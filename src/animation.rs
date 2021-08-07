@@ -1,4 +1,4 @@
-use bevy::prelude::{Res, Time, Assets, Handle, TextureAtlas, TextureAtlasSprite, Query};
+use bevy::prelude::{Res, Time, Timer, Assets, Handle, TextureAtlas, TextureAtlasSprite, Query};
 
 //Cycles through all the animations TODO: Needs different animations
 pub fn sprite_animation(
