@@ -1,3 +1,6 @@
+use bevy::prelude::{Entity, Query, Transform, Time, Without, Res};
+use bevy::math::Vec3Swizzles;
+
 pub struct FollowEntity {
     pub entity: Entity,
     pub lerp_speed: f32,
