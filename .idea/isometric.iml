@@ -88,6 +88,11 @@
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/wgpu-core-2bac7d66f600e6ff/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/winapi-0e07de1477042ba2/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/heron-e20c1641f70cf008/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/ahash-9f4a1ab2761d9c8e/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/crossbeam-utils-980c582ec74eaf09/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/getrandom-1b4085a18f52c1c8/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/glam-314d5e40a06b33b0/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/maybe-uninit-603c7700b4c8c5a1/out" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
