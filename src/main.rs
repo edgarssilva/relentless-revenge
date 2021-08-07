@@ -12,6 +12,19 @@ pub struct FollowEntity {
     pub lerp_speed: f32,
 }
 
+pub struct Stats {
+    pub health: u32,
+    pub damage: u32,
+    pub speed: u32,
+}
+
+impl Stats {
+    fn new(health: u32, damage: u32, speed: u32) -> Self {
+        Stats { health, damage, speed }
+    }
+}
+
+
 fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
@@ -74,6 +87,7 @@ fn setup(mut commands: Commands, mut texture_atlases: ResMut<Assets<TextureAtlas
             // .insert(PhysicMaterial { friction: 0., restitution: 0., density: 1. })
             .insert(Velocity::from_linear(Vec3::ZERO))
             .insert(Timer::from_seconds(0.1, true))
+            .insert(Stats::new(100, 20, 50))
             .id();
 
     //Add Camera after so we can give it the player entity
@@ -98,8 +112,8 @@ fn sprite_animation(
 }
 
 //Player Movement
-fn player_controller(mut query: Query<&mut Velocity, With<PlayerControlled>>, keys: Res<Input<KeyCode>>, time: Res<Time>) {
-    for mut velocity in query.iter_mut() {
+fn player_controller(mut query: Query<(&mut Velocity, Option<&Stats>), With<PlayerControlled>>, keys: Res<Input<KeyCode>>, time: Res<Time>) {
+    for (mut velocity, stats) in query.iter_mut() {
         let mut dir = Vec3::ZERO;
 
         if keys.pressed(KeyCode::W) { dir += Vec3::Y; }
@@ -108,7 +122,9 @@ fn player_controller(mut query: Query<&mut Velocity, With<PlayerControlled>>, ke
         if keys.pressed(KeyCode::D) { dir += Vec3::X; }
         /* if keys.pressed(KeyCode::Space) { dir += Vec3::new(0., 0., 1.); }*/
 
-        *velocity = Velocity::from_linear(dir.normalize_or_zero() * 45. * 100. * time.delta_seconds());
+        let speed: u32 = if let Some(stats) = stats { stats.speed } else { 45 /*TODO: Check default movement speed*/ };
+
+        *velocity = Velocity::from_linear(dir.normalize_or_zero() * speed as f32 * 100. * time.delta_seconds());
     }
 }
 
