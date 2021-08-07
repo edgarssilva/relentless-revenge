@@ -1,0 +1,11 @@
+[package]
+name = "isometric"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy = "0.5.0"
+bevy_ecs_tilemap = { git = "https://github.com/StarArawn/bevy_ecs_tilemap.git", branch="improved-iso", features = ["tiled_map"] }
+heron = { version = "0.11.0", features = ["2d"] }
