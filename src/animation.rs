@@ -1,5 +1,16 @@
 use bevy::prelude::{Res, Time, Timer, Assets, Handle, TextureAtlas, TextureAtlasSprite, Query};
 
+/*struct Animation {
+    frames: [i32],
+    duration: f32,
+    repeat: bool,
+}
+
+pub struct SpriteAnimation {
+
+}*/
+
+
 //Cycles through all the animations TODO: Needs different animations
 pub fn sprite_animation(
     time: Res<Time>,

@@ -93,6 +93,13 @@
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/getrandom-1b4085a18f52c1c8/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/glam-314d5e40a06b33b0/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/maybe-uninit-603c7700b4c8c5a1/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/wasm-bindgen-cfb5c339a7c18da0/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/wasm-bindgen-shared-379ecbaa1dfa9154/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/cpal-bccd12cf8a225dc6/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/libc-08a2d9369f30b9d9/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/minimp3-sys-312ec2a9796b36cd/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/spirv-reflect-06006f7d6726175d/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/spirv_cross-f8813fbdf98e63d6/out" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

@@ -14,10 +14,12 @@ pub fn follow_entity_system(
 ) {
     for (mut transform, follow_entity) in query.iter_mut() {
         if let Ok(follow_transform) = transform_query.get(follow_entity.entity) {
-            transform.translation =
-                transform.translation.xy()
-                    .lerp(follow_transform.translation.xy(), follow_entity.lerp_speed * time.delta_seconds())
-                    .extend(transform.translation.z);
+            if transform.translation.xy().distance(follow_transform.translation.xy()) > 0.5 { //TODO: Check distance threshold (This was added because of the parallax on the Changed)
+                transform.translation =
+                    transform.translation.xy()
+                        .lerp(follow_transform.translation.xy(), follow_entity.lerp_speed * time.delta_seconds())
+                        .extend(transform.translation.z);
+            }
         }
     }
 }
