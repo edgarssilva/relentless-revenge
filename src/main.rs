@@ -15,7 +15,7 @@ use animation::*;
 use stats::*;
 use bevy::render::camera::Camera;
 use bevy::ecs::schedule::ShouldRun;
-
+use rand::Rng;
 
 struct Parallax;
 
@@ -41,6 +41,7 @@ fn main() {
                 .with_run_criteria(run_on_camera_move.system())
                 .with_system(parallax_system.system())
         )
+        // .add_system(camera_shake.system())
         .add_startup_system(setup.system())
         .run();
 }
@@ -90,7 +91,7 @@ fn setup(mut commands: Commands, mut texture_atlases: ResMut<Assets<TextureAtlas
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = OrthographicCameraBundle::new_2d();
     camera_bundle.orthographic_projection.scale = 0.15;
-    commands.spawn_bundle(camera_bundle).insert(FollowEntity { entity: player_entity, lerp_speed: 5. });
+    commands.spawn_bundle(camera_bundle).insert(Follow { target: FollowTarget::Entity(player_entity), speed: 5. });
 
 
     //Add parallax planet
@@ -122,7 +123,6 @@ fn setup(mut commands: Commands, mut texture_atlases: ResMut<Assets<TextureAtlas
     }
 }
 
-
 fn run_on_camera_move(query: Query<(), (Changed<Transform>, With<Camera>)>) -> ShouldRun {
     if query.single().is_ok() { ShouldRun::Yes } else { ShouldRun::No }
 }
@@ -139,3 +139,12 @@ fn parallax_system(
     }
 }
 
+/*fn camera_shake(mut query: Query<&mut Transform, With<Camera>>, time: Res<Time>) {
+    if let Ok(mut trans) = query.single_mut() {
+        let strength = 50.;
+        let mut rng = rand::thread_rng();
+
+        trans.translation.x += rng.gen_range(-1.0..1.0) * strength * time.delta_seconds();
+        trans.translation.y += rng.gen_range(-1.0..1.0) * strength * time.delta_seconds();
+    }*/
+}

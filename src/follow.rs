@@ -1,25 +1,32 @@
-use bevy::prelude::{Entity, Query, Transform, Time, Without, Res};
-use bevy::math::Vec3Swizzles;
+use bevy::prelude::{Entity, Query, Transform, Time, Without, Res, Or};
+use bevy::math::{Vec3Swizzles, Vec3};
+use bevy::ecs::prelude::With;
 
-pub struct FollowEntity {
-    pub entity: Entity,
-    pub lerp_speed: f32,
+pub struct Follow {
+    pub speed: f32,
+    pub target: FollowTarget,
+}
+
+pub enum FollowTarget {
+    Entity(Entity),
+    Position(Vec3),
 }
 
 //System for an entity to follow another
 pub fn follow_entity_system(
-    mut query: Query<(&mut Transform, &FollowEntity)>,
-    transform_query: Query<&Transform, Without<FollowEntity>>,
+    mut query: Query<(&mut Transform, &Follow)>,
+    transform_query: Query<&Transform, Without<Follow>>,
     time: Res<Time>,
 ) {
-    for (mut transform, follow_entity) in query.iter_mut() {
-        if let Ok(follow_transform) = transform_query.get(follow_entity.entity) {
-            if transform.translation.xy().distance(follow_transform.translation.xy()) > 0.5 { //TODO: Check distance threshold (This was added because of the parallax on the Changed)
-                transform.translation =
-                    transform.translation.xy()
-                        .lerp(follow_transform.translation.xy(), follow_entity.lerp_speed * time.delta_seconds())
-                        .extend(transform.translation.z);
-            }
+    for (mut transform, follow) in query.iter_mut() {
+        let pos = match follow.target {
+            FollowTarget::Position(pos) => pos,
+            FollowTarget::Entity(entity) => transform_query.get(entity).expect("Tried to follow an entity without position!").translation,
+        };
+
+        if transform.translation.xy().distance(pos.xy()) > 0.5 { //TODO: Check distance threshold (This was added because of the parallax on the Changed)
+            transform.translation =
+                transform.translation.xy().lerp(pos.xy(), follow.speed * time.delta_seconds()).extend(transform.translation.z);
         }
     }
 }
