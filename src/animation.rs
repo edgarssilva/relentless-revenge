@@ -1,4 +1,4 @@
-use bevy::prelude::{Res, Time, Timer, Assets, Handle, TextureAtlas, TextureAtlasSprite, Query};
+use bevy::prelude::{Assets, Handle, Query, Res, TextureAtlas, TextureAtlasSprite, Time, Timer};
 
 /*struct Animation {
     frames: [i32],
@@ -9,7 +9,6 @@ use bevy::prelude::{Res, Time, Timer, Assets, Handle, TextureAtlas, TextureAtlas
 pub struct SpriteAnimation {
 
 }*/
-
 
 //Cycles through all the animations TODO: Needs different animations
 pub fn sprite_animation(

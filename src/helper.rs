@@ -1,6 +1,6 @@
 use bevy::prelude::{
-    AssetEvent, Assets, EventReader, Input, KeyCode, Query, Res, ResMut, Texture, Time, Transform,
-    Windows,
+    AssetEvent, Assets, Commands, Entity, EventReader, Input, KeyCode, Query, Res, ResMut, Texture,
+    Time, Transform, Windows,
 };
 use bevy::render::{
     camera::{Camera, CameraProjection, OrthographicProjection},
@@ -13,8 +13,12 @@ pub struct Shake {
     pub duration: f32,
 }
 
-pub fn shake_system(mut query: Query<(&mut Transform, &mut Shake)>, time: Res<Time>) {
-    for (mut trans, mut shake) in query.iter_mut() {
+pub fn shake_system(
+    mut commands: Commands,
+    mut query: Query<(&mut Transform, &mut Shake, Entity)>,
+    time: Res<Time>,
+) {
+    for (mut trans, mut shake, entity) in query.iter_mut() {
         if shake.duration > 0. {
             let mut rng = rand::thread_rng();
 
@@ -22,7 +26,9 @@ pub fn shake_system(mut query: Query<(&mut Transform, &mut Shake)>, time: Res<Ti
             trans.translation.y += rng.gen_range(-1.0..1.0) * shake.strength * time.delta_seconds();
 
             shake.duration -= time.delta_seconds();
-        } else {}
+        } else {
+            commands.entity(entity).remove::<Shake>();
+        }
     }
 }
 
@@ -33,15 +39,12 @@ pub fn set_texture_filters_to_nearest(
 ) {
     // quick and dirty, run this for all textures anytime a texture is created.
     for event in texture_events.iter() {
-        match event {
-            AssetEvent::Created { handle } => {
-                if let Some(mut texture) = textures.get_mut(handle) {
-                    texture.sampler.min_filter = FilterMode::Nearest;
-                    texture.sampler.mag_filter = FilterMode::Nearest;
-                    texture.sampler.mipmap_filter = FilterMode::Nearest;
-                }
+        if let AssetEvent::Created { handle } = event {
+            if let Some(mut texture) = textures.get_mut(handle) {
+                texture.sampler.min_filter = FilterMode::Nearest;
+                texture.sampler.mag_filter = FilterMode::Nearest;
+                texture.sampler.mipmap_filter = FilterMode::Nearest;
             }
-            _ => (),
         }
     }
 }
@@ -67,7 +70,7 @@ pub fn helper_camera_controller(
             transform.translation.x += 150.0 * time.delta_seconds();
         }
 
-        let scale = projection.scale.clone();
+        let scale = projection.scale;
 
         let w = windows.get(camera.window).unwrap();
 
@@ -78,7 +81,7 @@ pub fn helper_camera_controller(
             projection.scale += 0.55 * time.delta_seconds();
         }
 
-        if projection.scale != scale {
+        if (projection.scale - scale).abs() > 0.05 {
             projection.update(w.width(), w.height());
             camera.projection_matrix = projection.get_projection_matrix();
             camera.depth_calculation = projection.depth_calculation();

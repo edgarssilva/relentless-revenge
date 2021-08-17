@@ -91,14 +91,15 @@ fn setup(
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = OrthographicCameraBundle::new_2d();
     camera_bundle.orthographic_projection.scale = 0.15;
-    commands.spawn_bundle(camera_bundle)
+    commands
+        .spawn_bundle(camera_bundle)
         .insert(Follow {
             target: FollowTarget::Entity(player_entity),
             speed: 5.,
         })
         .insert(Shake {
             strength: 15.,
-            duration: 10.
+            duration: 10.,
         });
 
     //Add parallax planet
