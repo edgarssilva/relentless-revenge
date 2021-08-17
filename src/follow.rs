@@ -1,6 +1,5 @@
-use bevy::prelude::{Entity, Query, Transform, Time, Without, Res, Or};
-use bevy::math::{Vec3Swizzles, Vec3};
-use bevy::ecs::prelude::With;
+use bevy::math::{Vec3, Vec3Swizzles};
+use bevy::prelude::{Entity, Query, Res, Time, Transform, Without};
 
 pub struct Follow {
     pub speed: f32,
@@ -21,12 +20,21 @@ pub fn follow_entity_system(
     for (mut transform, follow) in query.iter_mut() {
         let pos = match follow.target {
             FollowTarget::Position(pos) => pos,
-            FollowTarget::Entity(entity) => transform_query.get(entity).expect("Tried to follow an entity without position!").translation,
+            FollowTarget::Entity(entity) => {
+                transform_query
+                    .get(entity)
+                    .expect("Tried to follow an entity without position!")
+                    .translation
+            }
         };
 
-        if transform.translation.xy().distance(pos.xy()) > 0.5 { //TODO: Check distance threshold (This was added because of the parallax on the Changed)
-            transform.translation =
-                transform.translation.xy().lerp(pos.xy(), follow.speed * time.delta_seconds()).extend(transform.translation.z);
+        if transform.translation.xy().distance(pos.xy()) > 0.5 {
+            //TODO: Check distance threshold (This was added because of the parallax on the Changed)
+            transform.translation = transform
+                .translation
+                .xy()
+                .lerp(pos.xy(), follow.speed * time.delta_seconds())
+                .extend(transform.translation.z);
         }
     }
 }

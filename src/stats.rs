@@ -6,6 +6,10 @@ pub struct Stats {
 
 impl Stats {
     pub fn new(health: u32, damage: u32, speed: u32) -> Self {
-        Stats { health, damage, speed }
+        Stats {
+            health,
+            damage,
+            speed,
+        }
     }
 }
