@@ -16,6 +16,24 @@ use follow::*;
 use helper::*;
 use stats::*;
 
+pub struct KeyMaps {
+    walk_up: KeyCode,
+    walk_left: KeyCode,
+    walk_down: KeyCode,
+    walk_right: KeyCode,
+}
+
+impl Default for KeyMaps {
+    fn default() -> Self {
+        KeyMaps {
+            walk_up: KeyCode::W,
+            walk_left: KeyCode::A,
+            walk_down: KeyCode::S,
+            walk_right: KeyCode::D,
+        }
+    }
+}
+
 struct Parallax;
 
 const PLAYER_Z: f32 = 39.;
@@ -25,6 +43,7 @@ const BACKGROUND_Z: f32 = 1.;
 fn main() {
     App::build()
         .insert_resource(ClearColor(Color::rgb(48. / 255., 44. / 255., 46. / 255.)))
+        .insert_resource(KeyMaps::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
         .add_plugin(TiledMapPlugin)

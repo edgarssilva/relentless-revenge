@@ -1,4 +1,4 @@
-use crate::stats::Stats;
+use crate::{stats::Stats, KeyMaps};
 use bevy::prelude::{Input, KeyCode, Query, Res, Time, Vec3, With};
 use heron::Velocity;
 
@@ -9,20 +9,21 @@ pub fn player_controller(
     mut query: Query<(&mut Velocity, Option<&Stats>), With<PlayerControlled>>,
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
+    mapping: Res<KeyMaps>,
 ) {
     for (mut velocity, stats) in query.iter_mut() {
         let mut dir = Vec3::ZERO;
 
-        if keys.pressed(KeyCode::W) {
+        if keys.pressed(mapping.walk_up) {
             dir += Vec3::Y;
         }
-        if keys.pressed(KeyCode::A) {
+        if keys.pressed(mapping.walk_left) {
             dir -= Vec3::X;
         }
-        if keys.pressed(KeyCode::S) {
+        if keys.pressed(mapping.walk_down) {
             dir -= Vec3::Y;
         }
-        if keys.pressed(KeyCode::D) {
+        if keys.pressed(mapping.walk_right) {
             dir += Vec3::X;
         }
         /* if keys.pressed(KeyCode::Space) { dir += Vec3::new(0., 0., 1.); }*/
