@@ -6,15 +6,12 @@ mod stats;
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-use heron::{prelude::*, SensorShape};
 
 use animation::*;
-
 use controller::*;
 use follow::*;
 use helper::*;
 use stats::*;
-
 pub struct KeyMaps {
     walk_up: KeyCode,
     walk_left: KeyCode,
@@ -37,6 +34,13 @@ pub const PLAYER_Z: f32 = 39.;
 pub const MAP_Z: f32 = 36.;
 pub const BACKGROUND_Z: f32 = 1.;
 
+/* #[derive(PhysicsLayer)]
+enum CollisionLayer {
+    Player,
+    PlayerWeapon,
+    Enemy,
+} */
+
 fn main() {
     App::build()
         .insert_resource(ClearColor(Color::rgb(48. / 255., 44. / 255., 46. / 255.)))
@@ -44,7 +48,6 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
         .add_plugin(TiledMapPlugin)
-        .add_plugin(PhysicsPlugin::default())
         .add_system(set_texture_filters_to_nearest.system())
         .add_system(helper_camera_controller.system())
         .add_system(sprite_animation.system())
@@ -93,42 +96,22 @@ fn setup(
             ..Default::default()
         })
         .insert(PlayerControlled)
-        .insert(RigidBody::KinematicPositionBased)
-        .insert(CollisionShape::Cuboid {
-            half_extends: player_size.extend(1.) / 2.,
-            border_radius: None,
-        })
-        .insert(RotationConstraints::lock())
         .insert(Timer::from_seconds(0.1, true))
         .insert(Stats::new(100, 20, 50))
         .with_children(|children| {
             let offset = player_size.x;
             let half_width = player_size.x / 3.;
 
-            let sensor_shape = CollisionShape::Cuboid {
-                half_extends: Vec2::splat(half_width).extend(0.),
-                border_radius: Some(2.),
-            };
-
-            let translations = [
-                Vec3::Y * offset,
-                Vec3::Y * -offset,
-                Vec3::X * -offset,
-                Vec3::X * offset,
+            let positions = [
+                Vec2::Y * offset,
+                Vec2::Y * -offset,
+                Vec2::X * -offset,
+                Vec2::X * offset,
             ];
 
             //Add attack sensors
-
-            for translation in translations {
-                children.spawn_bundle((
-                    SensorShape,
-                    sensor_shape.clone(),
-                    Transform {
-                        translation,
-                        ..Default::default()
-                    },
-                    GlobalTransform::default(),
-                ));
+            for pos in positions {
+                children.spawn();
             }
         })
         .id();
@@ -145,11 +128,7 @@ fn setup(
             },
             ..Default::default()
         })
-        .insert(RigidBody::KinematicPositionBased)
-        .insert(CollisionShape::Cuboid {
-            half_extends: Vec3::new(4.0, 8.0, 0.),
-            border_radius: None,
-        });
+        .insert(Stats::new(100, 20, 50));
 
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = OrthographicCameraBundle::new_2d();

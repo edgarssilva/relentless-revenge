@@ -84,7 +84,7 @@ pub fn helper_camera_controller(
             projection.scale += 0.55 * time.delta_seconds();
         }
 
-        if (projection.scale - scale).abs() > 0.05 {
+        if (projection.scale - scale).abs() > f32::MIN_POSITIVE {
             projection.update(w.width(), w.height());
             camera.projection_matrix = projection.get_projection_matrix();
             camera.depth_calculation = projection.depth_calculation();
