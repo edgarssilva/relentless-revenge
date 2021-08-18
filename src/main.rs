@@ -6,11 +6,10 @@ mod stats;
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-use heron::prelude::*;
+use heron::{prelude::*, SensorShape};
 
 use animation::*;
-use bevy::ecs::schedule::ShouldRun;
-use bevy::render::camera::Camera;
+
 use controller::*;
 use follow::*;
 use helper::*;
@@ -34,11 +33,9 @@ impl Default for KeyMaps {
     }
 }
 
-struct Parallax;
-
-const PLAYER_Z: f32 = 39.;
-const MAP_Z: f32 = 36.;
-const BACKGROUND_Z: f32 = 1.;
+pub const PLAYER_Z: f32 = 39.;
+pub const MAP_Z: f32 = 36.;
+pub const BACKGROUND_Z: f32 = 1.;
 
 fn main() {
     App::build()
@@ -87,6 +84,7 @@ fn setup(
     let texture_handle = asset_server.load("IsometricTRPGAssetPack_Entities.png");
     let texture_atlas = TextureAtlas::from_grid(texture_handle, player_size, 4, 33);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
+    let player_size = player_size / 2.; //Player actual size is half of his sprite (whitespace)
 
     let player_entity = commands
         .spawn_bundle(SpriteSheetBundle {
@@ -95,17 +93,63 @@ fn setup(
             ..Default::default()
         })
         .insert(PlayerControlled)
-        .insert(RigidBody::Dynamic)
+        .insert(RigidBody::KinematicPositionBased)
         .insert(CollisionShape::Cuboid {
             half_extends: player_size.extend(1.) / 2.,
             border_radius: None,
         })
         .insert(RotationConstraints::lock())
-        // .insert(PhysicMaterial { friction: 0., restitution: 0., density: 1. })
-        .insert(Velocity::from_linear(Vec3::ZERO))
         .insert(Timer::from_seconds(0.1, true))
         .insert(Stats::new(100, 20, 50))
+        .with_children(|children| {
+            let offset = player_size.x;
+            let half_width = player_size.x / 3.;
+
+            let sensor_shape = CollisionShape::Cuboid {
+                half_extends: Vec2::splat(half_width).extend(0.),
+                border_radius: Some(2.),
+            };
+
+            let translations = [
+                Vec3::Y * offset,
+                Vec3::Y * -offset,
+                Vec3::X * -offset,
+                Vec3::X * offset,
+            ];
+
+            //Add attack sensors
+
+            for translation in translations {
+                children.spawn_bundle((
+                    SensorShape,
+                    sensor_shape.clone(),
+                    Transform {
+                        translation,
+                        ..Default::default()
+                    },
+                    GlobalTransform::default(),
+                ));
+            }
+        })
         .id();
+
+    //Add enemy
+    commands
+        .spawn()
+        .insert_bundle(SpriteBundle {
+            material: materials.add(asset_server.load("old/char/iddle_l1.png").into()),
+            transform: Transform {
+                translation: Vec3::new(30., 5., PLAYER_Z),
+                scale: Vec3::splat(0.5),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(RigidBody::KinematicPositionBased)
+        .insert(CollisionShape::Cuboid {
+            half_extends: Vec3::new(4.0, 8.0, 0.),
+            border_radius: None,
+        });
 
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = OrthographicCameraBundle::new_2d();
@@ -116,10 +160,10 @@ fn setup(
             target: FollowTarget::Entity(player_entity),
             speed: 5.,
         })
-        .insert(Shake {
+       /*  .insert(Shake {
             strength: 15.,
             duration: 10.,
-        });
+        }) */;
 
     //Add parallax planet
     commands
@@ -162,27 +206,5 @@ fn setup(
                 ..Default::default()
             })
             .insert(Parallax);
-    }
-}
-
-fn run_on_camera_move(query: Query<(), (Changed<Transform>, With<Camera>)>) -> ShouldRun {
-    if query.single().is_ok() {
-        ShouldRun::Yes
-    } else {
-        ShouldRun::No
-    }
-}
-
-fn parallax_system(
-    cam_query: Query<&Transform, With<Camera>>,
-    mut query: Query<&mut Transform, (With<Parallax>, Without<Camera>)>,
-) {
-    if let Ok(cam_trans) = cam_query.single() {
-        for mut trans in query.iter_mut() {
-            trans.translation.x =
-                -cam_trans.translation.x * (0.002 * (trans.translation.z - BACKGROUND_Z));
-            trans.translation.y =
-                -cam_trans.translation.y * (0.001 * (trans.translation.z - BACKGROUND_Z));
-        }
     }
 }

@@ -8,6 +8,6 @@ edition = "2018"
 [dependencies]
 bevy = "0.5.0"
 bevy_ecs_tilemap = { git = "https://github.com/StarArawn/bevy_ecs_tilemap.git", branch="improved-iso", features = ["tiled_map"] }
-heron = { version = "0.11.0", features = ["2d"] }
+heron = { version = "0.11.0", features = ["2d", "debug-2d"] }
 rand = "0.8"
 getrandom = { version = "0.2", features = ["js"] } # Works with rand to support browser runder numbers
