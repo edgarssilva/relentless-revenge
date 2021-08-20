@@ -84,7 +84,7 @@ pub fn helper_camera_controller(
             projection.scale += 0.55 * time.delta_seconds();
         }
 
-        if (projection.scale - scale).abs() > f32::MIN_POSITIVE {
+        if (projection.scale - scale).abs() > f32::EPSILON {
             projection.update(w.width(), w.height());
             camera.projection_matrix = projection.get_projection_matrix();
             camera.depth_calculation = projection.depth_calculation();
@@ -110,6 +110,24 @@ pub fn parallax_system(
                 -cam_trans.translation.x * (0.002 * (trans.translation.z - crate::BACKGROUND_Z));
             trans.translation.y =
                 -cam_trans.translation.y * (0.001 * (trans.translation.z - crate::BACKGROUND_Z));
+        }
+    }
+}
+
+pub struct KeyMaps {
+    pub walk_up: KeyCode,
+    pub walk_left: KeyCode,
+    pub walk_down: KeyCode,
+    pub walk_right: KeyCode,
+}
+
+impl Default for KeyMaps {
+    fn default() -> Self {
+        KeyMaps {
+            walk_up: KeyCode::W,
+            walk_left: KeyCode::A,
+            walk_down: KeyCode::S,
+            walk_right: KeyCode::D,
         }
     }
 }
