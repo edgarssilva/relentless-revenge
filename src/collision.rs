@@ -10,7 +10,7 @@ pub enum Layers {
 
 pub fn melee_collisions(
     mut events: EventReader<CollisionEvent>,
-    mut query: Query<&mut crate::MeleeSensor>,
+    mut query: Query<&mut crate::MeleeSensor>, //TODO: Abstract this so any entity can have a list of collided entities
 ) {
     events.iter().for_each(|e| match e {
         CollisionEvent::Started(d1, d2) => {
@@ -34,9 +34,9 @@ pub fn melee_collisions(
 
 fn enemy_on_sensor(d1: &CollisionData, d2: &CollisionData) -> Option<(Entity, Entity)> {
     if is_attack(d1) && is_enemy(d2) {
-        Some((d1.rigid_body_entity(), d2.rigid_body_entity()))
+        Some((d1.collision_shape_entity(), d2.rigid_body_entity()))
     } else if is_attack(d2) && is_enemy(d1) {
-        Some((d2.rigid_body_entity(), d1.rigid_body_entity()))
+        Some((d2.rigid_body_entity(), d1.collision_shape_entity()))
     } else {
         None
     }
