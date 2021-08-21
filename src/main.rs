@@ -21,6 +21,7 @@ pub const MAP_Z: f32 = 36.;
 pub const BACKGROUND_Z: f32 = 1.;
 pub const DEBUG_Z: f32 = 100.;
 
+#[derive(PartialEq)]
 pub enum Direction {
     NORTH,
     SOUTH,
@@ -71,6 +72,8 @@ fn main() {
         .add_system(player_controller.system())
         .add_system(follow_entity_system.system())
         .add_system(melee_collisions.system())
+        .add_system(attack_system.system())
+        .add_system(death_system.system())
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(run_on_camera_move.system())
@@ -79,6 +82,32 @@ fn main() {
         .add_system(shake_system.system())
         .add_startup_system(setup.system())
         .run();
+}
+
+fn attack_system(
+    player_query: Query<&Stats, With<PlayerControlled>>,
+    mut stats_query: Query<&mut Stats, Without<PlayerControlled>>,
+    sensors_query: Query<&MeleeSensor>,
+    keys: Res<Input<KeyCode>>,
+    keymaps: Res<KeyMaps>,
+) {
+    if !keys.just_pressed(keymaps.attack) {
+        return;
+    }
+
+    if let Ok(attacker_stats) = player_query.single() {
+        for sensor in sensors_query
+            .iter()
+            //TODO: Change this to the players direction
+            .filter(|sensor| sensor.dir == Direction::EAST)
+        {
+            for &attacked_entity in sensor.targets.iter() {
+                if let Ok(mut attacked_stats) = stats_query.get_mut(attacked_entity) {
+                    attacked_stats.health -= attacker_stats.damage;
+                }
+            }
+        }
+    }
 }
 
 fn setup(

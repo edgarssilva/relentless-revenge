@@ -119,6 +119,7 @@ pub struct KeyMaps {
     pub walk_left: KeyCode,
     pub walk_down: KeyCode,
     pub walk_right: KeyCode,
+    pub attack: KeyCode,
 }
 
 impl Default for KeyMaps {
@@ -128,6 +129,7 @@ impl Default for KeyMaps {
             walk_left: KeyCode::A,
             walk_down: KeyCode::S,
             walk_right: KeyCode::D,
+            attack: KeyCode::K,
         }
     }
 }
