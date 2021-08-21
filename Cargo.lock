@@ -1842,7 +1842,7 @@ dependencies = [
 [[package]]
 name = "heron"
 version = "0.11.0"
-source = "git+https://github.com/jcornaz/heron.git#9c4dd9aaa80481d9293cec75ac874b5221b18dba"
+source = "git+https://github.com/edgarssilva/heron.git?branch=main#b6ed6b205a7e5d67e05cb1a5e2cebd9b6d52c18e"
 dependencies = [
  "bevy",
  "cfg_aliases",
@@ -1855,7 +1855,7 @@ dependencies = [
 [[package]]
 name = "heron_core"
 version = "0.11.0"
-source = "git+https://github.com/jcornaz/heron.git#9c4dd9aaa80481d9293cec75ac874b5221b18dba"
+source = "git+https://github.com/edgarssilva/heron.git?branch=main#b6ed6b205a7e5d67e05cb1a5e2cebd9b6d52c18e"
 dependencies = [
  "bevy",
  "duplicate",
@@ -1864,7 +1864,7 @@ dependencies = [
 [[package]]
 name = "heron_debug"
 version = "0.11.0"
-source = "git+https://github.com/jcornaz/heron.git#9c4dd9aaa80481d9293cec75ac874b5221b18dba"
+source = "git+https://github.com/edgarssilva/heron.git?branch=main#b6ed6b205a7e5d67e05cb1a5e2cebd9b6d52c18e"
 dependencies = [
  "bevy",
  "bevy_prototype_lyon",
@@ -1877,7 +1877,7 @@ dependencies = [
 [[package]]
 name = "heron_macros"
 version = "0.11.0"
-source = "git+https://github.com/jcornaz/heron.git#9c4dd9aaa80481d9293cec75ac874b5221b18dba"
+source = "git+https://github.com/edgarssilva/heron.git?branch=main#b6ed6b205a7e5d67e05cb1a5e2cebd9b6d52c18e"
 dependencies = [
  "heron_core",
  "quote",
@@ -1887,7 +1887,7 @@ dependencies = [
 [[package]]
 name = "heron_rapier"
 version = "0.11.0"
-source = "git+https://github.com/jcornaz/heron.git#9c4dd9aaa80481d9293cec75ac874b5221b18dba"
+source = "git+https://github.com/edgarssilva/heron.git?branch=main#b6ed6b205a7e5d67e05cb1a5e2cebd9b6d52c18e"
 dependencies = [
  "bevy",
  "cfg_aliases",
@@ -2098,9 +2098,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "libc"
-version = "0.2.99"
+version = "0.2.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7f823d141fe0a24df1e23b4af4e3c7ba9e5966ec514ea068c93024aa7deb765"
+checksum = "a1fa8cddc8fbbee11227ef194b5317ed014b8acbf15139bd716a18ad3fe99ec5"
 
 [[package]]
 name = "libflate"

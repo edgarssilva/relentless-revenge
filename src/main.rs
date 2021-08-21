@@ -1,4 +1,5 @@
 mod animation;
+mod collision;
 mod controller;
 mod follow;
 mod helper;
@@ -6,9 +7,10 @@ mod stats;
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-use heron::prelude::*;
+use heron::{prelude::*, SensorShape};
 
 use animation::*;
+use collision::*;
 use controller::*;
 use follow::*;
 use helper::*;
@@ -18,6 +20,42 @@ pub const PLAYER_Z: f32 = 39.;
 pub const MAP_Z: f32 = 36.;
 pub const BACKGROUND_Z: f32 = 1.;
 pub const DEBUG_Z: f32 = 100.;
+
+pub enum Direction {
+    NORTH,
+    SOUTH,
+    WEST,
+    EAST,
+}
+
+impl Direction {
+    pub fn vec(&self) -> Vec2 {
+        match self {
+            &Self::NORTH => Vec2::Y,
+            &Self::SOUTH => -Vec2::Y,
+            &Self::WEST => -Vec2::X,
+            &Self::EAST => Vec2::X,
+        }
+    }
+
+    pub fn values() -> [Self; 4] {
+        [Self::NORTH, Self::SOUTH, Self::WEST, Self::EAST]
+    }
+}
+
+pub struct MeleeSensor {
+    pub dir: Direction,
+    pub targets: Vec<Entity>,
+}
+
+impl MeleeSensor {
+    pub fn from(dir: Direction) -> Self {
+        Self {
+            dir,
+            targets: Vec::new(),
+        }
+    }
+}
 
 fn main() {
     App::build()
@@ -32,7 +70,7 @@ fn main() {
         .add_system(sprite_animation.system())
         .add_system(player_controller.system())
         .add_system(follow_entity_system.system())
-        .add_system(log_collisions.system())
+        .add_system(melee_collisions.system())
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(run_on_camera_move.system())
@@ -41,19 +79,6 @@ fn main() {
         .add_system(shake_system.system())
         .add_startup_system(setup.system())
         .run();
-}
-
-fn log_collisions(mut events: EventReader<CollisionEvent>) {
-    for event in events.iter() {
-        match event {
-            CollisionEvent::Started(d1, d2) => {
-                println!("Collision started between {:?} and {:?}", d1, d2)
-            }
-            CollisionEvent::Stopped(d1, d2) => {
-                println!("Collision stopped between {:?} and {:?}", d1, d2)
-            }
-        }
-    }
 }
 
 fn setup(
@@ -94,30 +119,36 @@ fn setup(
             border_radius: None,
         })
         .insert(PlayerControlled)
+        .insert(
+            CollisionLayers::none()
+                .with_group(Layers::Player)
+                .with_mask(Layers::Enemy),
+        )
         .insert(Timer::from_seconds(0.1, true))
         .insert(Stats::new(100, 20, 50))
         .with_children(|children| {
             let offset = player_size.x;
             let width = player_size.x * 1.25;
             let height = player_size.y * 1.25;
-            let positions = [
-                Vec2::Y * offset,
-                Vec2::Y * -offset,
-                Vec2::X * -offset,
-                Vec2::X * offset,
-            ];
 
             //Add attack sensors
-            for pos in positions {
+            for dir in Direction::values() {
                 children
                     .spawn_bundle((
-                        Transform::from_translation(pos.extend(10.)),
+                        Transform::from_translation((dir.vec() * offset).extend(10.)),
                         GlobalTransform::default(),
                     ))
+                    .insert(SensorShape)
                     .insert(CollisionShape::Cuboid {
                         half_extends: Vec3::new(width / 2., height / 2., 0.),
                         border_radius: None,
-                    });
+                    })
+                    .insert(
+                        CollisionLayers::none()
+                            .with_group(Layers::Attack)
+                            .with_mask(Layers::Enemy),
+                    )
+                    .insert(MeleeSensor::from(dir));
             }
         })
         .id();
@@ -139,7 +170,12 @@ fn setup(
         .insert(CollisionShape::Cuboid {
             half_extends: Vec3::new(6.4, 8.8, 0.),
             border_radius: None,
-        });
+        })
+        .insert(
+            CollisionLayers::none()
+                .with_group(Layers::Enemy)
+                .with_masks([Layers::Player, Layers::Attack]),
+        );
 
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = OrthographicCameraBundle::new_2d();
