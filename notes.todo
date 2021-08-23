@@ -1,0 +1,23 @@
+Theme notes
+    - Player is an agile {BLANK} that leeps around 
+    - MISSING THEME STYLE AND WHAT MONSTERS ARE AND WHY THE PLAYER IS FIGHTING THEM
+
+Mechanics notes
+    - Combat should be smooth and quick with increasing speed through level
+    - Travel down an level using maybe a portal or spining around 
+    - Transition each level trough a slide up dithering effect
+    - There should be a dash effects that locks on targets (prevent unwanted ones)
+    ? Figure out wheter to use JKL keys or the mouse (maybe both) 
+
+Art Notes
+    - Assets should be isometric if possible
+    - Sprites can be around 16x16
+    - Enemies should be larger then the player (expecially bosses)
+    - Color scheme should be a bit more to dark and colder colors
+    - Every animation should be smooth with trailing effects
+    - Hit effects should be a white overlay (or red)
+    - There should be parallax partiles all around and some always moving
+
+Sound Notes
+    - Attack should be swift and faded (should use wind as a base)
+    - Try to go for a pixel arty style but without sounding 8 bitty
