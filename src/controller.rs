@@ -1,7 +1,7 @@
 use crate::{direction::Direction, stats::Stats, KeyMaps};
 use bevy::{
     math::Vec2,
-    prelude::{Input, KeyCode, Query, Res, Time, Transform, With},
+    prelude::{Input, KeyCode, Query, Res, Time, Transform},
 };
 
 pub struct PlayerControlled(pub Direction);
@@ -18,6 +18,7 @@ pub fn player_controller(
 
         if keys.pressed(mapping.walk_up) {
             dir += Vec2::Y;
+            controller.0 = Direction::NORTH;
         }
 
         if keys.pressed(mapping.walk_left) {
@@ -27,6 +28,7 @@ pub fn player_controller(
 
         if keys.pressed(mapping.walk_down) {
             dir -= Vec2::Y;
+            controller.0 = Direction::SOUTH;
         }
 
         if keys.pressed(mapping.walk_right) {
