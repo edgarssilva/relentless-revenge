@@ -1,20 +1,19 @@
-use crate::{stats::Stats, KeyMaps};
+use crate::{direction::Direction, stats::Stats, KeyMaps};
 use bevy::{
     math::Vec2,
     prelude::{Input, KeyCode, Query, Res, Time, Transform, With},
 };
-// use bevy_rapier2d::prelude::RigidBodyPosition;
 
-pub struct PlayerControlled;
+pub struct PlayerControlled(pub Direction);
 
 //Player Movement TODO: Add option to Transform, Collider and RigidBody
 pub fn player_controller(
-    mut query: Query<(&mut Transform, Option<&Stats>), With<PlayerControlled>>,
+    mut query: Query<(&mut Transform, Option<&Stats>, &mut PlayerControlled)>,
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
     mapping: Res<KeyMaps>,
 ) {
-    for (mut transform, stats) in query.iter_mut() {
+    for (mut transform, stats, mut controller) in query.iter_mut() {
         let mut dir = Vec2::ZERO;
 
         if keys.pressed(mapping.walk_up) {
@@ -23,6 +22,7 @@ pub fn player_controller(
 
         if keys.pressed(mapping.walk_left) {
             dir -= Vec2::X;
+            controller.0 = Direction::WEST;
         }
 
         if keys.pressed(mapping.walk_down) {
@@ -31,9 +31,8 @@ pub fn player_controller(
 
         if keys.pressed(mapping.walk_right) {
             dir += Vec2::X;
+            controller.0 = Direction::EAST;
         }
-
-        /* if keys.pressed(KeyCode::Space) { dir += Vec3::new(0., 0., 1.); }*/
 
         let speed: u32 = if let Some(stats) = stats {
             stats.speed

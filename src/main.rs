@@ -1,17 +1,19 @@
 mod animation;
 mod collision;
 mod controller;
+mod direction;
 mod follow;
 mod helper;
 mod stats;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::Camera};
 use bevy_ecs_tilemap::prelude::*;
 use heron::{prelude::*, SensorShape};
 
 use animation::*;
 use collision::*;
 use controller::*;
+use direction::Direction;
 use follow::*;
 use helper::*;
 use stats::*;
@@ -20,29 +22,6 @@ pub const PLAYER_Z: f32 = 39.;
 pub const MAP_Z: f32 = 36.;
 pub const BACKGROUND_Z: f32 = 1.;
 pub const DEBUG_Z: f32 = 100.;
-
-#[derive(PartialEq)]
-pub enum Direction {
-    NORTH,
-    SOUTH,
-    WEST,
-    EAST,
-}
-
-impl Direction {
-    pub fn vec(&self) -> Vec2 {
-        match self {
-            &Self::NORTH => Vec2::Y,
-            &Self::SOUTH => -Vec2::Y,
-            &Self::WEST => -Vec2::X,
-            &Self::EAST => Vec2::X,
-        }
-    }
-
-    pub fn values() -> [Self; 4] {
-        [Self::NORTH, Self::SOUTH, Self::WEST, Self::EAST]
-    }
-}
 
 pub struct MeleeSensor {
     pub dir: Direction,
@@ -74,6 +53,7 @@ fn main() {
         .add_system(melee_collisions.system())
         .add_system(attack_system.system())
         .add_system(death_system.system())
+        .add_system(attack_cooldown_system.system())
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(run_on_camera_move.system())
@@ -85,25 +65,35 @@ fn main() {
 }
 
 fn attack_system(
-    player_query: Query<&Stats, With<PlayerControlled>>,
+    player_query: Query<(&Stats, &PlayerControlled)>,
     mut stats_query: Query<&mut Stats, Without<PlayerControlled>>,
     sensors_query: Query<&MeleeSensor>,
     keys: Res<Input<KeyCode>>,
     keymaps: Res<KeyMaps>,
+    camera_query: Query<Entity, With<Camera>>,
+    mut commands: Commands,
 ) {
     if !keys.just_pressed(keymaps.attack) {
         return;
     }
 
-    if let Ok(attacker_stats) = player_query.single() {
+    if let Ok((attacker_stats, controller)) = player_query.single() {
+        if !attacker_stats.can_attack() {
+            return;
+        }
         for sensor in sensors_query
             .iter()
-            //TODO: Change this to the players direction
-            .filter(|sensor| sensor.dir == Direction::EAST)
+            .filter(|sensor| sensor.dir == controller.0)
         {
             for &attacked_entity in sensor.targets.iter() {
                 if let Ok(mut attacked_stats) = stats_query.get_mut(attacked_entity) {
                     attacked_stats.health -= attacker_stats.damage;
+                    if let Ok(camera) = camera_query.single() {
+                        commands.entity(camera).insert(Shake {
+                            duration: 0.25,
+                            strength: 10.,
+                        });
+                    }
                 }
             }
         }
@@ -147,14 +137,14 @@ fn setup(
             half_extends: Vec3::new(player_size.x / 2., player_size.y / 2., 0.),
             border_radius: None,
         })
-        .insert(PlayerControlled)
+        .insert(PlayerControlled(Direction::EAST))
         .insert(
             CollisionLayers::none()
                 .with_group(Layers::Player)
                 .with_mask(Layers::Enemy),
         )
         .insert(Timer::from_seconds(0.1, true))
-        .insert(Stats::new(100, 20, 50))
+        .insert(Stats::new(100, 20, 50, 3.))
         .with_children(|children| {
             let offset = player_size.x;
             let width = player_size.x * 1.25;
@@ -194,7 +184,7 @@ fn setup(
             },
             ..Default::default()
         })
-        .insert(Stats::new(100, 20, 50))
+        .insert(Stats::new(100, 20, 50, 2.))
         .insert(RigidBody::KinematicPositionBased)
         .insert(CollisionShape::Cuboid {
             half_extends: Vec3::new(6.4, 8.8, 0.),
@@ -209,16 +199,10 @@ fn setup(
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = OrthographicCameraBundle::new_2d();
     camera_bundle.orthographic_projection.scale = 0.15;
-    commands
-        .spawn_bundle(camera_bundle)
-        .insert(Follow {
-            target: FollowTarget::Transform(player_entity),
-            speed: 5.,
-        })
-       /*  .insert(Shake {
-            strength: 15.,
-            duration: 10.,
-        }) */;
+    commands.spawn_bundle(camera_bundle).insert(Follow {
+        target: FollowTarget::Transform(player_entity),
+        speed: 5.,
+    });
 
     //Add parallax planet
     commands
