@@ -202,6 +202,7 @@ fn setup(
     commands.spawn_bundle(camera_bundle).insert(Follow {
         target: FollowTarget::Transform(player_entity),
         speed: 5.,
+        continous: true,
     });
 
     //Add parallax planet

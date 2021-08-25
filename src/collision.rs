@@ -47,7 +47,7 @@ fn is_attack(data: &CollisionData) -> bool {
         .contains_group(crate::Layers::Attack)
 }
 
-fn is_player(data: &CollisionData) -> bool {
+fn _is_player(data: &CollisionData) -> bool {
     data.collision_layers().contains_group(Layers::Player)
 }
 

@@ -1,19 +1,30 @@
-use crate::{direction::Direction, stats::Stats, KeyMaps};
+use crate::{
+    direction::Direction,
+    follow::{Follow, FollowTarget},
+    stats::Stats,
+    KeyMaps,
+};
 use bevy::{
     math::Vec2,
-    prelude::{Input, KeyCode, Query, Res, Time, Transform},
+    prelude::{Commands, Entity, Input, KeyCode, Query, Res, Time, Transform},
 };
 
 pub struct PlayerControlled(pub Direction);
 
 //Player Movement TODO: Add option to Transform, Collider and RigidBody
 pub fn player_controller(
-    mut query: Query<(&mut Transform, Option<&Stats>, &mut PlayerControlled)>,
+    mut commands: Commands,
+    mut query: Query<(
+        &mut Transform,
+        Option<&Stats>,
+        &mut PlayerControlled,
+        Entity,
+    )>,
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
     mapping: Res<KeyMaps>,
 ) {
-    for (mut transform, stats, mut controller) in query.iter_mut() {
+    for (mut transform, stats, mut controller, entity) in query.iter_mut() {
         let mut dir = Vec2::ZERO;
 
         if keys.pressed(mapping.walk_up) {
@@ -34,6 +45,23 @@ pub fn player_controller(
         if keys.pressed(mapping.walk_right) {
             dir += Vec2::X;
             controller.0 = Direction::EAST;
+        }
+
+        if keys.just_pressed(mapping.dash) {
+            let dash_dir = if dir == Vec2::ZERO {
+                controller.0.vec()
+            } else {
+                dir
+            };
+
+            let new_pos = transform.translation + (dash_dir * 35.).extend(0.);
+            commands.entity(entity).insert(Follow {
+                target: FollowTarget::Position(new_pos),
+                speed: 10.,
+                continous: false,
+            });
+
+            return;
         }
 
         let speed: u32 = if let Some(stats) = stats {
