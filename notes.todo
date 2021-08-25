@@ -1,6 +1,7 @@
 Theme notes
-    - Player is an agile {BLANK} that leeps around 
-    - MISSING THEME STYLE AND WHAT MONSTERS ARE AND WHY THE PLAYER IS FIGHTING THEM
+    - Player is an agile {BLANK CHARACTER} that leeps around using daggers and emits lightnigh
+    - He evolves taking bosses skills and becomes strong with each kill (should be represented with color)
+    x MISSING THEME STYLE AND WHAT MONSTERS ARE AND WHY THE PLAYER IS FIGHTING THEM
 
 Mechanics notes
     - Combat should be smooth and quick with increasing speed through level
@@ -8,6 +9,9 @@ Mechanics notes
     - Transition each level trough a slide up dithering effect
     - There should be a dash effects that locks on targets (prevent unwanted ones)
     ? Figure out wheter to use JKL keys or the mouse (maybe both) 
+    ? How should health be displayed (healthbars and/or damage counters) or even show at all
+    - There should be leveling of different stats like hp, speed, dash-speed, etc.
+    - A skill where you can refect an incoming projectile
 
 Art Notes
     - Assets should be isometric if possible
@@ -17,7 +21,13 @@ Art Notes
     - Every animation should be smooth with trailing effects
     - Hit effects should be a white overlay (or red)
     - There should be parallax partiles all around and some always moving
+    - Main character should have different versions with different lightnigh color and entinsity
+    - Idle animation should be a tired slow breathing up-and-down, with head and daggers lowered 
 
 Sound Notes
     - Attack should be swift and faded (should use wind as a base)
     - Try to go for a pixel arty style but without sounding 8 bitty
+
+References
+    - Player mechanis (Solo leveling)
+    - Map and enemies (Quadropus Rampage)
