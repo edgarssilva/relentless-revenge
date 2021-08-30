@@ -6,16 +6,18 @@ pub struct Stats {
     pub speed: u32,
     pub attack_speed: f32,
     attack_timer: f32,
+    pub xp: u32,
 }
 
 impl Stats {
-    pub fn new(health: u32, damage: u32, speed: u32, attack_speed: f32) -> Self {
+    pub fn new(health: u32, damage: u32, speed: u32, attack_speed: f32, xp: u32) -> Self {
         Stats {
             health,
             damage,
             speed,
             attack_speed,
             attack_timer: 0.,
+            xp,
         }
     }
 

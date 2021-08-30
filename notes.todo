@@ -7,18 +7,18 @@ Mechanics notes
     - Combat should be smooth and quick with increasing speed through level
     - Travel down an level using maybe a portal or spining around 
     - Transition each level trough a slide up dithering effect
-    - There should be a dash effects that locks on targets (prevent unwanted ones)
+    - There should be a dash effects that maybe locks on targets (prevent unwanted ones)
     ? Figure out wheter to use JKL keys or the mouse (maybe both) 
     ? How should health be displayed (healthbars and/or damage counters) or even show at all
     - There should be leveling of different stats like hp, speed, dash-speed, etc.
-    - A skill where you can refect an incoming projectile
+    - A skill where you can refect an incoming projectile (not by attacking it)
 
 Art Notes
     - Assets should be isometric if possible
     - Sprites can be around 16x16
     - Enemies should be larger then the player (expecially bosses)
     - Color scheme should be a bit more to dark and colder colors
-    - Every animation should be smooth with trailing effects
+    - Dash and attack animations should be smooth with trailing effects
     - Hit effects should be a white overlay (or red)
     - There should be parallax partiles all around and some always moving
     - Main character should have different versions with different lightnigh color and entinsity
@@ -29,5 +29,5 @@ Sound Notes
     - Try to go for a pixel arty style but without sounding 8 bitty
 
 References
-    - Player mechanis (Solo leveling)
+    - Player mechanis and look (Solo leveling)
     - Map and enemies (Quadropus Rampage)

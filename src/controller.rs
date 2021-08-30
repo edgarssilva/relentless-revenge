@@ -11,7 +11,7 @@ use bevy::{
 
 pub struct PlayerControlled(pub Direction);
 
-//Player Movement TODO: Add option to Transform, Collider and RigidBody
+//Player Movement
 pub fn player_controller(
     mut commands: Commands,
     mut query: Query<(
@@ -54,12 +54,13 @@ pub fn player_controller(
                 dir
             };
 
+            //TODO: Add dash stats
             let new_pos = transform.translation + (dash_dir * 35.).extend(0.);
-            commands.entity(entity).insert(Follow {
-                target: FollowTarget::Position(new_pos),
-                speed: 10.,
-                continous: false,
-            });
+            commands.entity(entity).insert(Follow::new(
+                FollowTarget::Position(new_pos),
+                10.,
+                false,
+            ));
 
             return;
         }

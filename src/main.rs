@@ -1,4 +1,5 @@
 mod animation;
+mod attack;
 mod collision;
 mod controller;
 mod direction;
@@ -6,11 +7,12 @@ mod follow;
 mod helper;
 mod stats;
 
-use bevy::{prelude::*, render::camera::Camera};
+use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use heron::{prelude::*, SensorShape};
 
 use animation::*;
+use attack::*;
 use collision::*;
 use controller::*;
 use direction::Direction;
@@ -23,19 +25,7 @@ pub const MAP_Z: f32 = 36.;
 pub const BACKGROUND_Z: f32 = 1.;
 pub const DEBUG_Z: f32 = 100.;
 
-pub struct MeleeSensor {
-    pub dir: Direction,
-    pub targets: Vec<Entity>,
-}
-
-impl MeleeSensor {
-    pub fn from(dir: Direction) -> Self {
-        Self {
-            dir,
-            targets: Vec::new(),
-        }
-    }
-}
+pub struct XP(u32);
 
 fn main() {
     App::build()
@@ -60,44 +50,10 @@ fn main() {
                 .with_system(parallax_system.system()),
         )
         .add_system(shake_system.system())
+        // .add_system_to_stage(CoreStage::PostUpdate, xp_system.system())
+        .add_system(xp_system.system())
         .add_startup_system(setup.system())
         .run();
-}
-
-fn attack_system(
-    player_query: Query<(&Stats, &PlayerControlled)>,
-    mut stats_query: Query<&mut Stats, Without<PlayerControlled>>,
-    sensors_query: Query<&MeleeSensor>,
-    keys: Res<Input<KeyCode>>,
-    keymaps: Res<KeyMaps>,
-    camera_query: Query<Entity, With<Camera>>,
-    mut commands: Commands,
-) {
-    if !keys.just_pressed(keymaps.attack) {
-        return;
-    }
-
-    if let Ok((attacker_stats, controller)) = player_query.single() {
-        if !attacker_stats.can_attack() {
-            return;
-        }
-        for sensor in sensors_query
-            .iter()
-            .filter(|sensor| sensor.dir == controller.0)
-        {
-            for &attacked_entity in sensor.targets.iter() {
-                if let Ok(mut attacked_stats) = stats_query.get_mut(attacked_entity) {
-                    attacked_stats.health -= attacker_stats.damage;
-                    if let Ok(camera) = camera_query.single() {
-                        commands.entity(camera).insert(Shake {
-                            duration: 0.25,
-                            strength: 10.,
-                        });
-                    }
-                }
-            }
-        }
-    }
 }
 
 fn setup(
@@ -141,10 +97,10 @@ fn setup(
         .insert(
             CollisionLayers::none()
                 .with_group(Layers::Player)
-                .with_mask(Layers::Enemy),
+                .with_mask(Layers::XP),
         )
         .insert(Timer::from_seconds(0.1, true))
-        .insert(Stats::new(100, 20, 50, 3.))
+        .insert(Stats::new(100, 20, 50, 3., 0))
         .with_children(|children| {
             let offset = player_size.x;
             let width = player_size.x * 1.25;
@@ -184,7 +140,7 @@ fn setup(
             },
             ..Default::default()
         })
-        .insert(Stats::new(100, 20, 50, 2.))
+        .insert(Stats::new(100, 20, 50, 2., 0))
         .insert(RigidBody::KinematicPositionBased)
         .insert(CollisionShape::Cuboid {
             half_extends: Vec3::new(6.4, 8.8, 0.),
@@ -199,11 +155,11 @@ fn setup(
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = OrthographicCameraBundle::new_2d();
     camera_bundle.orthographic_projection.scale = 0.15;
-    commands.spawn_bundle(camera_bundle).insert(Follow {
-        target: FollowTarget::Transform(player_entity),
-        speed: 5.,
-        continous: true,
-    });
+    commands.spawn_bundle(camera_bundle).insert(Follow::new(
+        FollowTarget::Transform(player_entity),
+        5.,
+        true,
+    ));
 
     //Add parallax planet
     commands
@@ -246,5 +202,23 @@ fn setup(
                 ..Default::default()
             })
             .insert(Parallax);
+    }
+
+    for i in 1..20 {
+        commands
+            .spawn_bundle(SpriteBundle {
+                material: materials.add(asset_server.load("sensor.png").into()),
+                transform: Transform::from_xyz((5 * i) as f32, (1 * i) as f32, PLAYER_Z + 1 as f32),
+                ..Default::default()
+            })
+            .insert(XP(5))
+            .insert(SensorShape)
+            .insert(RigidBody::KinematicPositionBased)
+            .insert(CollisionShape::Sphere { radius: 20. })
+            .insert(
+                CollisionLayers::none()
+                    .with_group(Layers::XP)
+                    .with_mask(Layers::Player),
+            );
     }
 }
