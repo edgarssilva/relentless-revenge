@@ -1,6 +1,7 @@
 use bevy::math::{Vec2, Vec3, Vec3Swizzles};
-use bevy::prelude::{Commands, Entity, Query, Res, Time, Transform};
+use bevy::prelude::{Commands, Component, Entity, Query, Res, Time, Transform};
 
+#[derive(Component)]
 pub struct Follow {
     pub target: FollowTarget,
     pub speed: f32,

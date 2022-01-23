@@ -100,6 +100,14 @@
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/minimp3-sys-312ec2a9796b36cd/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/spirv-reflect-06006f7d6726175d/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/spirv_cross-f8813fbdf98e63d6/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/anyhow-89674427647a555b/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/heron-3088322b914c04e5/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/heron_rapier-4df042e51eb43946/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/libc-77a21d42a314b3dc/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/memchr-57a328545b4dd64e/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/minimp3-sys-a2d610094921e4bb/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/spirv-reflect-51ec9bbed1842dd3/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/spirv_cross-c3d5c2402f04ed05/out" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

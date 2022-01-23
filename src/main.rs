@@ -25,17 +25,18 @@ pub const MAP_Z: f32 = 36.;
 pub const BACKGROUND_Z: f32 = 1.;
 pub const DEBUG_Z: f32 = 100.;
 
+#[derive(Component)]
 pub struct XP(u32);
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(ClearColor(Color::rgb(48. / 255., 44. / 255., 46. / 255.)))
         .insert_resource(KeyMaps::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
-        .add_plugin(TiledMapPlugin)
+        // .add_plugin(TiledMapPlugin)
         .add_plugin(PhysicsPlugin::default())
-        .add_system(set_texture_filters_to_nearest.system())
+        // .add_system(set_texture_filters_to_nearest.system())
         .add_system(helper_camera_controller.system())
         .add_system(sprite_animation.system())
         .add_system(player_controller.system())
@@ -63,16 +64,20 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     //Map Creation
-    let map_id = commands.spawn().id();
-    let map_handle = asset_server.load("map.tmx");
+    /* let map_id = commands.spawn().id();
+    let map_handle = asset_server.load("iso_map.tmx");
 
-    commands.entity(map_id).insert_bundle(TiledMapBundle {
-        tiled_map: map_handle,
-        map: Map::new(0u16, map_id),
-        transform: Transform::from_xyz(0.0, 40.0, MAP_Z), //TODO: Find a way to center the map
-        ..Default::default()
-    });
-
+       commands.entity(map_id).insert_bundle(TiledMapBundle {
+           tiled_map: map_handle,
+           map: Map::new(0u16, map_id),
+           transform: Transform {
+               translation: Vec3::new(0.0, 40.0, MAP_Z), //TODO: Find a way to center the map
+               scale: Vec3::splat(1. / 3.),
+               ..Default::default()
+           },
+           ..Default::default()
+       });
+    */
     //Player Creation
     let player_size = Vec2::new(16., 17.);
 
@@ -132,7 +137,7 @@ fn setup(
     commands
         .spawn()
         .insert_bundle(SpriteBundle {
-            material: materials.add(asset_server.load("old/char/iddle_l1.png").into()),
+            texture: asset_server.load("old/char/iddle_l1.png"),
             transform: Transform {
                 translation: Vec3::new(30., 5., PLAYER_Z),
                 scale: Vec3::splat(0.4),
@@ -197,7 +202,7 @@ fn setup(
     for i in 1..5 {
         commands
             .spawn_bundle(SpriteBundle {
-                material: materials.add(asset_server.load(names[i - 1]).into()),
+                texture: asset_server.load(names[i - 1]),
                 transform: Transform::from_xyz(0., 0., BACKGROUND_Z + (i * 10) as f32),
                 ..Default::default()
             })
@@ -207,7 +212,7 @@ fn setup(
     for i in 1..20 {
         commands
             .spawn_bundle(SpriteBundle {
-                material: materials.add(asset_server.load("sensor.png").into()),
+                texture: asset_server.load("sensor.png"),
                 transform: Transform::from_xyz((5 * i) as f32, (1 * i) as f32, PLAYER_Z + 1 as f32),
                 ..Default::default()
             })

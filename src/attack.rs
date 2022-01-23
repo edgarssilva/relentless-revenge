@@ -1,6 +1,6 @@
 use bevy::{
     input::Input,
-    prelude::{Commands, Entity, KeyCode, Query, Res, With, Without},
+    prelude::{Commands, Component, Entity, KeyCode, Query, Res, With, Without},
     render::camera::Camera,
 };
 
@@ -11,6 +11,7 @@ use crate::{
     stats::Stats,
 };
 
+#[derive(Component)]
 pub struct MeleeSensor {
     pub dir: Direction,
     pub targets: Vec<Entity>,
@@ -38,7 +39,7 @@ pub fn attack_system(
         return;
     }
 
-    if let Ok((attacker_stats, controller)) = player_query.single() {
+    if let Ok((attacker_stats, controller)) = player_query.get_single() {
         if !attacker_stats.can_attack() {
             return;
         }
@@ -49,10 +50,10 @@ pub fn attack_system(
             for &attacked_entity in sensor.targets.iter() {
                 if let Ok(mut attacked_stats) = stats_query.get_mut(attacked_entity) {
                     attacked_stats.health -= attacker_stats.damage;
-                    if let Ok(camera) = camera_query.single() {
+                    if let Ok(camera) = camera_query.get_single() {
                         commands.entity(camera).insert(Shake {
                             duration: 0.25,
-                            strength: 10.,
+                            strength: 7.5,
                         });
                     }
                 }

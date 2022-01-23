@@ -97,7 +97,7 @@ pub fn xp_system(
             continue;
         }
 
-        player_query.single_mut().unwrap().xp += xp.0; //TODO: Prevent panic
+        player_query.get_single_mut().unwrap().xp += xp.0; //TODO: Prevent panic
 
         commands.entity(entity).despawn_recursive();
     }

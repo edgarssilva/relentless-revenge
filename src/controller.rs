@@ -6,20 +6,24 @@ use crate::{
 };
 use bevy::{
     math::Vec2,
-    prelude::{Commands, Entity, Input, KeyCode, Query, Res, Time, Transform},
+    prelude::{Commands, Component, Entity, Input, KeyCode, Query, Res, Time, Transform, Without},
 };
 
+#[derive(Component)]
 pub struct PlayerControlled(pub Direction);
 
 //Player Movement
 pub fn player_controller(
     mut commands: Commands,
-    mut query: Query<(
-        &mut Transform,
-        Option<&Stats>,
-        &mut PlayerControlled,
-        Entity,
-    )>,
+    mut query: Query<
+        (
+            &mut Transform,
+            Option<&Stats>,
+            &mut PlayerControlled,
+            Entity,
+        ),
+        Without<Follow>,
+    >,
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
     mapping: Res<KeyMaps>,

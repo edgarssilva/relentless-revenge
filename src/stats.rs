@@ -1,5 +1,6 @@
-use bevy::prelude::{Commands, DespawnRecursiveExt, Entity, Query, Res, Time};
+use bevy::prelude::{Commands, Component, DespawnRecursiveExt, Entity, Query, Res, Time};
 
+#[derive(Component)]
 pub struct Stats {
     pub health: u32,
     pub damage: u32,
