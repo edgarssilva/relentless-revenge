@@ -1,5 +1,5 @@
 Theme notes
-    - Player is an agile {BLANK CHARACTER} that leeps around using daggers and emits lightnigh
+    - Player is an agile {BLANK CHARACTER} that leeps around using daggers and emits lightning
     - He evolves taking bosses skills and becomes strong with each kill (should be represented with color)
     x MISSING THEME STYLE AND WHAT MONSTERS ARE AND WHY THE PLAYER IS FIGHTING THEM
 
@@ -11,15 +11,15 @@ Mechanics notes
     ? Figure out wheter to use JKL keys or the mouse (maybe both) 
     ? How should health be displayed (healthbars and/or damage counters) or even show at all
     - There should be leveling of different stats like hp, speed, dash-speed, etc.
-    - A skill where you can refect an incoming projectile (not by attacking it)
+    - A skill where you can reflect an incoming projectile (not by attacking it)
 
 Art Notes
-    - Assets should be isometric if possible
-    - Sprites can be around 16x16
+    - Assets should be isometric style if possible
+    - Sprites should be around 16x16
     - Enemies should be larger then the player (expecially bosses)
     - Color scheme should be a bit more to dark and colder colors
     - Dash and attack animations should be smooth with trailing effects
-    - Hit effects should be a white overlay (or red)
+    ? Hit effects should be a white overlay (or red)
     - There should be parallax partiles all around and some always moving
     - Main character should have different versions with different lightnigh color and entinsity
     - Idle animation should be a tired slow breathing up-and-down, with head and daggers lowered 
