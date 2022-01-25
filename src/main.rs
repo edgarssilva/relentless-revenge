@@ -5,6 +5,7 @@ mod controller;
 mod direction;
 mod follow;
 mod helper;
+mod map;
 mod stats;
 
 use bevy::prelude::*;
@@ -18,6 +19,7 @@ use controller::*;
 use direction::Direction;
 use follow::*;
 use helper::*;
+use map::generation::*;
 use stats::*;
 
 pub const PLAYER_Z: f32 = 39.;
@@ -36,24 +38,24 @@ fn main() {
         .add_plugin(TilemapPlugin)
         // .add_plugin(TiledMapPlugin)
         .add_plugin(PhysicsPlugin::default())
-        // .add_system(set_texture_filters_to_nearest.system())
-        .add_system(helper_camera_controller.system())
-        .add_system(sprite_animation.system())
-        .add_system(player_controller.system())
-        .add_system(follow_entity_system.system())
-        .add_system(melee_collisions.system())
-        .add_system(attack_system.system())
-        .add_system(death_system.system())
-        .add_system(attack_cooldown_system.system())
+        .add_system(set_texture_filters_to_nearest)
+        .add_system(helper_camera_controller)
+        .add_system(sprite_animation)
+        .add_system(player_controller)
+        .add_system(follow_entity_system)
+        .add_system(melee_collisions)
+        .add_system(attack_system)
+        .add_system(death_system)
+        .add_system(attack_cooldown_system)
         .add_system_set(
             SystemSet::new()
-                .with_run_criteria(run_on_camera_move.system())
-                .with_system(parallax_system.system()),
+                .with_run_criteria(run_on_camera_move)
+                .with_system(parallax_system),
         )
-        .add_system(shake_system.system())
-        // .add_system_to_stage(CoreStage::PostUpdate, xp_system.system())
-        .add_system(xp_system.system())
-        .add_startup_system(setup.system())
+        .add_system(shake_system)
+        .add_system(xp_system)
+        .add_startup_system(setup_map)
+        .add_startup_system(setup)
         .run();
 }
 
@@ -63,21 +65,6 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    //Map Creation
-    /* let map_id = commands.spawn().id();
-    let map_handle = asset_server.load("iso_map.tmx");
-
-       commands.entity(map_id).insert_bundle(TiledMapBundle {
-           tiled_map: map_handle,
-           map: Map::new(0u16, map_id),
-           transform: Transform {
-               translation: Vec3::new(0.0, 40.0, MAP_Z), //TODO: Find a way to center the map
-               scale: Vec3::splat(1. / 3.),
-               ..Default::default()
-           },
-           ..Default::default()
-       });
-    */
     //Player Creation
     let player_size = Vec2::new(16., 17.);
 

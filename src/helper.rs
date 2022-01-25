@@ -5,7 +5,7 @@ use bevy::prelude::{
 };
 use bevy::render::camera::{Camera, CameraProjection, OrthographicProjection};
 
-use bevy::render::render_resource::FilterMode;
+use bevy::render::render_resource::TextureUsages;
 use rand::Rng;
 
 #[derive(Component)]
@@ -36,22 +36,24 @@ pub fn shake_system(
     }
 }
 
-//Just a quick helper to make all textures Nearest Neighbour  TODO: Change this to a helper file
-/* pub fn set_texture_filters_to_nearest(
+pub fn set_texture_filters_to_nearest(
     mut texture_events: EventReader<AssetEvent<Image>>,
     mut textures: ResMut<Assets<Image>>,
 ) {
     // quick and dirty, run this for all textures anytime a texture is created.
     for event in texture_events.iter() {
-        if let AssetEvent::Created { handle } = event {
-            if let Some(mut image) = textures.get_mut(handle) {
-                texture.sampler.min_filter = FilterMode::Nearest;
-                texture.sampler.mag_filter = FilterMode::Nearest;
-                texture.sampler.mipmap_filter = FilterMode::Nearest;
+        match event {
+            AssetEvent::Created { handle } => {
+                if let Some(mut texture) = textures.get_mut(handle) {
+                    texture.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
+                        | TextureUsages::COPY_SRC
+                        | TextureUsages::COPY_DST;
+                }
             }
+            _ => (),
         }
     }
-} */
+}
 
 //Helper camera controller
 pub fn helper_camera_controller(

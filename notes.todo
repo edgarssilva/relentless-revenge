@@ -6,6 +6,7 @@ Theme notes
 Mechanics notes
     - Combat should be smooth and quick with increasing speed through level
     - Travel down an level using maybe a portal or spining around 
+    - Levels should be procedurally generated with open spaces
     - Transition each level trough a slide up dithering effect
     - There should be a dash effects that maybe locks on targets (prevent unwanted ones)
     ? Figure out wheter to use JKL keys or the mouse (maybe both) 

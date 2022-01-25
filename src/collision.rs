@@ -2,6 +2,7 @@ use bevy::prelude::{Commands, DespawnRecursiveExt, Entity, EventReader, Query, W
 use heron::{CollisionData, CollisionEvent, PhysicsLayer};
 
 use crate::{
+    attack::MeleeSensor,
     controller::PlayerControlled,
     follow::{Follow, FollowTarget},
     stats::Stats,
@@ -19,7 +20,7 @@ pub enum Layers {
 pub fn melee_collisions(
     mut commands: Commands,
     mut events: EventReader<CollisionEvent>,
-    mut query: Query<&mut crate::MeleeSensor>,
+    mut query: Query<&mut MeleeSensor>,
 ) {
     events.iter().for_each(|e| match e {
         CollisionEvent::Started(d1, d2) => {
