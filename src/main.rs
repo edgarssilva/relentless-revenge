@@ -37,23 +37,23 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
         // .add_plugin(TiledMapPlugin)
-        .add_plugin(PhysicsPlugin::default())
+        // .add_plugin(PhysicsPlugin::default())
         .add_system(set_texture_filters_to_nearest)
         .add_system(helper_camera_controller)
-        .add_system(sprite_animation)
-        .add_system(player_controller)
-        .add_system(follow_entity_system)
-        .add_system(melee_collisions)
-        .add_system(attack_system)
-        .add_system(death_system)
-        .add_system(attack_cooldown_system)
-        .add_system_set(
-            SystemSet::new()
-                .with_run_criteria(run_on_camera_move)
-                .with_system(parallax_system),
-        )
-        .add_system(shake_system)
-        .add_system(xp_system)
+        // .add_system(sprite_animation)
+        // .add_system(player_controller)
+        // .add_system(follow_entity_system)
+        // .add_system(melee_collisions)
+        // .add_system(attack_system)
+        // .add_system(death_system)
+        // .add_system(attack_cooldown_system)
+        // .add_system_set(
+        //     SystemSet::new()
+        //         .with_run_criteria(run_on_camera_move)
+        //         .with_system(parallax_system),
+        // )
+        // .add_system(shake_system)
+        // .add_system(xp_system)
         .add_startup_system(setup_map)
         .add_startup_system(setup)
         .run();
@@ -65,8 +65,14 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    let mut camera_bundle = OrthographicCameraBundle::new_2d();
+    camera_bundle.orthographic_projection.scale = 0.2;
+    // camera_bundle.transform.translation.y = 200.;
+    // camera_bundle.transform.translation.z = 500.;
+
+    commands.spawn_bundle(camera_bundle);
     //Player Creation
-    let player_size = Vec2::new(16., 17.);
+    /*    let player_size = Vec2::new(16., 17.);
 
     //Load the textures
     let texture_handle = asset_server.load("IsometricTRPGAssetPack_Entities.png");
@@ -212,5 +218,5 @@ fn setup(
                     .with_group(Layers::XP)
                     .with_mask(Layers::Player),
             );
-    }
+    } */
 }
