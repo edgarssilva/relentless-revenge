@@ -54,6 +54,7 @@ fn main() {
         // )
         // .add_system(shake_system)
         // .add_system(xp_system)
+        .add_system(remake_map)
         .add_startup_system(setup_map)
         .add_startup_system(setup)
         .run();
