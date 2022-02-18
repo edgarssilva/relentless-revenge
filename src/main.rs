@@ -68,8 +68,8 @@ fn setup(
 ) {
     let mut camera_bundle = OrthographicCameraBundle::new_2d();
     camera_bundle.orthographic_projection.scale = 0.2;
-    // camera_bundle.transform.translation.y = 200.;
-    // camera_bundle.transform.translation.z = 500.;
+    camera_bundle.transform.translation.x = -138.;
+    camera_bundle.transform.translation.y = -1735.;
 
     commands.spawn_bundle(camera_bundle);
     //Player Creation

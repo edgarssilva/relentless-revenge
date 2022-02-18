@@ -1,16 +1,13 @@
-#[derive(Clone, Copy, Debug)]
+use bevy::math::IVec2;
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Room {
-    pub x: i32,
-    pub y: i32,
+    pub pos: IVec2,
     pub radius: i32,
 }
 
 impl Room {
-    pub fn new(x: i32, y: i32, radius: i32) -> Self {
-        Room {
-            x,
-            y,
-            radius,
-        }
+    pub fn new(pos: IVec2, radius: i32) -> Self {
+        Room { pos, radius }
     }
 }

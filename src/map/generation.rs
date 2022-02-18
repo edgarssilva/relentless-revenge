@@ -1,6 +1,6 @@
 use crate::map::room::Room;
 use bevy::input::Input;
-use bevy::math::Vec2;
+use bevy::math::{IVec2, Vec2};
 use bevy::prelude::{AssetServer, Commands, GlobalTransform, KeyCode, Res, Transform};
 use bevy_ecs_tilemap::{
     ChunkSize, IsoType, LayerBuilder, LayerSettings, Map, MapQuery, MapSize, TextureSize, Tile,
@@ -8,6 +8,8 @@ use bevy_ecs_tilemap::{
 };
 use rand;
 use rand::prelude::*;
+
+use super::bridge::Bridge;
 
 pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>, mut map_query: MapQuery) {
     let map_entity = commands.spawn().id();
@@ -48,24 +50,21 @@ pub fn remake_map(mut commands: Commands, keys: Res<Input<KeyCode>>, mut map_que
     }
 }
 
+//TODO: Build on the chunk not the map itself
 fn build_map(map_query: &mut MapQuery, commands: &mut Commands) {
-    for room in generate_rooms() {
-        for x in room.x - room.radius..room.x + room.radius + 1 {
-            for y in room.y - room.radius..room.y + room.radius + 1 {
-                if Vec2::new(x as f32, y as f32).distance(Vec2::new(room.x as f32, room.y as f32))
-                    > room.radius as f32
-                {
+    let (rooms, bridges) = generate_level();
+    for room in rooms {
+        for x in room.pos.x - room.radius..room.pos.x + room.radius {
+            for y in room.pos.y - room.radius..room.pos.y + room.radius + 1 {
+                //Cut corners
+                if IVec2::new(x, y).as_vec2().distance(room.pos.as_vec2()) > room.radius as f32 {
                     continue;
                 }
 
-                let mut tile = Tile {
+                let tile = Tile {
                     texture_index: 2,
                     ..Default::default()
                 };
-
-                if room.x == x && room.y == y {
-                    tile.texture_index = 0;
-                }
 
                 let tile_pos = TilePos(x as u32, y as u32);
 
@@ -74,33 +73,83 @@ fn build_map(map_query: &mut MapQuery, commands: &mut Commands) {
             }
         }
     }
+
+    for bridge in bridges {
+        for pos in bridge.pos {
+            let x = pos.x;
+            let y = pos.y;
+
+            let tile_pos = TilePos(x as u32, y as u32);
+
+            let tile = Tile {
+                texture_index: 0,
+                ..Default::default()
+            };
+
+            let _ = map_query.set_tile(commands, tile_pos, tile, 0u16, 0u16);
+            map_query.notify_chunk_for_tile(tile_pos, 0u16, 0u16);
+        }
+    }
 }
 
-fn generate_rooms() -> Vec<Room> {
+fn generate_level() -> (Vec<Room>, Vec<Bridge>) {
     let mut rng = rand::thread_rng();
 
     let mut rooms = Vec::<Room>::new();
+    let mut bridges = Vec::<Bridge>::new();
 
-    let num_rooms = rng.gen_range(5..7);
-    let room_min_radius = 3;
+    let num_rooms = rng.gen_range(6..10);
+    let room_min_radius = 4;
     let room_max_radius = 6;
 
-    let mut old_room = Room::new(128, 128, rng.gen_range(room_min_radius..room_max_radius));
+    let mut old_room = Room::new(
+        IVec2::new(128, 128),
+        rng.gen_range(room_min_radius..room_max_radius),
+    );
 
-    let main_direction = rng.gen_range(0..360) as f32;
-    let angle_rande = 130.;
+    let main_direction: i32 = rng.gen_range(0..360);
+    let angle_range = 130;
 
     while rooms.len() < num_rooms {
         let radius = rng.gen_range(room_min_radius..room_max_radius);
-        let direction = main_direction + rng.gen_range(-angle_rande..angle_rande);
-        let bridge_length = rng.gen_range(1..4);
+        let direction = (main_direction + rng.gen_range(-angle_range..angle_range)) as f32;
+        let bridge_length = rng.gen_range(1..3);
         let distance = old_room.radius + bridge_length + radius;
 
-        let x = old_room.x + (distance as f32 * direction.to_radians().cos()).round() as i32;
-        let y = old_room.y + (distance as f32 * direction.to_radians().sin()).round() as i32;
+        let new_room = Room::new(
+            Vec2::new(direction.cos(), direction.sin())
+                .round()
+                .as_ivec2()
+                * distance
+                + old_room.pos,
+            radius,
+        );
 
-        old_room = Room::new(x, y, radius);
-        rooms.push(old_room);
+        if !rooms.is_empty() {
+            bridges.push(generate_bridge(old_room.pos, new_room.pos));
+        }
+
+        rooms.push(new_room.clone());
+        old_room = new_room;
     }
-    rooms
+
+    (rooms, bridges)
+}
+
+fn generate_bridge(from: IVec2, to: IVec2) -> Bridge {
+    let mut current = from.clone().as_vec2();
+    let to = to.as_vec2();
+
+    let mut positions = Vec::<IVec2>::new();
+
+    while current != to {
+        let dir = (to.y - current.y).atan2(to.x - current.x).to_degrees();
+        let dir = ((dir / 90.).round() * 90.).to_radians();
+
+        current = current + Vec2::new(dir.cos(), dir.sin()).round();
+
+        positions.push(current.as_ivec2());
+    }
+
+    Bridge::new(positions)
 }
