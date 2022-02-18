@@ -137,14 +137,17 @@ fn generate_level() -> (Vec<Room>, Vec<Bridge>) {
 }
 
 fn generate_bridge(from: IVec2, to: IVec2) -> Bridge {
+    let mut rng = rand::thread_rng();
     let mut current = from.clone().as_vec2();
     let to = to.as_vec2();
 
     let mut positions = Vec::<IVec2>::new();
 
     while current != to {
-        let dir = (to.y - current.y).atan2(to.x - current.x).to_degrees();
-        let dir = ((dir / 90.).round() * 90.).to_radians();
+        let mut dir = (to.y - current.y).atan2(to.x - current.x).to_degrees();
+        dir = dir + [-90., 0., 90.].choose(&mut rng).unwrap(); //Add randomness
+        dir = (dir / 90.).round() * 90.; //Increments of 90
+        dir = dir.to_radians();
 
         current = current + Vec2::new(dir.cos(), dir.sin()).round();
 
