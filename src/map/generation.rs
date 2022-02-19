@@ -1,10 +1,14 @@
+use crate::controller::PlayerControlled;
 use crate::map::room::Room;
 use bevy::input::Input;
 use bevy::math::{IVec2, Vec2};
-use bevy::prelude::{AssetServer, Commands, GlobalTransform, KeyCode, Res, Transform};
+use bevy::prelude::{
+    AssetServer, Commands, GlobalTransform, KeyCode, Mut, Query, QuerySet, QueryState, Res,
+    Transform, With,
+};
 use bevy_ecs_tilemap::{
-    ChunkSize, IsoType, LayerBuilder, LayerSettings, Map, MapQuery, MapSize, TextureSize, Tile,
-    TileBundle, TilePos, TileSize, TilemapMeshType,
+    Chunk, ChunkSize, IsoType, LayerBuilder, LayerSettings, Map, MapQuery, MapSize, TextureSize,
+    Tile, TileBundle, TilePos, TileSize, TilemapMeshType,
 };
 use rand;
 use rand::prelude::*;
@@ -30,7 +34,13 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>, mut map
     let (mut layer_builder, _) =
         LayerBuilder::<TileBundle>::new(&mut commands, layer_settings, 0u16, 0u16);
 
-    layer_builder.set_all(TileBundle::default());
+    layer_builder.set_all(TileBundle {
+        tile: Tile {
+            texture_index: 4,
+            ..Default::default()
+        },
+        ..Default::default()
+    });
 
     let layer_entity = map_query.build_layer(&mut commands, layer_builder, texture_handle);
 
@@ -39,19 +49,41 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>, mut map
     commands
         .entity(map_entity)
         .insert(map)
-        .insert(Transform::from_xyz(0.0, 8.0 * 32.0, 0.0))
+        .insert(Transform::from_xyz(0.0, 0., 0.0))
         .insert(GlobalTransform::default());
 }
 
-pub fn remake_map(mut commands: Commands, keys: Res<Input<KeyCode>>, mut map_query: MapQuery) {
+pub fn remake_map(
+    mut commands: Commands,
+    keys: Res<Input<KeyCode>>,
+    mut map_query: MapQuery,
+    mut player_query: Query<&mut Transform, With<PlayerControlled>>,
+) {
     if keys.just_released(KeyCode::LControl) {
+        let transform = player_query.single_mut();
+
         map_query.despawn_layer_tiles(&mut commands, 0u16, 0u16);
-        build_map(&mut map_query, &mut commands);
+        build_map(&mut commands, map_query, transform);
     }
 }
 
 //TODO: Build on the chunk not the map itself
-fn build_map(map_query: &mut MapQuery, commands: &mut Commands) {
+fn build_map(
+    commands: &mut Commands,
+    mut map_query: MapQuery,
+    mut player_transform: Mut<Transform>,
+) {
+    /*   for x in 0..256 {
+        let tile = Tile {
+            texture_index: 0,
+            ..Default::default()
+        };
+        let _ = map_query.set_tile(commands, TilePos(0, x), tile, 0u16, 0u16);
+        map_query.notify_chunk_for_tile(TilePos(0, x), 0u16, 0u16);
+    } */
+
+    let mut first = true;
+
     let (rooms, bridges) = generate_level();
     for room in rooms {
         for x in room.pos.x - room.radius..room.pos.x + room.radius {
@@ -68,10 +100,21 @@ fn build_map(map_query: &mut MapQuery, commands: &mut Commands) {
 
                 let tile_pos = TilePos(x as u32, y as u32);
 
+                if first && room.pos.to_array() == [x, y] {
+                    let pos = room.pos.as_vec2();
+                    let x = (pos.x - pos.y) * 32. / 2.0;
+                    let y = (pos.x + pos.y) * 16. / 2.0;
+                    let new = Vec2::new(x, -y);
+
+                    player_transform.translation.x = new.x;
+                    player_transform.translation.y = new.y;
+                }
+
                 let _ = map_query.set_tile(commands, tile_pos, tile, 0u16, 0u16);
                 map_query.notify_chunk_for_tile(tile_pos, 0u16, 0u16);
             }
         }
+        first = false;
     }
 
     for bridge in bridges {
@@ -82,7 +125,7 @@ fn build_map(map_query: &mut MapQuery, commands: &mut Commands) {
             let tile_pos = TilePos(x as u32, y as u32);
 
             let tile = Tile {
-                texture_index: 0,
+                texture_index: 2,
                 ..Default::default()
             };
 

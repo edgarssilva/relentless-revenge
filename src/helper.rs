@@ -77,6 +77,8 @@ pub fn helper_camera_controller(
         transform.translation.x += 150.0 * time.delta_seconds();
     }
 
+    //println!("{:?}", transform.translation);
+
     let scale = projection.scale;
 
     let w = windows.get(camera.window).unwrap();

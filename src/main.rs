@@ -37,23 +37,23 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
         // .add_plugin(TiledMapPlugin)
-        // .add_plugin(PhysicsPlugin::default())
+        .add_plugin(PhysicsPlugin::default())
         .add_system(set_texture_filters_to_nearest)
         .add_system(helper_camera_controller)
-        // .add_system(sprite_animation)
-        // .add_system(player_controller)
-        // .add_system(follow_entity_system)
-        // .add_system(melee_collisions)
-        // .add_system(attack_system)
-        // .add_system(death_system)
-        // .add_system(attack_cooldown_system)
-        // .add_system_set(
-        //     SystemSet::new()
-        //         .with_run_criteria(run_on_camera_move)
-        //         .with_system(parallax_system),
-        // )
-        // .add_system(shake_system)
-        // .add_system(xp_system)
+        .add_system(sprite_animation)
+        .add_system(player_controller)
+        .add_system(follow_entity_system)
+        .add_system(melee_collisions)
+        .add_system(attack_system)
+        .add_system(death_system)
+        .add_system(attack_cooldown_system)
+        .add_system_set(
+            SystemSet::new()
+                .with_run_criteria(run_on_camera_move)
+                .with_system(parallax_system),
+        )
+        .add_system(shake_system)
+        .add_system(xp_system)
         .add_system(remake_map)
         .add_startup_system(setup_map)
         .add_startup_system(setup)
@@ -66,14 +66,14 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let mut camera_bundle = OrthographicCameraBundle::new_2d();
+    /* let mut camera_bundle = OrthographicCameraBundle::new_2d();
     camera_bundle.orthographic_projection.scale = 0.2;
     camera_bundle.transform.translation.x = -138.;
     camera_bundle.transform.translation.y = -1735.;
 
-    commands.spawn_bundle(camera_bundle);
+    commands.spawn_bundle(camera_bundle);*/
     //Player Creation
-    /*    let player_size = Vec2::new(16., 17.);
+    let player_size = Vec2::new(16., 17.);
 
     //Load the textures
     let texture_handle = asset_server.load("IsometricTRPGAssetPack_Entities.png");
@@ -127,30 +127,31 @@ fn setup(
         })
         .id();
 
-    //Add enemy
-    commands
-        .spawn()
-        .insert_bundle(SpriteBundle {
-            texture: asset_server.load("old/char/iddle_l1.png"),
-            transform: Transform {
-                translation: Vec3::new(30., 5., PLAYER_Z),
-                scale: Vec3::splat(0.4),
+    /*
+        //Add enemy
+        commands
+            .spawn()
+            .insert_bundle(SpriteBundle {
+                texture: asset_server.load("old/char/iddle_l1.png"),
+                transform: Transform {
+                    translation: Vec3::new(30., 5., PLAYER_Z),
+                    scale: Vec3::splat(0.4),
+                    ..Default::default()
+                },
                 ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert(Stats::new(100, 20, 50, 2., 0))
-        .insert(RigidBody::KinematicPositionBased)
-        .insert(CollisionShape::Cuboid {
-            half_extends: Vec3::new(6.4, 8.8, 0.),
-            border_radius: None,
-        })
-        .insert(
-            CollisionLayers::none()
-                .with_group(Layers::Enemy)
-                .with_masks([Layers::Player, Layers::Attack]),
-        );
-
+            })
+            .insert(Stats::new(100, 20, 50, 2., 0))
+            .insert(RigidBody::KinematicPositionBased)
+            .insert(CollisionShape::Cuboid {
+                half_extends: Vec3::new(6.4, 8.8, 0.),
+                border_radius: None,
+            })
+            .insert(
+                CollisionLayers::none()
+                    .with_group(Layers::Enemy)
+                    .with_masks([Layers::Player, Layers::Attack]),
+            );
+    */
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = OrthographicCameraBundle::new_2d();
     camera_bundle.orthographic_projection.scale = 0.15;
@@ -159,7 +160,7 @@ fn setup(
         5.,
         true,
     ));
-
+    /*
     //Add parallax planet
     commands
         .spawn()
