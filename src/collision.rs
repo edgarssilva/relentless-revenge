@@ -1,105 +1,106 @@
-use bevy::prelude::{Commands, DespawnRecursiveExt, Entity, EventReader, Query, With};
-use heron::{CollisionData, CollisionEvent, PhysicsLayer};
-
-use crate::{
-    attack::MeleeSensor,
-    controller::PlayerControlled,
-    follow::{Follow, FollowTarget},
-    stats::Stats,
-    XP,
+use bevy::prelude::{
+    App, Commands, DespawnRecursiveExt, Entity, EventReader, EventWriter, Plugin, Query,
 };
+use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 
-#[derive(PhysicsLayer)]
-pub enum Layers {
-    Player,
-    Enemy,
-    Attack,
-    XP,
+use crate::{stats::Stats, XP};
+
+pub struct CollisionPlugin;
+
+impl Plugin for CollisionPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+            .add_plugin(RapierDebugRenderPlugin::default())
+            .add_event::<HandleCollisionEvent>()
+            .add_system(melee_collisions)
+            .add_system(xp_system);
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct BodyLayers;
+
+impl BodyLayers {
+    pub const PLAYER: u32 = 1 << 0; // 0b00000001
+    pub const ENEMY: u32 = 1 << 1; // 0b00000010
+    pub const PLAYER_ATTACK: u32 = 1 << 2; // 0b00000100
+                                           // pub const ENEMY_ATTACK: u32 = 1 << 3; // 0b00001000
+    pub const XP_LAYER: u32 = 1 << 4; // 0b00010000
+                                      // pub const ALL: u32 = u32::MAX; // 0b11111111
+}
+
+pub enum CollisionType {
+    PlayerAttack(Entity, Entity),
+    XPOnPlayer(Entity, Entity),
+}
+
+pub struct HandleCollisionEvent {
+    pub collision_type: CollisionType,
+    pub started: bool,
 }
 
 pub fn melee_collisions(
-    mut commands: Commands,
     mut events: EventReader<CollisionEvent>,
-    mut query: Query<&mut MeleeSensor>,
+    mut handle_writer: EventWriter<HandleCollisionEvent>,
+    query: Query<&CollisionGroups>,
 ) {
-    events.iter().for_each(|e| match e {
-        CollisionEvent::Started(d1, d2) => {
-            //Enemy entered players attack sensor
-            if let Some((sensor, enemy)) = enemy_on_sensor(d1, d2) {
-                if let Ok(mut melee_sensor) = query.get_mut(sensor) {
-                    melee_sensor.targets.push(enemy);
-                }
-            } else if let Some((xp, player)) = xp_on_player(d1, d2) {
-                commands.entity(xp).insert(Follow {
-                    target: FollowTarget::Transform(player),
-                    speed: 4.,
-                    continous: true,
-                    treshhold: 5., //TODO: Check xp hit range
-                    ..Default::default()
-                });
-            }
+    events.iter().for_each(|e| {
+        let (e1, e2, started, flags) = match e {
+            CollisionEvent::Started(e1, e2, flags) => (e1, e2, true, flags),
+            CollisionEvent::Stopped(e1, e2, flags) => (e1, e2, false, flags),
+        };
+
+        //If entity removed from world, don't handle collision
+        if !started && *flags == CollisionEventFlags::REMOVED {
+            return;
         }
 
-        CollisionEvent::Stopped(d1, d2) => {
-            //Enemy left players attack sensor
-            if let Some((sensor, enemy)) = enemy_on_sensor(d1, d2) {
-                if let Ok(mut melee_sensor) = query.get_mut(sensor) {
-                    melee_sensor.targets.retain(|&entity| entity != enemy);
+        let collision_groups = (query.get(*e1), query.get(*e2));
+
+        if let (Ok(cg1), Ok(cg2)) = collision_groups {
+            let collision_type = match (cg1.memberships, cg2.memberships) {
+                (BodyLayers::PLAYER_ATTACK, BodyLayers::ENEMY) => {
+                    Some(CollisionType::PlayerAttack(*e1, *e2))
                 }
+                (BodyLayers::ENEMY, BodyLayers::PLAYER_ATTACK) => {
+                    Some(CollisionType::PlayerAttack(*e2, *e1))
+                }
+                (BodyLayers::XP_LAYER, BodyLayers::PLAYER) => {
+                    Some(CollisionType::XPOnPlayer(*e1, *e2))
+                }
+                (BodyLayers::PLAYER, BodyLayers::XP_LAYER) => {
+                    Some(CollisionType::XPOnPlayer(*e2, *e1))
+                }
+                _ => None,
+            };
+
+            if let Some(collision_type) = collision_type {
+                handle_writer.send(HandleCollisionEvent {
+                    collision_type,
+                    started,
+                });
             }
         }
     });
 }
 
-fn enemy_on_sensor(d1: &CollisionData, d2: &CollisionData) -> Option<(Entity, Entity)> {
-    if is_attack(d1) && is_enemy(d2) {
-        Some((d1.collision_shape_entity(), d2.rigid_body_entity()))
-    } else if is_attack(d2) && is_enemy(d1) {
-        Some((d2.rigid_body_entity(), d1.collision_shape_entity()))
-    } else {
-        None
-    }
-}
-
-fn xp_on_player(d1: &CollisionData, d2: &CollisionData) -> Option<(Entity, Entity)> {
-    if is_xp(d1) && is_player(d2) {
-        Some((d1.collision_shape_entity(), d2.rigid_body_entity()))
-    } else if is_xp(d2) && is_player(d1) {
-        Some((d2.rigid_body_entity(), d1.collision_shape_entity()))
-    } else {
-        None
-    }
-}
-
-fn is_attack(data: &CollisionData) -> bool {
-    data.collision_layers()
-        .contains_group(crate::Layers::Attack)
-}
-
-fn is_player(data: &CollisionData) -> bool {
-    data.collision_layers().contains_group(Layers::Player)
-}
-
-fn is_enemy(data: &CollisionData) -> bool {
-    data.collision_layers().contains_group(Layers::Enemy)
-}
-
-fn is_xp(data: &CollisionData) -> bool {
-    data.collision_layers().contains_group(Layers::XP)
-}
-
 pub fn xp_system(
     mut commands: Commands,
-    query: Query<(&Follow, &XP, Entity)>,
-    mut player_query: Query<&mut Stats, With<PlayerControlled>>,
+    mut events: EventReader<HandleCollisionEvent>,
+    query: Query<&XP>,
+    mut player_query: Query<&mut Stats>,
 ) {
-    for (follow, xp, entity) in query.iter() {
-        if !follow.on_target() {
-            continue;
+    for e in events.iter() {
+        match e.collision_type {
+            CollisionType::XPOnPlayer(e_exp, e_player) => {
+                //TODO: Prevent panic from unwrap
+                if let Ok(xp) = query.get(e_exp) {
+                    let mut stats = player_query.get_mut(e_player).unwrap();
+                    stats.xp += xp.0;
+                    commands.entity(e_exp).despawn_recursive();
+                }
+            }
+            _ => {}
         }
-
-        player_query.get_single_mut().unwrap().xp += xp.0; //TODO: Prevent panic
-
-        commands.entity(entity).despawn_recursive();
     }
 }

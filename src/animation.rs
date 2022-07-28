@@ -1,4 +1,4 @@
-use bevy::prelude::{Assets, Handle, Query, Res, TextureAtlas, TextureAtlasSprite, Time, Timer};
+// use bevy::prelude::{Assets, Handle, Query, Res, TextureAtlas, TextureAtlasSprite, Time, Timer};
 
 /*struct Animation {
     frames: [i32],
@@ -11,7 +11,7 @@ pub struct SpriteAnimation {
 }*/
 
 //Cycles through all the animations TODO: Needs different animations
-pub fn sprite_animation(
+/* pub fn sprite_animation(
     time: Res<Time>,
     texture_atlases: Res<Assets<TextureAtlas>>,
     mut query: Query<(&mut Timer, &mut TextureAtlasSprite, &Handle<TextureAtlas>)>,
@@ -23,4 +23,4 @@ pub fn sprite_animation(
             sprite.index = (sprite.index as usize + 1) % texture_atlas.textures.len();
         }
     }
-}
+} */

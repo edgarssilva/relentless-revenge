@@ -20,9 +20,9 @@ impl Follow {
         }
     }
 
-    pub fn on_target(self: &Self) -> bool {
+    /* pub fn on_target(self: &Self) -> bool {
         self.on_target
-    }
+    } */
 }
 
 impl Default for Follow {

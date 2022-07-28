@@ -60,7 +60,7 @@ pub fn helper_camera_controller(
     mut query: Query<(&mut Camera, &mut OrthographicProjection, &mut Transform)>,
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
-    windows: Res<Windows>,
+    mut windows: ResMut<Windows>,
 ) {
     let (mut camera, mut projection, mut transform) = query.single_mut();
 
@@ -81,13 +81,13 @@ pub fn helper_camera_controller(
 
     let scale = projection.scale;
 
-    let w = windows.get(camera.window).unwrap();
+    let w = windows.primary_mut();
 
     if keys.pressed(KeyCode::Z) {
-        projection.scale -= 0.55 * time.delta_seconds();
+        projection.scale -= 1. * time.delta_seconds();
     }
     if keys.pressed(KeyCode::X) {
-        projection.scale += 0.55 * time.delta_seconds();
+        projection.scale += 1. * time.delta_seconds();
     }
 
     if (projection.scale - scale).abs() > f32::EPSILON {

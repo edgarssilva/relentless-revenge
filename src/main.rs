@@ -10,11 +10,12 @@ mod stats;
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-use heron::{prelude::*, SensorShape};
+use bevy_rapier2d::prelude::Sensor;
+use bevy_rapier2d::prelude::*;
 
-use animation::*;
+// use animation::*;
 use attack::*;
-use collision::*;
+use collision::{BodyLayers, CollisionPlugin};
 use controller::*;
 use direction::Direction;
 use follow::*;
@@ -27,7 +28,7 @@ pub const MAP_Z: f32 = 36.;
 pub const BACKGROUND_Z: f32 = 1.;
 pub const DEBUG_Z: f32 = 100.;
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 pub struct XP(u32);
 
 fn main() {
@@ -37,13 +38,12 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
         // .add_plugin(TiledMapPlugin)
-        .add_plugin(PhysicsPlugin::default())
+        .add_plugin(CollisionPlugin)
         .add_system(set_texture_filters_to_nearest)
         .add_system(helper_camera_controller)
-        .add_system(sprite_animation)
+        // .add_system(sprite_animation)
         .add_system(player_controller)
         .add_system(follow_entity_system)
-        .add_system(melee_collisions)
         .add_system(attack_system)
         .add_system(death_system)
         .add_system(attack_cooldown_system)
@@ -53,7 +53,7 @@ fn main() {
                 .with_system(parallax_system),
         )
         .add_system(shake_system)
-        .add_system(xp_system)
+        // .add_system(xp_system)
         .add_system(remake_map)
         .add_startup_system(setup_map)
         .add_startup_system(setup)
@@ -64,7 +64,7 @@ fn setup(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    // mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     /* let mut camera_bundle = OrthographicCameraBundle::new_2d();
     camera_bundle.orthographic_projection.scale = 0.2;
@@ -88,17 +88,15 @@ fn setup(
             ..Default::default()
         })
         .insert(RigidBody::KinematicPositionBased)
-        .insert(CollisionShape::Cuboid {
-            half_extends: Vec3::new(player_size.x / 2., player_size.y / 2., 0.),
-            border_radius: None,
-        })
+        .insert(Collider::cuboid(player_size.x / 2., player_size.y / 2.))
         .insert(PlayerControlled(Direction::EAST))
-        .insert(
-            CollisionLayers::none()
-                .with_group(Layers::Player)
-                .with_mask(Layers::XP),
-        )
-        .insert(Timer::from_seconds(0.1, true))
+        .insert(CollisionGroups::new(
+            BodyLayers::PLAYER,
+            BodyLayers::XP_LAYER,
+        ))
+        .insert(ActiveEvents::COLLISION_EVENTS)
+        .insert(ActiveCollisionTypes::all())
+        // .insert(Timer::from_seconds(0.1, true))
         .insert(Stats::new(100, 20, 50, 3., 0))
         .with_children(|children| {
             let offset = player_size.x;
@@ -112,17 +110,14 @@ fn setup(
                         Transform::from_translation((dir.vec() * offset).extend(10.)),
                         GlobalTransform::default(),
                     ))
-                    .insert(SensorShape)
-                    .insert(CollisionShape::Cuboid {
-                        half_extends: Vec3::new(width / 2., height / 2., 0.),
-                        border_radius: None,
-                    })
-                    .insert(
-                        CollisionLayers::none()
-                            .with_group(Layers::Attack)
-                            .with_mask(Layers::Enemy),
-                    )
-                    .insert(MeleeSensor::from(dir));
+                    .insert(Sensor) //TODO: Uncomment this line to enable sensors
+                    .insert(Collider::cuboid(width / 2., height / 2.))
+                    .insert(CollisionGroups::new(
+                        BodyLayers::PLAYER_ATTACK,
+                        BodyLayers::ENEMY,
+                    ))
+                    .insert(MeleeSensor::from(dir))
+                    .insert(ActiveEvents::COLLISION_EVENTS);
             }
         })
         .id();
@@ -161,49 +156,49 @@ fn setup(
         true,
     ));
     /*
-    //Add parallax planet
-    commands
-        .spawn()
-        .insert(Transform::from_xyz(-75., 30., 0.))
-        .insert(GlobalTransform::default())
-        .with_children(|parent| {
-            parent
-                .spawn_bundle(SpriteSheetBundle {
-                    texture_atlas: texture_atlases.add(TextureAtlas::from_grid(
-                        asset_server.load("earth2.png"),
-                        Vec2::splat(100.),
-                        50,
-                        50,
-                    )),
-                    transform: Transform {
-                        translation: Vec3::new(0., 0., BACKGROUND_Z + 20.),
-                        scale: Vec3::new(0.5, 0.5, 1.),
+        //Add parallax planet
+        commands
+            .spawn()
+            .insert(Transform::from_xyz(-75., 30., 0.))
+            .insert(GlobalTransform::default())
+            .with_children(|parent| {
+                parent
+                    .spawn_bundle(SpriteSheetBundle {
+                        texture_atlas: texture_atlases.add(TextureAtlas::from_grid(
+                            asset_server.load("earth2.png"),
+                            Vec2::splat(100.),
+                            50,
+                            50,
+                        )),
+                        transform: Transform {
+                            translation: Vec3::new(0., 0., BACKGROUND_Z + 20.),
+                            scale: Vec3::new(0.5, 0.5, 1.),
+                            ..Default::default()
+                        },
                         ..Default::default()
-                    },
+                    })
+                    .insert(Timer::from_seconds(0.050, true))
+                    .insert(Parallax);
+            });
+
+        //Add space layers with parallax
+        let names = vec![
+            "background_4.png",
+            "background_3.png",
+            "background_2.png",
+            "background_1.png",
+        ];
+
+        for i in 1..5 {
+            commands
+                .spawn_bundle(SpriteBundle {
+                    texture: asset_server.load(names[i - 1]),
+                    transform: Transform::from_xyz(0., 0., BACKGROUND_Z + (i * 10) as f32),
                     ..Default::default()
                 })
-                .insert(Timer::from_seconds(0.050, true))
                 .insert(Parallax);
-        });
-
-    //Add space layers with parallax
-    let names = vec![
-        "background_4.png",
-        "background_3.png",
-        "background_2.png",
-        "background_1.png",
-    ];
-
-    for i in 1..5 {
-        commands
-            .spawn_bundle(SpriteBundle {
-                texture: asset_server.load(names[i - 1]),
-                transform: Transform::from_xyz(0., 0., BACKGROUND_Z + (i * 10) as f32),
-                ..Default::default()
-            })
-            .insert(Parallax);
-    }
-
+        }
+    */
     for i in 1..20 {
         commands
             .spawn_bundle(SpriteBundle {
@@ -212,13 +207,19 @@ fn setup(
                 ..Default::default()
             })
             .insert(XP(5))
-            .insert(SensorShape)
+            .insert(Sensor)
             .insert(RigidBody::KinematicPositionBased)
-            .insert(CollisionShape::Sphere { radius: 20. })
-            .insert(
-                CollisionLayers::none()
-                    .with_group(Layers::XP)
-                    .with_mask(Layers::Player),
-            );
-    } */
+            .insert(Collider::ball(20.))
+            .insert(CollisionGroups::new(
+                BodyLayers::XP_LAYER,
+                BodyLayers::PLAYER,
+            ))
+            .insert(Follow::new(
+                FollowTarget::Transform(player_entity),
+                5.,
+                true,
+            ))
+            .insert(ActiveCollisionTypes::all())
+            .insert(ActiveEvents::COLLISION_EVENTS);
+    }
 }
