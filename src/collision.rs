@@ -11,7 +11,7 @@ impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
             .add_plugin(RapierDebugRenderPlugin::default())
-            .add_event::<HandleCollisionEvent>()
+            // .add_event::<HandleCollisionEvent>()
             .add_system(melee_collisions)
             .add_system(xp_system);
     }

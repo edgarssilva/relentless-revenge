@@ -3,7 +3,7 @@ use crate::map::room::Room;
 use bevy::input::Input;
 use bevy::math::{IVec2, Vec2};
 use bevy::prelude::{
-    AssetServer, Commands, GlobalTransform, KeyCode, Mut, Query, QueryState, Res, Transform, With,
+    AssetServer, Commands, GlobalTransform, KeyCode, Mut, Query, Res, Transform, With,
 };
 use bevy_ecs_tilemap::{
     Chunk, ChunkSize, IsoType, LayerBuilder, LayerSettings, Map, MapQuery, MapSize, TextureSize,
