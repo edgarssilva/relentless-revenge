@@ -1,6 +1,7 @@
 use crate::{
     direction::Direction,
     follow::{Follow, FollowTarget},
+    state::State,
     stats::Stats,
     KeyMaps,
 };
@@ -20,6 +21,7 @@ pub fn player_controller(
             &mut Transform,
             Option<&Stats>,
             &mut PlayerControlled,
+            &mut State,
             Entity,
         ),
         Without<Follow>,
@@ -28,7 +30,7 @@ pub fn player_controller(
     time: Res<Time>,
     mapping: Res<KeyMaps>,
 ) {
-    for (mut transform, stats, mut controller, entity) in query.iter_mut() {
+    for (mut transform, stats, mut controller, mut state, entity) in query.iter_mut() {
         let mut dir = Vec2::ZERO;
 
         if keys.pressed(mapping.walk_up) {
@@ -79,5 +81,11 @@ pub fn player_controller(
 
         transform.translation.x += dir.x;
         transform.translation.y += dir.y;
+
+        if dir.length() > 0. {
+            state.set(State::WALKING);
+        } else {
+            state.set(State::IDLE);
+        }
     }
 }

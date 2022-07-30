@@ -6,6 +6,7 @@ mod direction;
 mod follow;
 mod helper;
 mod map;
+mod state;
 mod stats;
 
 use bevy::prelude::*;
@@ -21,6 +22,7 @@ use direction::Direction;
 use follow::*;
 use helper::*;
 use map::generation::*;
+use state::State;
 use stats::*;
 
 pub const PLAYER_Z: f32 = 39.;
@@ -96,6 +98,7 @@ fn setup(
         .insert(ActiveCollisionTypes::all())
         // .insert(Timer::from_seconds(0.1, true))
         .insert(Stats::new(100, 20, 50, 3., 0))
+        .insert(State::IDLE)
         .with_children(|children| {
             let offset = player_size.x / 2.;
             let width = player_size.x * 1.25;
