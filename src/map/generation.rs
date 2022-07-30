@@ -6,8 +6,8 @@ use bevy::prelude::{
     AssetServer, Commands, GlobalTransform, KeyCode, Mut, Query, Res, Transform, With,
 };
 use bevy_ecs_tilemap::{
-    Chunk, ChunkSize, IsoType, LayerBuilder, LayerSettings, Map, MapQuery, MapSize, TextureSize,
-    Tile, TileBundle, TilePos, TileSize, TilemapMeshType,
+    ChunkSize, IsoType, LayerBuilder, LayerSettings, Map, MapQuery, MapSize, TextureSize, Tile,
+    TileBundle, TilePos, TileSize, TilemapMeshType,
 };
 use rand;
 use rand::prelude::*;

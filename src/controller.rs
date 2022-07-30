@@ -7,11 +7,13 @@ use crate::{
 };
 use bevy::{
     math::Vec2,
-    prelude::{Commands, Component, Entity, Input, KeyCode, Query, Res, Time, Transform, Without},
+    prelude::{
+        Commands, Component, Entity, Input, KeyCode, Query, Res, Time, Transform, With, Without,
+    },
 };
 
 #[derive(Component)]
-pub struct PlayerControlled(pub Direction);
+pub struct PlayerControlled;
 
 //Player Movement
 pub fn player_controller(
@@ -20,48 +22,48 @@ pub fn player_controller(
         (
             &mut Transform,
             Option<&Stats>,
-            &mut PlayerControlled,
+            &mut Direction,
             &mut State,
             Entity,
         ),
-        Without<Follow>,
+        (With<PlayerControlled>, Without<Follow>),
     >,
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
     mapping: Res<KeyMaps>,
 ) {
-    for (mut transform, stats, mut controller, mut state, entity) in query.iter_mut() {
+    for (mut transform, stats, mut direction, mut state, entity) in query.iter_mut() {
         let mut dir = Vec2::ZERO;
 
         if keys.pressed(mapping.walk_up) {
             dir += Vec2::Y;
-            controller.0 = Direction::NORTH;
+            direction.set(Direction::NORTH);
         }
 
         if keys.pressed(mapping.walk_left) {
             dir -= Vec2::X;
-            controller.0 = Direction::WEST;
+            direction.set(Direction::WEST);
         }
 
         if keys.pressed(mapping.walk_down) {
             dir -= Vec2::Y;
-            controller.0 = Direction::SOUTH;
+            direction.set(Direction::SOUTH);
         }
 
         if keys.pressed(mapping.walk_right) {
             dir += Vec2::X;
-            controller.0 = Direction::EAST;
+            direction.set(Direction::EAST);
         }
 
         if keys.just_pressed(mapping.dash) {
             let dash_dir = if dir == Vec2::ZERO {
-                controller.0.vec()
+                direction.vec()
             } else {
                 dir
             };
 
             //TODO: Add dash stats
-            let new_pos = transform.translation + (dash_dir * 35.).extend(0.);
+            let new_pos = transform.translation + (dash_dir * 50.).extend(0.);
             commands.entity(entity).insert(Follow::new(
                 FollowTarget::Position(new_pos),
                 10.,
@@ -82,10 +84,10 @@ pub fn player_controller(
         transform.translation.x += dir.x;
         transform.translation.y += dir.y;
 
-        if dir.length() > 0. {
-            state.set(State::WALKING);
-        } else {
+        if dir.x == 0. && dir.y == 0. {
             state.set(State::IDLE);
+        } else {
+            state.set(State::WALKING);
         }
     }
 }

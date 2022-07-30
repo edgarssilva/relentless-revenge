@@ -9,12 +9,12 @@ mod map;
 mod state;
 mod stats;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 use bevy_ecs_tilemap::prelude::*;
 use bevy_rapier2d::prelude::Sensor;
 use bevy_rapier2d::prelude::*;
 
-// use animation::*;
+use animation::*;
 use attack::*;
 use collision::{BodyLayers, CollisionPlugin};
 use controller::*;
@@ -42,6 +42,7 @@ fn main() {
         .add_plugin(TilemapPlugin)
         // .add_plugin(TiledMapPlugin)
         .add_plugin(CollisionPlugin)
+        .add_plugin(AnimationPlugin)
         .add_system(set_texture_filters_to_nearest)
         .add_system(helper_camera_controller)
         // .add_system(sprite_animation)
@@ -77,6 +78,23 @@ fn setup(
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
     let player_size = player_size * 0.45;
 
+    let mut player_animations = HashMap::new();
+
+    let mut idle_animations = HashMap::new();
+    idle_animations.insert(Direction::SOUTH, (0..3).collect());
+    idle_animations.insert(Direction::NORTH, (0..3).collect());
+    idle_animations.insert(Direction::EAST, (0..3).collect());
+    idle_animations.insert(Direction::WEST, (0..3).collect());
+
+    let mut walk_animations = HashMap::new();
+    walk_animations.insert(Direction::SOUTH, vec![4, 5, 7, 8, 9]);
+    walk_animations.insert(Direction::NORTH, vec![24, 25, 26, 28, 29, 30]);
+    walk_animations.insert(Direction::EAST, vec![17, 18, 19, 21, 22, 23]);
+    walk_animations.insert(Direction::WEST, vec![10, 11, 12, 14, 15, 16]);
+
+    player_animations.insert(State::IDLE, idle_animations);
+    player_animations.insert(State::WALKING, walk_animations);
+
     let player_entity = commands
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
@@ -87,9 +105,11 @@ fn setup(
             },
             ..default()
         })
+        .insert(PlayerControlled)
+        .insert(Direction::SOUTH)
+        .insert(AnimationState::new(player_animations, 100, true))
         .insert(RigidBody::KinematicPositionBased)
         .insert(Collider::cuboid(player_size.x / 2., player_size.y / 2.))
-        .insert(PlayerControlled(Direction::EAST))
         .insert(CollisionGroups::new(
             BodyLayers::PLAYER,
             BodyLayers::XP_LAYER,
@@ -97,7 +117,7 @@ fn setup(
         .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(ActiveCollisionTypes::all())
         // .insert(Timer::from_seconds(0.1, true))
-        .insert(Stats::new(100, 20, 50, 3., 0))
+        .insert(Stats::new(100, 20, 70, 3., 0))
         .insert(State::IDLE)
         .with_children(|children| {
             let offset = player_size.x / 2.;

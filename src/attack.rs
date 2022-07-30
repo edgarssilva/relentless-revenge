@@ -27,7 +27,7 @@ impl MeleeSensor {
 }
 
 pub fn attack_system(
-    player_query: Query<(&Stats, &PlayerControlled)>,
+    player_query: Query<(&Stats, &Direction), With<PlayerControlled>>,
     mut stats_query: Query<&mut Stats, Without<PlayerControlled>>,
     sensors_query: Query<&MeleeSensor>,
     keys: Res<Input<KeyCode>>,
@@ -39,13 +39,13 @@ pub fn attack_system(
         return;
     }
 
-    if let Ok((attacker_stats, controller)) = player_query.get_single() {
+    if let Ok((attacker_stats, direction)) = player_query.get_single() {
         if !attacker_stats.can_attack() {
             return;
         }
         for sensor in sensors_query
             .iter()
-            .filter(|sensor| sensor.dir == controller.0)
+            .filter(|sensor| sensor.dir == *direction)
         {
             for &attacked_entity in sensor.targets.iter() {
                 if let Ok(mut attacked_stats) = stats_query.get_mut(attacked_entity) {

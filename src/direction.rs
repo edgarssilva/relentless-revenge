@@ -1,6 +1,6 @@
-use bevy::math::Vec2;
+use bevy::{math::Vec2, prelude::Component};
 
-#[derive(PartialEq)]
+#[derive(Component, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Direction {
     NORTH,
     SOUTH,
@@ -20,5 +20,13 @@ impl Direction {
 
     pub fn values() -> [Self; 4] {
         [Self::NORTH, Self::SOUTH, Self::WEST, Self::EAST]
+    }
+
+    pub fn set(&mut self, direction: Direction) {
+        *self = direction;
+    }
+
+    pub fn equals(&self, other: &Self) -> bool {
+        self == other
     }
 }
