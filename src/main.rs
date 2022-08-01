@@ -107,7 +107,7 @@ fn setup(
         })
         .insert(PlayerControlled)
         .insert(Direction::SOUTH)
-        .insert(AnimationState::new(player_animations, 100, true))
+        .insert(AnimationState::new(player_animations, 200, true))
         .insert(RigidBody::KinematicPositionBased)
         .insert(Collider::cuboid(player_size.x / 2., player_size.y / 2.))
         .insert(CollisionGroups::new(
