@@ -1,10 +1,15 @@
+use std::time::Duration;
+
+use crate::animation::Animation;
 use crate::controller::PlayerControlled;
 use crate::map::room::Room;
 use bevy::input::Input;
 use bevy::math::{IVec2, Vec2};
 use bevy::prelude::{
-    AssetServer, Commands, GlobalTransform, KeyCode, Mut, Query, Res, Transform, With,
+    default, AssetServer, Assets, Commands, GlobalTransform, KeyCode, Mut, Query, Res, ResMut,
+    Timer, Transform, Vec3, With,
 };
+use bevy::sprite::{SpriteSheetBundle, TextureAtlas};
 use bevy_ecs_tilemap::{
     ChunkSize, IsoType, LayerBuilder, LayerSettings, Map, MapQuery, MapSize, TextureSize, Tile,
     TileBundle, TilePos, TileSize, TilemapMeshType,
@@ -57,12 +62,20 @@ pub fn remake_map(
     keys: Res<Input<KeyCode>>,
     mut map_query: MapQuery,
     mut player_query: Query<&mut Transform, With<PlayerControlled>>,
+    texture_atlases: ResMut<Assets<TextureAtlas>>,
+    asset_server: Res<AssetServer>,
 ) {
     if keys.just_released(KeyCode::LControl) {
         let transform = player_query.single_mut();
 
         map_query.despawn_layer_tiles(&mut commands, 0u16, 0u16);
-        build_map(&mut commands, map_query, transform);
+        build_map(
+            &mut commands,
+            map_query,
+            transform,
+            texture_atlases,
+            asset_server,
+        );
     }
 }
 
@@ -71,6 +84,8 @@ fn build_map(
     commands: &mut Commands,
     mut map_query: MapQuery,
     mut player_transform: Mut<Transform>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    asset_server: Res<AssetServer>,
 ) {
     /*   for x in 0..256 {
         let tile = Tile {
@@ -81,7 +96,13 @@ fn build_map(
         map_query.notify_chunk_for_tile(TilePos(0, x), 0u16, 0u16);
     } */
 
-    let mut first = true;
+    let mut rng = rand::thread_rng();
+    //Load the textures
+    let texture_handle = asset_server.load("monster_flesh_eye_sheet.png");
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(256.), 3, 3);
+    let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
+    let mut first_room = true;
 
     let (rooms, bridges) = generate_level();
     for room in rooms {
@@ -99,21 +120,40 @@ fn build_map(
 
                 let tile_pos = TilePos(x as u32, y as u32);
 
-                if first && room.pos.to_array() == [x, y] {
-                    let pos = room.pos.as_vec2();
-                    let x = (pos.x - pos.y) * 32. / 2.0;
-                    let y = (pos.x + pos.y) * 16. / 2.0;
-                    let new = Vec2::new(x, -y);
+                //TODO: Build a function to move map cords to world cords
+                let world_x = (x as f32 - y as f32) * 32. / 2.0;
+                let world_y = (x as f32 + y as f32) * 16. / 2.0;
+                let world_pos = Vec2::new(world_x, -world_y);
 
-                    player_transform.translation.x = new.x;
-                    player_transform.translation.y = new.y;
+                //TODO: Move enemy spawns to a separate system
+                if rng.gen_bool(1. / 15.) {
+                    commands
+                        .spawn_bundle(SpriteSheetBundle {
+                            texture_atlas: texture_atlas_handle.clone(),
+                            transform: Transform {
+                                translation: world_pos.extend(1.),
+                                scale: Vec3::new(0.2, 0.2, 1.),
+                                ..default()
+                            },
+                            ..default()
+                        })
+                        .insert(Animation {
+                            frames: (0..7).collect(),
+                            current_frame: 0,
+                            timer: Timer::new(Duration::from_millis(250), true),
+                        });
+                }
+
+                if first_room && room.pos.to_array() == [x, y] {
+                    player_transform.translation.x = world_pos.x;
+                    player_transform.translation.y = world_pos.y;
                 }
 
                 let _ = map_query.set_tile(commands, tile_pos, tile, 0u16, 0u16);
                 map_query.notify_chunk_for_tile(tile_pos, 0u16, 0u16);
             }
         }
-        first = false;
+        first_room = false;
     }
 
     for bridge in bridges {

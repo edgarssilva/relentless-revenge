@@ -150,28 +150,4 @@ fn setup(
         5.,
         true,
     ));
-
-    /*  for i in 1..20 {
-        commands
-            .spawn_bundle(SpriteBundle {
-                texture: asset_server.load("sensor.png"),
-                transform: Transform::from_xyz((5 * i) as f32, (1 * i) as f32, PLAYER_Z + 1 as f32),
-                ..Default::default()
-            })
-            .insert(XP(5))
-            .insert(Sensor)
-            .insert(RigidBody::KinematicPositionBased)
-            .insert(Collider::ball(20.))
-            .insert(CollisionGroups::new(
-                BodyLayers::XP_LAYER,
-                BodyLayers::PLAYER,
-            ))
-            .insert(Follow::new(
-                FollowTarget::Transform(player_entity),
-                5.,
-                true,
-            ))
-            .insert(ActiveCollisionTypes::all())
-            .insert(ActiveEvents::COLLISION_EVENTS);
-    } */
 }
