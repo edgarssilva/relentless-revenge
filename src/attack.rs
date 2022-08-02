@@ -8,6 +8,7 @@ use crate::{
     controller::PlayerControlled,
     direction::Direction,
     helper::{KeyMaps, Shake},
+    state::State,
     stats::Stats,
 };
 
@@ -27,7 +28,7 @@ impl MeleeSensor {
 }
 
 pub fn attack_system(
-    player_query: Query<(&Stats, &Direction), With<PlayerControlled>>,
+    mut player_query: Query<(&Stats, &Direction, &mut State), With<PlayerControlled>>,
     mut stats_query: Query<&mut Stats, Without<PlayerControlled>>,
     sensors_query: Query<&MeleeSensor>,
     keys: Res<Input<KeyCode>>,
@@ -39,10 +40,13 @@ pub fn attack_system(
         return;
     }
 
-    if let Ok((attacker_stats, direction)) = player_query.get_single() {
+    if let Ok((attacker_stats, direction, mut state)) = player_query.get_single_mut() {
         if !attacker_stats.can_attack() {
             return;
         }
+
+        state.set(State::ATTACKING);
+
         for sensor in sensors_query
             .iter()
             .filter(|sensor| sensor.dir == *direction)

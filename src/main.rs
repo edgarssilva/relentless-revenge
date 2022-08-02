@@ -92,8 +92,15 @@ fn setup(
     walk_animations.insert(Direction::EAST, vec![17, 18, 19, 21, 22, 23]);
     walk_animations.insert(Direction::WEST, vec![10, 11, 12, 14, 15, 16]);
 
+    let mut attack_animations = HashMap::new();
+    attack_animations.insert(Direction::SOUTH, vec![30, 31, 32]);
+    attack_animations.insert(Direction::NORTH, vec![40, 6, 13]);
+    attack_animations.insert(Direction::EAST, vec![33, 35, 36]);
+    attack_animations.insert(Direction::WEST, vec![37, 38, 39]);
+
     player_animations.insert(State::IDLE, idle_animations);
     player_animations.insert(State::WALKING, walk_animations);
+    player_animations.insert(State::ATTACKING, attack_animations);
 
     let player_entity = commands
         .spawn_bundle(SpriteSheetBundle {

@@ -77,7 +77,7 @@ pub fn animation_state(
     mut query: Query<(&mut Animation, &mut AnimationState, &State, &Direction)>,
 ) {
     for (mut animation, mut animation_state, state, direction) in query.iter_mut() {
-        if !animation_state.previous_state.equals(state)
+        if !animation_state.previous_state.equals(*state)
             || !animation_state.previous_direction.equals(direction)
         {
             if let Some(directions) = animation_state.animations.get(state) {

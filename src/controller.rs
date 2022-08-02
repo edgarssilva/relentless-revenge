@@ -85,7 +85,9 @@ pub fn player_controller(
         transform.translation.y += dir.y;
 
         if dir.x == 0. && dir.y == 0. {
-            state.set(State::IDLE);
+            if state.equals(State::WALKING) {
+                state.set(State::IDLE);
+            }
         } else {
             state.set(State::WALKING);
         }

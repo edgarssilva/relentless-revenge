@@ -3,17 +3,18 @@ use bevy::prelude::{
 };
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 
-use crate::{stats::Stats, XP};
+use crate::{attack::MeleeSensor, stats::Stats, XP};
 
 pub struct CollisionPlugin;
 
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-            // .add_plugin(RapierDebugRenderPlugin::default())
+            .add_plugin(RapierDebugRenderPlugin::default())
             .add_event::<HandleCollisionEvent>()
             .add_system(melee_collisions)
-            .add_system(xp_system);
+            .add_system(xp_system)
+            .add_system(player_attack_system);
     }
 }
 
@@ -98,6 +99,27 @@ pub fn xp_system(
                     let mut stats = player_query.get_mut(e_player).unwrap();
                     stats.xp += xp.0;
                     commands.entity(e_exp).despawn_recursive();
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+//TODO: Refractor for generic attack system
+pub fn player_attack_system(
+    mut events: EventReader<HandleCollisionEvent>,
+    mut query: Query<&mut MeleeSensor>,
+) {
+    for e in events.iter() {
+        match e.collision_type {
+            CollisionType::PlayerAttack(e_attacker, e_defender) => {
+                if let Ok(mut sensor) = query.get_mut(e_attacker) {
+                    if e.started {
+                        sensor.targets.push(e_defender);
+                    } else {
+                        sensor.targets.retain(|&e| e == e_defender);
+                    }
                 }
             }
             _ => {}

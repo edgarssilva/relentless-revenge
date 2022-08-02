@@ -5,7 +5,7 @@ pub enum State {
     IDLE,
     WALKING,
     ATTACKING,
-    DYING,
+    _DYING,
 }
 
 impl State {
@@ -13,7 +13,7 @@ impl State {
         *self = state;
     }
 
-    pub fn equals(&self, other: &Self) -> bool {
-        self == other
+    pub fn equals(&self, other: Self) -> bool {
+        *self == other
     }
 }

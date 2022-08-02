@@ -1,8 +1,10 @@
 use std::time::Duration;
 
 use crate::animation::Animation;
+use crate::collision::BodyLayers;
 use crate::controller::PlayerControlled;
 use crate::map::room::Room;
+use crate::stats::Stats;
 use bevy::input::Input;
 use bevy::math::{IVec2, Vec2};
 use bevy::prelude::{
@@ -13,6 +15,9 @@ use bevy::sprite::{SpriteSheetBundle, TextureAtlas};
 use bevy_ecs_tilemap::{
     ChunkSize, IsoType, LayerBuilder, LayerSettings, Map, MapQuery, MapSize, TextureSize, Tile,
     TileBundle, TilePos, TileSize, TilemapMeshType,
+};
+use bevy_rapier2d::prelude::{
+    ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
 };
 use rand;
 use rand::prelude::*;
@@ -137,11 +142,20 @@ fn build_map(
                             },
                             ..default()
                         })
+                        .insert(Stats::new(100, 20, 20, 2., 5))
                         .insert(Animation {
                             frames: (0..7).collect(),
                             current_frame: 0,
                             timer: Timer::new(Duration::from_millis(250), true),
-                        });
+                        })
+                        .insert(RigidBody::KinematicPositionBased)
+                        .insert(Collider::cuboid(256. * 0.2, 256. * 0.2))
+                        .insert(CollisionGroups::new(
+                            BodyLayers::ENEMY,
+                            BodyLayers::PLAYER_ATTACK,
+                        ))
+                        .insert(ActiveEvents::COLLISION_EVENTS)
+                        .insert(ActiveCollisionTypes::all());
                 }
 
                 if first_room && room.pos.to_array() == [x, y] {
