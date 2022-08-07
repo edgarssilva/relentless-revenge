@@ -3,13 +3,14 @@ use std::time::Duration;
 use crate::animation::Animation;
 use crate::collision::BodyLayers;
 use crate::controller::PlayerControlled;
+use crate::follow::{Follow, FollowTarget};
 use crate::map::room::Room;
 use crate::stats::Stats;
 use bevy::input::Input;
 use bevy::math::Vec2;
 use bevy::prelude::{
-    default, AssetServer, Assets, Commands, KeyCode, Mut, Query, Res, ResMut, Timer, Transform,
-    UVec2, Vec3, With,
+    default, AssetServer, Assets, Commands, Entity, KeyCode, Mut, Query, Res, ResMut, Timer,
+    Transform, UVec2, Vec3, With,
 };
 use bevy::sprite::{SpriteSheetBundle, TextureAtlas};
 
@@ -69,14 +70,14 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
 pub fn remake_map(
     mut commands: Commands,
     keys: Res<Input<KeyCode>>,
-    mut player_query: Query<&mut Transform, With<PlayerControlled>>,
+    mut player_query: Query<(&mut Transform, Entity), With<PlayerControlled>>,
     texture_atlases: ResMut<Assets<TextureAtlas>>,
     asset_server: Res<AssetServer>,
     mut tile_query: Query<&mut TileTexture>,
     tile_storage_query: Query<&TileStorage>,
 ) {
     if keys.just_released(KeyCode::LControl) {
-        let transform = player_query.single_mut();
+        let (transform, entity) = player_query.single_mut();
 
         //Change all tiles to clear texture
         for mut tile in tile_query.iter_mut() {
@@ -87,6 +88,7 @@ pub fn remake_map(
             build_map(
                 &mut commands,
                 transform,
+                entity,
                 texture_atlases,
                 asset_server,
                 tile_query,
@@ -99,6 +101,7 @@ pub fn remake_map(
 fn build_map(
     commands: &mut Commands,
     mut player_transform: Mut<Transform>,
+    player_entity: Entity,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     asset_server: Res<AssetServer>,
     mut tile_query: Query<&mut TileTexture>,
@@ -134,7 +137,7 @@ fn build_map(
                 let world_pos = Vec2::new(world_x, -world_y);
 
                 //TODO: Move enemy spawns to a separate system
-                if rng.gen_bool(1. / 15.) {
+                if rng.gen_bool(1. / 40.) {
                     commands
                         .spawn_bundle(SpriteSheetBundle {
                             texture_atlas: texture_atlas_handle.clone(),
@@ -158,7 +161,13 @@ fn build_map(
                             BodyLayers::PLAYER_ATTACK,
                         ))
                         .insert(ActiveEvents::COLLISION_EVENTS)
-                        .insert(ActiveCollisionTypes::all());
+                        .insert(ActiveCollisionTypes::all())
+                        .insert(Follow {
+                            target: FollowTarget::Transform(player_entity),
+                            speed: 0.05,
+                            continous: true,
+                            ..default()
+                        });
                 }
 
                 if first_room && room.pos.to_array() == [x, y] {
