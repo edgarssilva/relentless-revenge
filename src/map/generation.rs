@@ -35,7 +35,7 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
     let tilemap_entity = commands.spawn().id();
     let tilemap_id = TilemapId(tilemap_entity);
 
-    let tile_size = TilemapTileSize { x: 32.0, y: 32.0 };
+    let tile_size = TilemapTileSize { x: 32.0, y: 16.0 };
 
     for x in 0..tilemap_size.x {
         for y in 0..tilemap_size.y {
@@ -45,7 +45,7 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .insert_bundle(TileBundle {
                     position: tile_pos,
                     tilemap_id,
-                    texture: TileTexture(4),
+                    texture: TileTexture(3),
                     ..default()
                 })
                 .id();
@@ -56,7 +56,7 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .entity(tilemap_entity)
         .insert_bundle(TilemapBundle {
-            grid_size: TilemapGridSize { x: 32.0, y: 2.0 },
+            grid_size: TilemapGridSize { x: 32.0, y: 16.0 },
             size: tilemap_size,
             storage: tile_storage,
             texture: TilemapTexture(texture_handle),
@@ -80,7 +80,7 @@ pub fn remake_map(
 
         //Change all tiles to clear texture
         for mut tile in tile_query.iter_mut() {
-            tile.0 = 4;
+            tile.0 = 3;
         }
 
         if let Ok(tile_storage) = tile_storage_query.get_single() {
