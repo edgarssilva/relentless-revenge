@@ -9,7 +9,7 @@ mod map;
 mod state;
 mod stats;
 
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{prelude::*, render::texture::ImageSettings, utils::HashMap};
 use bevy_ecs_tilemap::prelude::*;
 use bevy_rapier2d::prelude::Sensor;
 use bevy_rapier2d::prelude::*;
@@ -36,6 +36,7 @@ pub struct XP(u32);
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(48. / 255., 44. / 255., 46. / 255.)))
+        .insert_resource(ImageSettings::default_nearest())
         .insert_resource(KeyMaps::default())
         // .insert_resource(ImageSettings::default_nearest())
         .add_plugins(DefaultPlugins)
@@ -150,8 +151,8 @@ fn setup(
         })
         .id();
     //Add Camera after so we can give it the player entity
-    let mut camera_bundle = OrthographicCameraBundle::new_2d();
-    camera_bundle.orthographic_projection.scale = 0.15;
+    let mut camera_bundle = Camera2dBundle::default();
+    camera_bundle.projection.scale = 0.15;
     commands.spawn_bundle(camera_bundle).insert(Follow::new(
         FollowTarget::Transform(player_entity),
         5.,

@@ -1,9 +1,9 @@
 use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::{
     AssetEvent, Assets, Changed, Commands, Component, Entity, EventReader, Image, Input, KeyCode,
-    Query, Res, ResMut, Time, Transform, Windows, With, Without,
+    Query, Res, ResMut, Time, Transform, With, Without,
 };
-use bevy::render::camera::{Camera, CameraProjection, OrthographicProjection};
+use bevy::render::camera::{Camera, OrthographicProjection};
 
 use bevy::render::render_resource::TextureUsages;
 use rand::Rng;
@@ -57,12 +57,11 @@ pub fn set_texture_filters_to_nearest(
 
 //Helper camera controller
 pub fn helper_camera_controller(
-    mut query: Query<(&mut Camera, &mut OrthographicProjection, &mut Transform)>,
+    mut query: Query<(&mut OrthographicProjection, &mut Transform)>,
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
-    mut windows: ResMut<Windows>,
 ) {
-    let (mut camera, mut projection, mut transform) = query.single_mut();
+    let (mut projection, mut transform) = query.single_mut();
 
     if keys.pressed(KeyCode::Up) {
         transform.translation.y += 150.0 * time.delta_seconds();
@@ -77,23 +76,11 @@ pub fn helper_camera_controller(
         transform.translation.x += 150.0 * time.delta_seconds();
     }
 
-    //println!("{:?}", transform.translation);
-
-    let scale = projection.scale;
-
-    let w = windows.primary_mut();
-
     if keys.pressed(KeyCode::Z) {
         projection.scale -= 1. * time.delta_seconds();
     }
     if keys.pressed(KeyCode::X) {
         projection.scale += 1. * time.delta_seconds();
-    }
-
-    if (projection.scale - scale).abs() > f32::EPSILON {
-        projection.update(w.width(), w.height());
-        camera.projection_matrix = projection.get_projection_matrix();
-        camera.depth_calculation = projection.depth_calculation();
     }
 }
 
