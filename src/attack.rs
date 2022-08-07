@@ -53,7 +53,11 @@ pub fn attack_system(
         {
             for &attacked_entity in sensor.targets.iter() {
                 if let Ok(mut attacked_stats) = stats_query.get_mut(attacked_entity) {
-                    attacked_stats.health -= attacker_stats.damage;
+                    if attacked_stats.health < attacker_stats.damage {
+                        attacked_stats.health = 0;
+                    } else {
+                        attacked_stats.health -= attacker_stats.damage;
+                    }
                     if let Ok(camera) = camera_query.get_single() {
                         commands.entity(camera).insert(Shake {
                             duration: 0.25,
