@@ -9,6 +9,7 @@ Mechanics notes
     - Levels should be procedurally generated with open spaces
     - Transition each level trough a slide up dithering effect
     - There should be a dash effects that maybe locks on targets (prevent unwanted ones)
+    - Later on the ability to attack mid dash should be obtained
     ? Figure out wheter to use JKL keys or the mouse (maybe both) 
     ? How should health be displayed (healthbars and/or damage counters) or even show at all
     - There should be leveling of different stats like hp, speed, dash-speed, etc.

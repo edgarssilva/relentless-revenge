@@ -37,7 +37,7 @@ pub struct XP(u32);
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(48. / 255., 44. / 255., 46. / 255.)))
+        .insert_resource(ClearColor(Color::rgb(25. / 255., 18. / 255., 37. / 255.)))
         .insert_resource(ImageSettings::default_nearest())
         .insert_resource(KeyMaps::default())
         // .insert_resource(ImageSettings::default_nearest())
