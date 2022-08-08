@@ -62,12 +62,13 @@ pub fn player_controller(
                 dir
             };
 
+            state.set(State::DASHING);
+
             //TODO: Add dash stats
             let new_pos = transform.translation + (dash_dir * 50.).extend(0.);
             commands
                 .entity(entity)
                 .insert(Follow::new(FollowTarget::Position(new_pos), 5., false));
-            state.set(State::DASHING);
             return;
         }
 

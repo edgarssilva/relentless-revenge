@@ -31,7 +31,7 @@ impl Default for Follow {
             target: FollowTarget::Position(Vec3::default()),
             speed: 1.,
             continous: true,
-            treshhold: 0.25,
+            treshhold: 0.5,
             on_target: false,
         }
     }

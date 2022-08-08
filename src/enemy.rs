@@ -119,7 +119,6 @@ fn follow_player_action(
 ) {
     if let Ok(player) = player.get_single() {
         for (Actor(actor), mut state) in query.iter_mut() {
-            println!("follow_player_action");
             if let Ok(follow) = seekers.get(*actor) {
                 match *state {
                     ActionState::Requested => {
