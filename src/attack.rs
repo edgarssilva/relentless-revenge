@@ -1,16 +1,37 @@
+use std::time::Duration;
+
 use bevy::{
     input::Input,
-    prelude::{Commands, Component, Entity, KeyCode, Query, Res, With, Without},
+    prelude::{
+        default, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle, KeyCode, Query,
+        Res, Transform, Vec2, Vec3, With, Without,
+    },
     render::camera::Camera,
+    sprite::{SpriteSheetBundle, TextureAtlas},
+    time::Timer,
+};
+use bevy_rapier2d::prelude::{
+    ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, Sensor,
 };
 
 use crate::{
+    collision::BodyLayers,
     controller::PlayerControlled,
     direction::Direction,
     helper::{KeyMaps, Shake},
+    movement::Velocity,
     state::State,
     stats::Stats,
 };
+
+#[derive(Component)]
+pub struct Attack;
+
+#[derive(Component)]
+pub struct Lifetime(pub Timer);
+
+#[derive(Component)]
+pub struct Damage(pub u32);
 
 #[derive(Component)]
 pub struct MeleeSensor {
@@ -23,6 +44,50 @@ impl MeleeSensor {
         Self {
             dir,
             targets: Vec::new(),
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct ProjectileBundle {
+    attack: Attack,
+    #[bundle]
+    spritesheet_bundle: SpriteSheetBundle,
+    collider: Collider,
+    sensor: Sensor,
+    events: ActiveEvents,
+    collision_types: ActiveCollisionTypes,
+    collision_groups: CollisionGroups,
+    duration: Lifetime,
+    damage: Damage,
+    velocity: Velocity,
+}
+
+impl ProjectileBundle {
+    pub fn new(
+        texture: Handle<TextureAtlas>,
+        position: Vec3,
+        size: Vec2,
+        duration: u64,
+        damage: Damage,
+        velocity: Velocity,
+    ) -> Self {
+        Self {
+            attack: Attack,
+            spritesheet_bundle: SpriteSheetBundle {
+                texture_atlas: texture,
+                transform: Transform::from_translation(position),
+                ..default()
+            },
+            collider: Collider::cuboid(size.x / 2., size.y / 2.),
+            sensor: Sensor,
+            events: ActiveEvents::COLLISION_EVENTS,
+            collision_types: ActiveCollisionTypes::default()
+                | ActiveCollisionTypes::KINEMATIC_STATIC,
+            collision_groups: CollisionGroups::new(BodyLayers::ENEMY_ATTACK, BodyLayers::PLAYER),
+            duration: Lifetime(Timer::new(Duration::from_millis(duration), false)),
+            damage,
+            velocity,
         }
     }
 }
@@ -66,6 +131,14 @@ pub fn attack_system(
                     }
                 }
             }
+        }
+    }
+}
+
+pub fn attack_lifetime(mut commands: Commands, attacks: Query<(Entity, &Lifetime), With<Attack>>) {
+    for (entity, lifetime) in attacks.iter() {
+        if lifetime.0.finished() {
+            commands.entity(entity).despawn_recursive();
         }
     }
 }

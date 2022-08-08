@@ -13,9 +13,10 @@ use big_brain::{
 
 use crate::{
     animation::Animation,
+    attack::{Damage, ProjectileBundle},
     collision::BodyLayers,
     controller::PlayerControlled,
-    follow::{Follow, FollowTarget},
+    movement::{Follow, FollowTarget, Velocity},
     stats::Stats,
 };
 
@@ -113,13 +114,16 @@ pub struct SeekPlayer;
 
 fn follow_player_action(
     mut commands: Commands,
-    seekers: Query<Option<&Follow>, With<Enemy>>,
-    player: Query<Entity, With<PlayerControlled>>,
+    seekers: Query<(&Transform, Option<&Follow>), With<Enemy>>,
+    player: Query<(Entity, &Transform), With<PlayerControlled>>,
     mut query: Query<(&Actor, &mut ActionState), With<SeekPlayer>>,
+    //Temporary for projectiles
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    asset_server: Res<AssetServer>,
 ) {
-    if let Ok(player) = player.get_single() {
+    if let Ok((player, player_transform)) = player.get_single() {
         for (Actor(actor), mut state) in query.iter_mut() {
-            if let Ok(follow) = seekers.get(*actor) {
+            if let Ok((seeker_transform, follow)) = seekers.get(*actor) {
                 match *state {
                     ActionState::Requested => {
                         commands.entity(*actor).insert(Follow::new(
@@ -127,6 +131,36 @@ fn follow_player_action(
                             0.10,
                             true,
                         ));
+                        //Temporary projectile spawning
+                        //Load the textures
+                        let texture_handle = asset_server.load("arrow.png");
+                        let texture_atlas =
+                            TextureAtlas::from_grid(texture_handle, Vec2::splat(100.), 6, 5);
+                        let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
+                        let angle_between = Vec2::from_angle(
+                            seeker_transform
+                                .translation
+                                .xy()
+                                .angle_between(player_transform.translation.xy()),
+                        )
+                        .normalize();
+
+                        commands
+                            .spawn_bundle(ProjectileBundle::new(
+                                texture_atlas_handle,
+                                seeker_transform.translation.clone(),
+                                Vec2::new(32., 32.),
+                                5,
+                                Damage(10),
+                                Velocity(angle_between * 50.),
+                            ))
+                            .insert(Animation {
+                                //TODO: Add animation to projectile
+                                frames: (0..(6 * 5)).collect(),
+                                current_frame: 0,
+                                timer: Timer::new(Duration::from_millis(300), true),
+                            });
                         *state = ActionState::Executing;
                     }
 

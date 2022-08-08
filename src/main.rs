@@ -4,9 +4,9 @@ mod collision;
 mod controller;
 mod direction;
 mod enemy;
-mod follow;
 mod helper;
 mod map;
+mod movement;
 mod state;
 mod stats;
 
@@ -21,9 +21,9 @@ use collision::{BodyLayers, CollisionPlugin};
 use controller::*;
 use direction::Direction;
 use enemy::EnemyBehaviourPlugin;
-use follow::*;
 use helper::*;
 use map::generation::*;
+use movement::*;
 use state::State;
 use stats::*;
 
@@ -37,7 +37,7 @@ pub struct XP(u32);
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(25. / 255., 18. / 255., 37. / 255.)))
+        .insert_resource(ClearColor(Color::rgb(20. / 255., 0. / 255., 25. / 255.)))
         .insert_resource(ImageSettings::default_nearest())
         .insert_resource(KeyMaps::default())
         // .insert_resource(ImageSettings::default_nearest())
@@ -60,8 +60,10 @@ fn main() {
                 .with_run_criteria(run_on_camera_move)
                 .with_system(parallax_system),
         )
+        .add_system(movement_system)
         .add_system(shake_system)
         .add_system(remake_map)
+        .add_system(attack_lifetime)
         .add_startup_system(setup_map)
         .add_startup_system(setup)
         .run();

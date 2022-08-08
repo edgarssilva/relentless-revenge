@@ -1,6 +1,7 @@
 Theme notes
     - Player is an agile {BLANK CHARACTER} that leeps around using daggers and emits lightning
     - He evolves taking bosses skills and becomes strong with each kill (should be represented with color)
+        ^- Maybe he should suck the boss into him becoming stronger and darker 
     x MISSING THEME STYLE AND WHAT MONSTERS ARE AND WHY THE PLAYER IS FIGHTING THEM
 
 Mechanics notes
@@ -24,7 +25,8 @@ Art Notes
     ? Hit effects should be a white overlay (or red)
     - There should be parallax partiles all around and some always moving
     - Main character should have different versions with different lightnigh color and entinsity
-    - Idle animation should be a tired slow breathing up-and-down, with head and daggers lowered 
+    - Idle animation should be a tired slow breathing up-and-down, with head and daggers lowered
+    - The screen should flash when the player is low hp 
 
 Sound Notes
     - Attack should be swift and faded (should use wind as a base)

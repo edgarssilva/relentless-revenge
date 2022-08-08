@@ -1,6 +1,6 @@
 use crate::{
     direction::Direction,
-    follow::{Follow, FollowTarget},
+    movement::{Follow, FollowTarget},
     state::State,
     stats::Stats,
     KeyMaps,

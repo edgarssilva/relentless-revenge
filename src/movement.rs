@@ -80,3 +80,12 @@ pub fn follow_entity_system(
         }
     }
 }
+
+#[derive(Component)]
+pub struct Velocity(pub Vec2);
+
+pub fn movement_system(mut query_velocity: Query<(&Velocity, &mut Transform)>, time: Res<Time>) {
+    for (velocity, mut transform) in query_velocity.iter_mut() {
+        transform.translation += velocity.0.extend(0.) * time.delta_seconds();
+    }
+}
