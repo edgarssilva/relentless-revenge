@@ -4,8 +4,8 @@ use crate::map::room::Room;
 use bevy::input::Input;
 use bevy::math::Vec2;
 use bevy::prelude::{
-    default, AssetServer, Assets, Commands, Entity, KeyCode, Mut, Query, Res, ResMut, Transform,
-    UVec2, With,
+    default, AssetServer, Assets, Commands, KeyCode, Mut, Query, Res, ResMut, Transform, UVec2,
+    With,
 };
 use bevy::sprite::TextureAtlas;
 
@@ -63,14 +63,14 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
 pub fn remake_map(
     mut commands: Commands,
     keys: Res<Input<KeyCode>>,
-    mut player_query: Query<(&mut Transform, Entity), With<PlayerControlled>>,
+    mut player_query: Query<&mut Transform, With<PlayerControlled>>,
     texture_atlases: ResMut<Assets<TextureAtlas>>,
     asset_server: Res<AssetServer>,
     mut tile_query: Query<&mut TileTexture>,
     tile_storage_query: Query<&TileStorage>,
 ) {
     if keys.just_released(KeyCode::LControl) {
-        let (transform, entity) = player_query.single_mut();
+        let transform = player_query.single_mut();
 
         //Change all tiles to clear texture
         for mut tile in tile_query.iter_mut() {
