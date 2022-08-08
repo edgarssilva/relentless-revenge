@@ -100,9 +100,16 @@ fn setup(
     attack_animations.insert(Direction::EAST, (8..12).collect());
     attack_animations.insert(Direction::WEST, (4..7).collect());
 
+    let mut dash_animations = HashMap::new();
+    dash_animations.insert(Direction::SOUTH, (32..35).collect());
+    dash_animations.insert(Direction::NORTH, (45..48).collect());
+    dash_animations.insert(Direction::EAST, (40..44).collect());
+    dash_animations.insert(Direction::WEST, (36..39).collect());
+
     player_animations.insert(State::IDLE, idle_animations);
     player_animations.insert(State::WALKING, walk_animations);
     player_animations.insert(State::ATTACKING, attack_animations);
+    player_animations.insert(State::DASHING, dash_animations);
 
     let player_entity = commands
         .spawn_bundle(SpriteSheetBundle {

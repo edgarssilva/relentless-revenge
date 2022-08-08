@@ -5,6 +5,7 @@ pub enum State {
     IDLE,
     WALKING,
     ATTACKING,
+    DASHING,
     _DYING,
 }
 
