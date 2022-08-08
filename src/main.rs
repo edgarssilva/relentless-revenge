@@ -72,33 +72,33 @@ fn setup(
     // mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     //Player Creation
-    let player_size = Vec2::new(84., 84.);
+    let player_size = Vec2::new(64., 64.);
 
     //Load the textures
-    let texture_handle = asset_server.load("spritesheet.png");
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, player_size, 7, 6);
+    let texture_handle = asset_server.load("tiny_hero.png");
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, player_size, 8, 8);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
-    let player_size = player_size * 0.45;
+    let player_size = player_size / 3.75;
 
     let mut player_animations = HashMap::new();
 
     let mut idle_animations = HashMap::new();
-    idle_animations.insert(Direction::SOUTH, (0..3).collect());
-    idle_animations.insert(Direction::NORTH, (0..3).collect());
-    idle_animations.insert(Direction::EAST, (0..3).collect());
-    idle_animations.insert(Direction::WEST, (0..3).collect());
+    idle_animations.insert(Direction::SOUTH, (16..19).collect());
+    idle_animations.insert(Direction::NORTH, (28..31).collect());
+    idle_animations.insert(Direction::EAST, (20..23).collect());
+    idle_animations.insert(Direction::WEST, (24..27).collect());
 
     let mut walk_animations = HashMap::new();
-    walk_animations.insert(Direction::SOUTH, vec![4, 5, 7, 8, 9]);
-    walk_animations.insert(Direction::NORTH, vec![24, 25, 26, 28, 29, 30]);
-    walk_animations.insert(Direction::EAST, vec![17, 18, 19, 21, 22, 23]);
-    walk_animations.insert(Direction::WEST, vec![10, 11, 12, 14, 15, 16]);
+    walk_animations.insert(Direction::SOUTH, (48..51).collect());
+    walk_animations.insert(Direction::NORTH, (60..63).collect());
+    walk_animations.insert(Direction::EAST, (56..59).collect());
+    walk_animations.insert(Direction::WEST, (52..55).collect());
 
     let mut attack_animations = HashMap::new();
-    attack_animations.insert(Direction::SOUTH, vec![30, 31, 32]);
-    attack_animations.insert(Direction::NORTH, vec![40, 6, 13]);
-    attack_animations.insert(Direction::EAST, vec![33, 35, 36]);
-    attack_animations.insert(Direction::WEST, vec![37, 38, 39]);
+    attack_animations.insert(Direction::SOUTH, (0..3).collect());
+    attack_animations.insert(Direction::NORTH, (13..16).collect());
+    attack_animations.insert(Direction::EAST, (8..12).collect());
+    attack_animations.insert(Direction::WEST, (4..7).collect());
 
     player_animations.insert(State::IDLE, idle_animations);
     player_animations.insert(State::WALKING, walk_animations);
@@ -109,7 +109,7 @@ fn setup(
             texture_atlas: texture_atlas_handle,
             transform: Transform {
                 translation: Vec3::new(0., 0., PLAYER_Z),
-                scale: Vec3::new(0.45, 0.45, 1.),
+                scale: Vec3::new(1.25, 1.25, 1.),
                 ..default()
             },
             ..default()
@@ -129,9 +129,9 @@ fn setup(
         .insert(Stats::new(100, 20, 70, 3., 0))
         .insert(State::IDLE)
         .with_children(|children| {
-            let offset = player_size.x / 2.;
-            let width = player_size.x * 1.25;
-            let height = player_size.y * 1.25;
+            let offset = player_size.x * 0.75;
+            let width = player_size.x;
+            let height = player_size.y;
 
             //Add attack sensors
             for dir in Direction::values() {
