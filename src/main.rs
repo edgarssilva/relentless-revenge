@@ -20,6 +20,7 @@ use attack::*;
 use collision::{BodyLayers, CollisionPlugin};
 use controller::*;
 use direction::Direction;
+use enemy::EnemyBehaviourPlugin;
 use follow::*;
 use helper::*;
 use map::generation::*;
@@ -45,6 +46,7 @@ fn main() {
         // .add_plugin(TiledMapPlugin)
         .add_plugin(CollisionPlugin)
         .add_plugin(AnimationPlugin)
+        .add_plugin(EnemyBehaviourPlugin)
         .add_system(set_texture_filters_to_nearest)
         .add_system(helper_camera_controller)
         // .add_system(sprite_animation)
@@ -85,8 +87,8 @@ fn setup(
     let mut idle_animations = HashMap::new();
     idle_animations.insert(Direction::SOUTH, (16..19).collect());
     idle_animations.insert(Direction::NORTH, (28..31).collect());
-    idle_animations.insert(Direction::EAST, (20..23).collect());
-    idle_animations.insert(Direction::WEST, (24..27).collect());
+    idle_animations.insert(Direction::EAST, (24..27).collect());
+    idle_animations.insert(Direction::WEST, (20..23).collect());
 
     let mut walk_animations = HashMap::new();
     walk_animations.insert(Direction::SOUTH, (48..51).collect());

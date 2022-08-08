@@ -1,6 +1,5 @@
 use crate::controller::PlayerControlled;
 use crate::enemy::EnemyBundle;
-use crate::follow::{Follow, FollowTarget};
 use crate::map::room::Room;
 use bevy::input::Input;
 use bevy::math::Vec2;
@@ -82,7 +81,6 @@ pub fn remake_map(
             build_map(
                 &mut commands,
                 transform,
-                entity,
                 texture_atlases,
                 asset_server,
                 tile_query,
@@ -95,7 +93,6 @@ pub fn remake_map(
 fn build_map(
     commands: &mut Commands,
     mut player_transform: Mut<Transform>,
-    player_entity: Entity,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     asset_server: Res<AssetServer>,
     mut tile_query: Query<&mut TileTexture>,
@@ -132,17 +129,10 @@ fn build_map(
 
                 //TODO: Move enemy spawns to a separate system
                 if rng.gen_bool(1. / 40.) {
-                    commands
-                        .spawn_bundle(EnemyBundle::new(
-                            texture_atlas_handle.clone(),
-                            world_pos.extend(1.0),
-                        ))
-                        .insert(Follow {
-                            target: FollowTarget::Transform(player_entity),
-                            speed: 0.05,
-                            continous: true,
-                            ..default()
-                        });
+                    commands.spawn_bundle(EnemyBundle::new(
+                        texture_atlas_handle.clone(),
+                        world_pos.extend(1.0),
+                    ));
                 }
 
                 if first_room && room.pos.to_array() == [x, y] {
