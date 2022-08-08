@@ -1,18 +1,14 @@
-use std::time::Duration;
-
-use crate::animation::Animation;
-use crate::collision::BodyLayers;
 use crate::controller::PlayerControlled;
+use crate::enemy::EnemyBundle;
 use crate::follow::{Follow, FollowTarget};
 use crate::map::room::Room;
-use crate::stats::Stats;
 use bevy::input::Input;
 use bevy::math::Vec2;
 use bevy::prelude::{
-    default, AssetServer, Assets, Commands, Entity, KeyCode, Mut, Query, Res, ResMut, Timer,
-    Transform, UVec2, Vec3, With,
+    default, AssetServer, Assets, Commands, Entity, KeyCode, Mut, Query, Res, ResMut, Transform,
+    UVec2, With,
 };
-use bevy::sprite::{SpriteSheetBundle, TextureAtlas};
+use bevy::sprite::TextureAtlas;
 
 use bevy_ecs_tilemap::prelude::{
     IsoType, TilemapGridSize, TilemapId, TilemapMeshType, TilemapSize, TilemapTexture,
@@ -20,9 +16,7 @@ use bevy_ecs_tilemap::prelude::{
 };
 use bevy_ecs_tilemap::tiles::{TileBundle, TilePos, TileStorage, TileTexture};
 use bevy_ecs_tilemap::TilemapBundle;
-use bevy_rapier2d::prelude::{
-    ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
-};
+
 use rand;
 use rand::prelude::*;
 
@@ -139,29 +133,10 @@ fn build_map(
                 //TODO: Move enemy spawns to a separate system
                 if rng.gen_bool(1. / 40.) {
                     commands
-                        .spawn_bundle(SpriteSheetBundle {
-                            texture_atlas: texture_atlas_handle.clone(),
-                            transform: Transform {
-                                translation: world_pos.extend(1.),
-                                scale: Vec3::new(0.2, 0.2, 1.),
-                                ..default()
-                            },
-                            ..default()
-                        })
-                        .insert(Stats::new(100, 20, 20, 2., 5))
-                        .insert(Animation {
-                            frames: (0..7).collect(),
-                            current_frame: 0,
-                            timer: Timer::new(Duration::from_millis(250), true),
-                        })
-                        .insert(RigidBody::KinematicPositionBased)
-                        .insert(Collider::cuboid(256. * 0.2, 256. * 0.2))
-                        .insert(CollisionGroups::new(
-                            BodyLayers::ENEMY,
-                            BodyLayers::PLAYER_ATTACK,
+                        .spawn_bundle(EnemyBundle::new(
+                            texture_atlas_handle.clone(),
+                            world_pos.extend(1.0),
                         ))
-                        .insert(ActiveEvents::COLLISION_EVENTS)
-                        .insert(ActiveCollisionTypes::all())
                         .insert(Follow {
                             target: FollowTarget::Transform(player_entity),
                             speed: 0.05,

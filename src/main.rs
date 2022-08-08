@@ -3,6 +3,7 @@ mod attack;
 mod collision;
 mod controller;
 mod direction;
+mod enemy;
 mod follow;
 mod helper;
 mod map;
