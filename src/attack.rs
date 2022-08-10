@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, time::Duration};
+use std::time::Duration;
 
 use bevy::{
     input::Input,
@@ -8,7 +8,7 @@ use bevy::{
     },
     render::camera::Camera,
     sprite::{SpriteSheetBundle, TextureAtlas},
-    time::Timer,
+    time::{Time, Timer},
 };
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, Sensor,
@@ -141,8 +141,14 @@ pub fn attack_system(
     }
 }
 
-pub fn attack_lifetime(mut commands: Commands, attacks: Query<(Entity, &Lifetime), With<Attack>>) {
-    for (entity, lifetime) in attacks.iter() {
+pub fn attack_lifetime(
+    mut commands: Commands,
+    mut attacks: Query<(Entity, &mut Lifetime), With<Attack>>,
+    time: Res<Time>,
+) {
+    for (entity, mut lifetime) in attacks.iter_mut() {
+        lifetime.0.tick(time.delta());
+
         if lifetime.0.finished() {
             commands.entity(entity).despawn_recursive();
         }

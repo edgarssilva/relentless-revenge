@@ -52,11 +52,15 @@ pub fn follow_entity_system(
     for (mut follow, entity) in query_followers.iter_mut() {
         let pos: Vec2 = match follow.target {
             FollowTarget::Position(pos) => pos.xy(),
-            FollowTarget::Transform(e) => transform_query
-                .get_mut(e)
-                .expect("Tried to follow an entity without transform!")
-                .translation
-                .xy(),
+            FollowTarget::Transform(e) => {
+                if let Ok(transform) = transform_query.get_mut(e) {
+                    transform.translation.xy()
+                } else {
+                    //Entity was removed or does not exist
+                    commands.entity(entity).remove::<Follow>();
+                    return;
+                }
+            }
         };
 
         //Workaround for nested queries

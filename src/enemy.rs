@@ -148,10 +148,10 @@ fn follow_player_action(
                                 texture_atlas_handle,
                                 seeker_transform.translation.clone(),
                                 f32::atan2(direction.y, direction.x),
-                                Vec2::new(32., 32.),
-                                5,
+                                Vec2::new(32., 32.) / 2.,
+                                3000,
                                 Damage(10),
-                                Velocity(direction * 50.),
+                                Velocity(direction * 75.),
                             ))
                             .insert(Animation {
                                 //TODO: Add animation to projectile

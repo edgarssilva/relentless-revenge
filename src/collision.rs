@@ -1,9 +1,13 @@
 use bevy::prelude::{
-    App, Commands, DespawnRecursiveExt, Entity, EventReader, EventWriter, Plugin, Query,
+    App, Commands, DespawnRecursiveExt, Entity, EventReader, EventWriter, Plugin, Query, With,
 };
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 
-use crate::{attack::MeleeSensor, stats::Stats, XP};
+use crate::{
+    attack::{Attack, Damage, MeleeSensor},
+    stats::Stats,
+    XP,
+};
 
 pub struct CollisionPlugin;
 
@@ -12,9 +16,10 @@ impl Plugin for CollisionPlugin {
         app.add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
             .add_plugin(RapierDebugRenderPlugin::default())
             .add_event::<HandleCollisionEvent>()
-            .add_system(melee_collisions)
+            .add_system(collision_events)
             .add_system(xp_system)
-            .add_system(player_attack_system);
+            .add_system(player_attack_system)
+            .add_system(enemy_projectile_system);
     }
 }
 
@@ -33,6 +38,7 @@ impl BodyLayers {
 pub enum CollisionType {
     PlayerAttack(Entity, Entity),
     XPOnPlayer(Entity, Entity),
+    EnemyAttack(Entity, Entity),
 }
 
 pub struct HandleCollisionEvent {
@@ -40,7 +46,7 @@ pub struct HandleCollisionEvent {
     pub started: bool,
 }
 
-pub fn melee_collisions(
+pub fn collision_events(
     mut events: EventReader<CollisionEvent>,
     mut handle_writer: EventWriter<HandleCollisionEvent>,
     query: Query<&CollisionGroups>,
@@ -71,6 +77,12 @@ pub fn melee_collisions(
                 }
                 (BodyLayers::PLAYER, BodyLayers::XP_LAYER) => {
                     Some(CollisionType::XPOnPlayer(*e2, *e1))
+                }
+                (BodyLayers::ENEMY_ATTACK, BodyLayers::PLAYER) => {
+                    Some(CollisionType::EnemyAttack(*e1, *e2))
+                }
+                (BodyLayers::PLAYER, BodyLayers::ENEMY_ATTACK) => {
+                    Some(CollisionType::EnemyAttack(*e2, *e1))
                 }
                 _ => None,
             };
@@ -119,6 +131,28 @@ pub fn player_attack_system(
                         sensor.targets.push(e_defender);
                     } else {
                         sensor.targets.retain(|&e| e == e_defender);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+//TODO: Refractor for generic attack system
+pub fn enemy_projectile_system(
+    mut commands: Commands,
+    mut events: EventReader<HandleCollisionEvent>,
+    query: Query<&Damage, With<Attack>>,
+    mut stats_query: Query<&mut Stats>,
+) {
+    for e in events.iter().filter(|e| e.started) {
+        match e.collision_type {
+            CollisionType::EnemyAttack(e_projectile, e_defender) => {
+                if let Ok(damage) = query.get(e_projectile) {
+                    if let Ok(mut stats) = stats_query.get_mut(e_defender) {
+                        stats.health -= damage.0;
+                        commands.entity(e_projectile).despawn_recursive();
                     }
                 }
             }
