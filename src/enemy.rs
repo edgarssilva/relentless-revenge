@@ -138,13 +138,10 @@ fn follow_player_action(
                             TextureAtlas::from_grid(texture_handle, Vec2::splat(100.), 6, 5);
                         let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
-                        let angle_between = Vec2::from_angle(
-                            seeker_transform
-                                .translation
-                                .xy()
-                                .angle_between(player_transform.translation.xy()),
-                        )
-                        .normalize();
+                        let seeker_position = seeker_transform.translation.xy();
+                        let player_position = player_transform.translation.xy();
+
+                        let direction = (player_position - seeker_position).normalize();
 
                         commands
                             .spawn_bundle(ProjectileBundle::new(
@@ -153,7 +150,7 @@ fn follow_player_action(
                                 Vec2::new(32., 32.),
                                 5,
                                 Damage(10),
-                                Velocity(angle_between * 50.),
+                                Velocity(direction * 50.),
                             ))
                             .insert(Animation {
                                 //TODO: Add animation to projectile
