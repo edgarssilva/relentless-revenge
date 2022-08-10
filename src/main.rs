@@ -132,7 +132,7 @@ fn setup(
         .insert(Collider::cuboid(player_size.x / 2., player_size.y / 2.))
         .insert(CollisionGroups::new(
             BodyLayers::PLAYER,
-            BodyLayers::XP_LAYER,
+            BodyLayers::XP_LAYER | BodyLayers::ENEMY_ATTACK,
         ))
         .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(ActiveCollisionTypes::all())

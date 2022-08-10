@@ -151,7 +151,7 @@ fn follow_player_action(
                                 Vec2::new(32., 32.),
                                 5,
                                 Damage(10),
-                                Velocity(direction * 50.),
+                                Velocity(direction * 75.),
                             ))
                             .insert(Animation {
                                 //TODO: Add animation to projectile
