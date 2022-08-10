@@ -1,10 +1,10 @@
-use std::time::Duration;
+use std::{f32::consts::PI, time::Duration};
 
 use bevy::{
     input::Input,
     prelude::{
-        default, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle, KeyCode, Query,
-        Res, Transform, Vec2, Vec3, With, Without,
+        default, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle, KeyCode, Quat,
+        Query, Res, Transform, Vec2, Vec3, With, Without,
     },
     render::camera::Camera,
     sprite::{SpriteSheetBundle, TextureAtlas},
@@ -67,6 +67,7 @@ impl ProjectileBundle {
     pub fn new(
         texture: Handle<TextureAtlas>,
         position: Vec3,
+        rotation: f32,
         size: Vec2,
         duration: u64,
         damage: Damage,
@@ -76,7 +77,12 @@ impl ProjectileBundle {
             attack: Attack,
             spritesheet_bundle: SpriteSheetBundle {
                 texture_atlas: texture,
-                transform: Transform::from_translation(position),
+                transform: Transform {
+                    translation: position,
+                    rotation: Quat::from_rotation_z(rotation),
+                    // scale: Vec3::new(size.x, size.y, 1.0),
+                    ..default()
+                },
                 ..default()
             },
             collider: Collider::cuboid(size.x / 2., size.y / 2.),

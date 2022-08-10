@@ -147,6 +147,7 @@ fn follow_player_action(
                             .spawn_bundle(ProjectileBundle::new(
                                 texture_atlas_handle,
                                 seeker_transform.translation.clone(),
+                                f32::atan2(direction.y, direction.x),
                                 Vec2::new(32., 32.),
                                 5,
                                 Damage(10),
