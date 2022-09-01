@@ -8,7 +8,6 @@ Mechanics notes
     - Combat should be smooth and quick with increasing speed through level
     - Travel down an level using maybe a portal or spining around 
     - Levels should be procedurally generated with open spaces
-    - Transition each level trough a slide up dithering effect
     - There should be a dash effects that maybe locks on targets (prevent unwanted ones)
     - Later on the ability to attack mid dash should be obtained
     ? Figure out wheter to use JKL keys or the mouse (maybe both) 
@@ -27,6 +26,7 @@ Art Notes
     - Main character should have different versions with different lightnigh color and entinsity
     - Idle animation should be a tired slow breathing up-and-down, with head and daggers lowered
     - The screen should flash when the player is low hp 
+    - Transition each level trough a slide up dithering effect
 
 Sound Notes
     - Attack should be swift and faded (should use wind as a base)

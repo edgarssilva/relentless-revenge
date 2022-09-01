@@ -9,6 +9,7 @@ mod map;
 mod movement;
 mod state;
 mod stats;
+mod level;
 
 use bevy::{prelude::*, render::texture::ImageSettings, utils::HashMap};
 use bevy_ecs_tilemap::prelude::*;
