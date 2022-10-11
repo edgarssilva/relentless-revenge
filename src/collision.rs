@@ -27,12 +27,11 @@ impl Plugin for CollisionPlugin {
 pub struct BodyLayers;
 
 impl BodyLayers {
-    pub const PLAYER: u32 = 1 << 0; // 0b00000001
-    pub const ENEMY: u32 = 1 << 1; // 0b00000010
-    pub const PLAYER_ATTACK: u32 = 1 << 2; // 0b00000100
-    pub const ENEMY_ATTACK: u32 = 1 << 3; // 0b00001000
-    pub const XP_LAYER: u32 = 1 << 4; // 0b00010000
-                                      // pub const ALL: u32 = u32::MAX; // 0b11111111
+    pub const PLAYER: Group = Group::GROUP_1;
+    pub const ENEMY: Group = Group::GROUP_2;
+    pub const PLAYER_ATTACK: Group = Group::GROUP_3;
+    pub const ENEMY_ATTACK: Group = Group::GROUP_4;
+    pub const XP_LAYER: Group = Group::GROUP_5;
 }
 
 pub enum CollisionType {

@@ -10,8 +10,7 @@ use bevy::prelude::{
 use bevy::sprite::TextureAtlas;
 
 use bevy_ecs_tilemap::prelude::{
-    IsoType, TilemapGridSize, TilemapId, TilemapMeshType, TilemapSize, TilemapTexture,
-    TilemapTileSize,
+    TilemapGridSize, TilemapId, TilemapSize, TilemapTexture, TilemapTileSize, TilemapType,
 };
 use bevy_ecs_tilemap::tiles::{TileBundle, TilePos, TileStorage, TileTexture};
 use bevy_ecs_tilemap::TilemapBundle;
@@ -30,6 +29,7 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
     let tilemap_id = TilemapId(tilemap_entity);
 
     let tile_size = TilemapTileSize { x: 32.0, y: 16.0 };
+    let grid_size = TilemapGridSize { x: 32.0, y: 16.0 };
 
     for x in 0..tilemap_size.x {
         for y in 0..tilemap_size.y {
@@ -43,19 +43,19 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
                     ..default()
                 })
                 .id();
-            tile_storage.set(&tile_pos, Some(tile_entity));
+            tile_storage.set(&tile_pos, tile_entity);
         }
     }
 
     commands
         .entity(tilemap_entity)
         .insert_bundle(TilemapBundle {
-            grid_size: TilemapGridSize { x: 32.0, y: 16.0 },
+            grid_size: grid_size,
             size: tilemap_size,
             storage: tile_storage,
-            texture: TilemapTexture(texture_handle),
+            texture: TilemapTexture::Single(texture_handle),
             tile_size,
-            mesh_type: TilemapMeshType::Isometric(IsoType::Diamond),
+            map_type: TilemapType::isometric_diamond(true),
             ..Default::default()
         });
 }
@@ -115,17 +115,20 @@ fn build_map(
                     continue;
                 }
 
+                let tile_pos = TilePos { x, y };
+
                 //TODO: Build room using neighbors
-                if let Some(tile_entity) = tile_storage.get(&TilePos { x, y }) {
+                if let Some(tile_entity) = tile_storage.get(&tile_pos) {
                     if let Ok(mut tile_texture) = tile_query.get_mut(tile_entity) {
                         tile_texture.0 = 2;
                     }
                 }
 
-                //TODO: Build a function to move map cords to world cords
-                let world_x = (x as f32 - y as f32) * 32. / 2.0;
-                let world_y = (x as f32 + y as f32) * 16. / 2.0;
-                let world_pos = Vec2::new(world_x, -world_y);
+                //TODO: Get the grid-size and map type from the current map
+                let world_pos = tile_pos.center_in_world(
+                    &TilemapGridSize { x: 32., y: 16. },
+                    &TilemapType::isometric_diamond(true),
+                );
 
                 //TODO: Move enemy spawns to a separate system
                 if rng.gen_bool(1. / 40.) {
