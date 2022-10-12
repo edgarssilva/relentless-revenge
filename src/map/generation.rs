@@ -1,13 +1,11 @@
 use crate::controller::PlayerControlled;
-use crate::enemy::EnemyBundle;
+use crate::level::{GenerateMapEvent, SpawnEnemiesEvent};
 use crate::map::room::Room;
-use bevy::input::Input;
 use bevy::math::Vec2;
 use bevy::prelude::{
-    default, AssetServer, Assets, Commands, KeyCode, Mut, Query, Res, ResMut, Transform, UVec2,
+    default, AssetServer, Commands, EventReader, EventWriter, Mut, Query, Res, Transform, UVec2,
     With,
 };
-use bevy::sprite::TextureAtlas;
 
 use bevy_ecs_tilemap::prelude::{
     TilemapGridSize, TilemapId, TilemapSize, TilemapTexture, TilemapTileSize, TilemapType,
@@ -61,15 +59,13 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 pub fn remake_map(
-    mut commands: Commands,
-    keys: Res<Input<KeyCode>>,
+    mut event: EventReader<GenerateMapEvent>,
     mut player_query: Query<&mut Transform, With<PlayerControlled>>,
-    texture_atlases: ResMut<Assets<TextureAtlas>>,
-    asset_server: Res<AssetServer>,
     mut tile_query: Query<&mut TileTexture>,
     tile_storage_query: Query<&TileStorage>,
+    mut spawn_enemies_writer: EventWriter<SpawnEnemiesEvent>,
 ) {
-    if keys.just_released(KeyCode::LControl) {
+    for _ in event.iter() {
         let transform = player_query.single_mut();
 
         //Change all tiles to clear texture
@@ -77,36 +73,32 @@ pub fn remake_map(
             tile.0 = 3;
         }
 
+        let mut enemies = SpawnEnemiesEvent {
+            positions: Vec::new(),
+        };
+
         if let Ok(tile_storage) = tile_storage_query.get_single() {
-            build_map(
-                &mut commands,
-                transform,
-                texture_atlases,
-                asset_server,
-                tile_query,
-                tile_storage,
-            );
+            build_map(transform, tile_query, tile_storage, &mut enemies);
         }
+
+        spawn_enemies_writer.send(enemies);
+
+        return;
     }
 }
 
 fn build_map(
-    commands: &mut Commands,
     mut player_transform: Mut<Transform>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    asset_server: Res<AssetServer>,
     mut tile_query: Query<&mut TileTexture>,
     tile_storage: &TileStorage,
+    enemies: &mut SpawnEnemiesEvent,
 ) {
     let mut rng = rand::thread_rng();
-    //Load the textures
-    let texture_handle = asset_server.load("monster_flesh_eye_sheet.png");
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(256.), 3, 3);
-    let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     let mut first_room = true;
 
     let (rooms, bridges) = generate_level();
+
     for room in rooms {
         for x in room.pos.x - room.radius..room.pos.x + room.radius {
             for y in room.pos.y - room.radius..room.pos.y + room.radius + 1 {
@@ -132,10 +124,7 @@ fn build_map(
 
                 //TODO: Move enemy spawns to a separate system
                 if rng.gen_bool(1. / 40.) {
-                    commands.spawn_bundle(EnemyBundle::new(
-                        texture_atlas_handle.clone(),
-                        world_pos.extend(1.0),
-                    ));
+                    enemies.positions.push(world_pos);
                 }
 
                 if first_room && room.pos.to_array() == [x, y] {

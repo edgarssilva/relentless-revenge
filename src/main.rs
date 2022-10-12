@@ -5,11 +5,11 @@ mod controller;
 mod direction;
 mod enemy;
 mod helper;
+mod level;
 mod map;
 mod movement;
 mod state;
 mod stats;
-mod level;
 
 use bevy::{prelude::*, render::texture::ImageSettings, utils::HashMap};
 use bevy_ecs_tilemap::prelude::*;
@@ -23,6 +23,7 @@ use controller::*;
 use direction::Direction;
 use enemy::EnemyBehaviourPlugin;
 use helper::*;
+use level::LevelPlugin;
 use map::generation::*;
 use movement::*;
 use state::State;
@@ -48,6 +49,7 @@ fn main() {
         .add_plugin(CollisionPlugin)
         .add_plugin(AnimationPlugin)
         .add_plugin(EnemyBehaviourPlugin)
+        .add_plugin(LevelPlugin)
         .add_system(set_texture_filters_to_nearest)
         .add_system(helper_camera_controller)
         // .add_system(sprite_animation)
@@ -61,12 +63,12 @@ fn main() {
                 .with_run_criteria(run_on_camera_move)
                 .with_system(parallax_system),
         )
+        .add_startup_system(setup_map)
+        .add_startup_system(setup)
         .add_system(movement_system)
         .add_system(shake_system)
         .add_system(remake_map)
         .add_system(attack_lifetime)
-        .add_startup_system(setup_map)
-        .add_startup_system(setup)
         .run();
 }
 
@@ -171,4 +173,6 @@ fn setup(
         5.,
         true,
     ));
+
+
 }

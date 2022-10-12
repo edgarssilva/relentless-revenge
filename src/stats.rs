@@ -1,4 +1,8 @@
-use bevy::prelude::{Commands, Component, DespawnRecursiveExt, Entity, Query, Res, Time};
+use bevy::prelude::{
+    Commands, Component, DespawnRecursiveExt, Entity, EventWriter, Query, Res, Time,
+};
+
+use crate::{enemy::Enemy, level::EnemyKilledEvent};
 
 #[derive(Component)]
 pub struct Stats {
@@ -27,10 +31,18 @@ impl Stats {
     }
 }
 
-pub fn death_system(mut commands: Commands, query: Query<(Entity, &Stats)>) {
-    for (entity, stats) in query.iter() {
+pub fn death_system(
+    mut commands: Commands,
+    query: Query<(Entity, &Stats, Option<&Enemy>)>,
+    mut enemy_kill_writer: EventWriter<EnemyKilledEvent>,
+) {
+    for (entity, stats, enemy) in query.iter() {
         if stats.health <= 0 {
             commands.entity(entity).despawn_recursive();
+
+            if enemy.is_some() {
+                enemy_kill_writer.send(EnemyKilledEvent(entity));
+            }
         }
     }
 }
