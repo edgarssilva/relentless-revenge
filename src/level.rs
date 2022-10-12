@@ -41,7 +41,6 @@ impl Plugin for LevelPlugin {
 
 fn keymap_generate(keys: Res<Input<KeyCode>>, mut map_writer: EventWriter<GenerateLevelEvent>) {
     if keys.just_pressed(KeyCode::LControl) {
-        println!("Pressed");
         map_writer.send(GenerateLevelEvent);
     }
 }
@@ -66,8 +65,6 @@ fn spawn_enemies(
     mut level: ResMut<LevelResource>,
 ) {
     for e in event.iter() {
-        println!("Spawn Enemies!");
-
         //Load the textures
         let texture_handle = asset_server.load("monster_flesh_eye_sheet.png");
         let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(256.), 3, 3);
