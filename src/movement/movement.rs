@@ -1,9 +1,21 @@
-use bevy::math::{Vec2, Vec3, Vec3Swizzles};
-use bevy::prelude::{Commands, Component, Entity, Query, Res, Time, Transform};
+use bevy::math::{Vec2, Vec3Swizzles};
+use bevy::prelude::{App, Commands, Component, Entity, Plugin, Query, Res, Time, Transform};
+
+use super::easing::ease_to_position;
+
+pub struct MovementPlugin;
+
+impl Plugin for MovementPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system(follow_entity_system)
+            .add_system(movement_system)
+            .add_system(ease_to_position);
+    }
+}
 
 #[derive(Component)]
 pub struct Follow {
-    pub target: FollowTarget,
+    pub target: Entity,
     pub speed: f32,
     pub continous: bool,
     pub treshhold: f32,
@@ -11,35 +23,19 @@ pub struct Follow {
 }
 
 impl Follow {
-    pub fn new(target: FollowTarget, speed: f32, continous: bool) -> Self {
+    pub fn new(target: Entity, speed: f32, continous: bool, treshhold: f32) -> Self {
         Self {
             target,
             speed,
             continous,
-            ..Default::default()
+            treshhold,
+            on_target: false,
         }
     }
 
     /* pub fn on_target(self: &Self) -> bool {
         self.on_target
     } */
-}
-
-impl Default for Follow {
-    fn default() -> Follow {
-        Follow {
-            target: FollowTarget::Position(Vec3::default()),
-            speed: 1.,
-            continous: true,
-            treshhold: 0.5,
-            on_target: false,
-        }
-    }
-}
-
-pub enum FollowTarget {
-    Transform(Entity),
-    Position(Vec3),
 }
 
 //System for an entity to follow another
@@ -50,20 +46,14 @@ pub fn follow_entity_system(
     time: Res<Time>,
 ) {
     for (mut follow, entity) in query_followers.iter_mut() {
-        let pos: Vec2 = match follow.target {
-            FollowTarget::Position(pos) => pos.xy(),
-            FollowTarget::Transform(e) => {
-                if let Ok(transform) = transform_query.get_mut(e) {
-                    transform.translation.xy()
-                } else {
-                    //Entity was removed or does not exist
-                    commands.entity(entity).remove::<Follow>();
-                    return;
-                }
-            }
+        let pos: Vec2 = if let Ok(transform) = transform_query.get_mut(follow.target) {
+            transform.translation.xy()
+        } else {
+            //Entity was removed or does not exist
+            commands.entity(entity).remove::<Follow>();
+            continue;
         };
 
-        //Workaround for nested queries
         if let Ok(mut transform) = transform_query.get_mut(entity) {
             //TODO: Check distance threshold (This was added because of Changed<>)
             if transform.translation.xy().distance(pos) > follow.treshhold {

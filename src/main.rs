@@ -25,7 +25,7 @@ use enemy::EnemyBehaviourPlugin;
 use helper::*;
 use level::LevelPlugin;
 use map::generation::*;
-use movement::*;
+use movement::movement::{Follow, MovementPlugin};
 use state::State;
 use stats::*;
 
@@ -50,11 +50,11 @@ fn main() {
         .add_plugin(AnimationPlugin)
         .add_plugin(EnemyBehaviourPlugin)
         .add_plugin(LevelPlugin)
+        .add_plugin(MovementPlugin)
         .add_system(set_texture_filters_to_nearest)
         .add_system(helper_camera_controller)
         // .add_system(sprite_animation)
         .add_system(player_controller)
-        .add_system(follow_entity_system)
         .add_system(attack_system)
         .add_system(death_system)
         .add_system(attack_cooldown_system)
@@ -65,7 +65,6 @@ fn main() {
         )
         .add_startup_system(setup_map)
         .add_startup_system(setup)
-        .add_system(movement_system)
         .add_system(shake_system)
         .add_system(remake_map)
         .add_system(attack_lifetime)
@@ -168,11 +167,7 @@ fn setup(
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = Camera2dBundle::default();
     camera_bundle.projection.scale = 0.15;
-    commands.spawn_bundle(camera_bundle).insert(Follow::new(
-        FollowTarget::Transform(player_entity),
-        5.,
-        true,
-    ));
-
-
+    commands
+        .spawn_bundle(camera_bundle)
+        .insert(Follow::new(player_entity, 3., true, 5.));
 }

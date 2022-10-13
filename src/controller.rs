@@ -1,12 +1,12 @@
 use crate::{
     direction::Direction,
-    movement::{Follow, FollowTarget},
+    movement::easing::{EaseFunction, EaseTo},
     state::State,
     stats::Stats,
     KeyMaps,
 };
 use bevy::{
-    math::Vec2,
+    math::{Vec2, Vec3Swizzles},
     prelude::{
         Commands, Component, Entity, Input, KeyCode, Query, Res, Time, Transform, With, Without,
     },
@@ -26,7 +26,7 @@ pub fn player_controller(
             &mut State,
             Entity,
         ),
-        (With<PlayerControlled>, Without<Follow>),
+        (With<PlayerControlled>, Without<EaseTo>),
     >,
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
@@ -65,10 +65,11 @@ pub fn player_controller(
             state.set(State::DASHING);
 
             //TODO: Add dash stats
-            let new_pos = transform.translation + (dash_dir * 50.).extend(0.);
+            let new_pos = transform.translation.xy() + (dash_dir * 50.);
             commands
                 .entity(entity)
-                .insert(Follow::new(FollowTarget::Position(new_pos), 5., false));
+                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutExpo, 1.));
+
             return;
         }
 

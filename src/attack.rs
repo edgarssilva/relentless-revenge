@@ -19,7 +19,7 @@ use crate::{
     controller::PlayerControlled,
     direction::Direction,
     helper::{KeyMaps, Shake},
-    movement::Velocity,
+    movement::movement::Velocity,
     state::State,
     stats::Stats,
 };

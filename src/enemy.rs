@@ -16,7 +16,7 @@ use crate::{
     attack::{Damage, ProjectileBundle},
     collision::BodyLayers,
     controller::PlayerControlled,
-    movement::{Follow, FollowTarget, Velocity},
+    movement::movement::{Follow, Velocity},
     stats::Stats,
 };
 
@@ -126,11 +126,9 @@ fn follow_player_action(
             if let Ok((seeker_transform, follow)) = seekers.get(*actor) {
                 match *state {
                     ActionState::Requested => {
-                        commands.entity(*actor).insert(Follow::new(
-                            FollowTarget::Transform(player),
-                            0.10,
-                            true,
-                        ));
+                        commands
+                            .entity(*actor)
+                            .insert(Follow::new(player, 0.10, true, 0.5));
                         //Temporary projectile spawning
                         //Load the textures
                         let texture_handle = asset_server.load("arrow.png");
