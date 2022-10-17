@@ -15,11 +15,17 @@ use bevy::{
 #[derive(Component)]
 pub struct PlayerControlled;
 
+#[derive(Component)]
+pub struct Controlled {
+    pub move_to: Option<Vec2>,
+}
+
 //Player Movement
 pub fn player_controller(
     mut commands: Commands,
     mut query: Query<
         (
+            &mut Controlled,
             &mut Transform,
             Option<&Stats>,
             &mut Direction,
@@ -32,7 +38,7 @@ pub fn player_controller(
     time: Res<Time>,
     mapping: Res<KeyMaps>,
 ) {
-    for (mut transform, stats, mut direction, mut state, entity) in query.iter_mut() {
+    for (mut controlled, transform, stats, mut direction, mut state, entity) in query.iter_mut() {
         let mut dir = Vec2::ZERO;
 
         if keys.pressed(mapping.walk_up) {
@@ -69,7 +75,7 @@ pub fn player_controller(
             commands
                 .entity(entity)
                 .insert(EaseTo::new(new_pos, EaseFunction::EaseOutExpo, 1.));
-
+            controlled.move_to = None;
             return;
         }
 
@@ -81,14 +87,13 @@ pub fn player_controller(
 
         let dir = dir.normalize_or_zero() * speed as f32 * time.delta_seconds();
 
-        transform.translation.x += dir.x;
-        transform.translation.y += dir.y;
-
         if dir.x == 0. && dir.y == 0. {
             if state.equals(State::WALKING) {
                 state.set(State::IDLE);
             }
+            controlled.move_to = None;
         } else {
+            controlled.move_to = Some(transform.translation.xy() + dir);
             state.set(State::WALKING);
         }
     }

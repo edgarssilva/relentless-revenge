@@ -24,7 +24,7 @@ use direction::Direction;
 use enemy::EnemyBehaviourPlugin;
 use helper::*;
 use level::LevelPlugin;
-use map::generation::*;
+use map::{generation::*, walkable::restrict_movement};
 use movement::movement::{Follow, MovementPlugin};
 use state::State;
 use stats::*;
@@ -68,6 +68,7 @@ fn main() {
         .add_system(shake_system)
         .add_system(remake_map)
         .add_system(attack_lifetime)
+        .add_system(restrict_movement)
         .run();
 }
 
@@ -127,6 +128,7 @@ fn setup(
             },
             ..default()
         })
+        .insert(Controlled { move_to: None })
         .insert(PlayerControlled)
         .insert(Direction::SOUTH)
         .insert(AnimationState::new(player_animations, 200, true))

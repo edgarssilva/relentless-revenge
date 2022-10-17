@@ -17,6 +17,7 @@ use rand;
 use rand::prelude::*;
 
 use super::bridge::Bridge;
+use super::walkable::WalkableTile;
 
 pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
     let texture_handle = asset_server.load("tileset.png");
@@ -64,6 +65,7 @@ pub fn remake_map(
     mut tile_query: Query<&mut TileTexture>,
     tile_storage_query: Query<&TileStorage>,
     mut spawn_enemies_writer: EventWriter<SpawnEnemiesEvent>,
+    mut commands: Commands,
 ) {
     for _ in event.iter() {
         let transform = player_query.single_mut();
@@ -78,7 +80,13 @@ pub fn remake_map(
         };
 
         if let Ok(tile_storage) = tile_storage_query.get_single() {
-            build_map(transform, tile_query, tile_storage, &mut enemies);
+            build_map(
+                transform,
+                tile_query,
+                tile_storage,
+                &mut enemies,
+                &mut commands,
+            );
         }
 
         spawn_enemies_writer.send(enemies);
@@ -92,6 +100,7 @@ fn build_map(
     mut tile_query: Query<&mut TileTexture>,
     tile_storage: &TileStorage,
     enemies: &mut SpawnEnemiesEvent,
+    commands: &mut Commands,
 ) {
     let mut rng = rand::thread_rng();
 
@@ -102,25 +111,26 @@ fn build_map(
     for room in rooms {
         for x in room.pos.x - room.radius..room.pos.x + room.radius {
             for y in room.pos.y - room.radius..room.pos.y + room.radius + 1 {
-                //Cut corners
-                if UVec2::new(x, y).as_vec2().distance(room.pos.as_vec2()) > room.radius as f32 {
-                    continue;
-                }
-
                 let tile_pos = TilePos { x, y };
-
-                //TODO: Build room using neighbors
-                if let Some(tile_entity) = tile_storage.get(&tile_pos) {
-                    if let Ok(mut tile_texture) = tile_query.get_mut(tile_entity) {
-                        tile_texture.0 = 2;
-                    }
-                }
 
                 //TODO: Get the grid-size and map type from the current map
                 let world_pos = tile_pos.center_in_world(
                     &TilemapGridSize { x: 32., y: 16. },
                     &TilemapType::isometric_diamond(true),
                 );
+
+                //Cut corners
+                if UVec2::new(x, y).as_vec2().distance(room.pos.as_vec2()) > room.radius as f32 {
+                    continue;
+                }
+
+                //TODO: Build room using neighbors
+                if let Some(tile_entity) = tile_storage.get(&tile_pos) {
+                    commands.entity(tile_entity).insert(WalkableTile);
+                    if let Ok(mut tile_texture) = tile_query.get_mut(tile_entity) {
+                        tile_texture.0 = 2;
+                    }
+                }
 
                 //TODO: Move enemy spawns to a separate system
                 if rng.gen_bool(1. / 40.) {
@@ -142,6 +152,7 @@ fn build_map(
             let y = pos.y;
 
             if let Some(tile_entity) = tile_storage.get(&TilePos { x, y }) {
+                commands.entity(tile_entity).insert(WalkableTile);
                 if let Ok(mut tile_texture) = tile_query.get_mut(tile_entity) {
                     tile_texture.0 = 2;
                 }
