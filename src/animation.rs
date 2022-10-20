@@ -1,4 +1,4 @@
-use crate::{direction::Direction, state::State};
+use crate::{movement::direction::Direction, state::State};
 use bevy::{
     prelude::{
         App, Commands, Component, Entity, Plugin, Query, Res, TextureAtlasSprite, Time, Timer,

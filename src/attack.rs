@@ -16,10 +16,10 @@ use bevy_rapier2d::prelude::{
 
 use crate::{
     collision::BodyLayers,
-    controller::PlayerControlled,
-    direction::Direction,
     helper::{KeyMaps, Shake},
+    movement::direction::Direction,
     movement::movement::Velocity,
+    player::Player,
     state::State,
     stats::Stats,
 };
@@ -99,8 +99,8 @@ impl ProjectileBundle {
 }
 
 pub fn attack_system(
-    mut player_query: Query<(&Stats, &Direction, &mut State), With<PlayerControlled>>,
-    mut stats_query: Query<&mut Stats, Without<PlayerControlled>>,
+    mut player_query: Query<(&Stats, &Direction, &mut State), With<Player>>,
+    mut stats_query: Query<&mut Stats, Without<Player>>,
     sensors_query: Query<&MeleeSensor>,
     keys: Res<Input<KeyCode>>,
     keymaps: Res<KeyMaps>,

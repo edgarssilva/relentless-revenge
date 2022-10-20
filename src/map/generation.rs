@@ -1,6 +1,6 @@
-use crate::controller::PlayerControlled;
 use crate::level::{GenerateMapEvent, SpawnEnemiesEvent};
 use crate::map::room::Room;
+use crate::player::Player;
 use bevy::math::Vec2;
 use bevy::prelude::{
     default, AssetServer, Commands, EventReader, EventWriter, Mut, Query, Res, Transform, UVec2,
@@ -61,7 +61,7 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 pub fn remake_map(
     mut event: EventReader<GenerateMapEvent>,
-    mut player_query: Query<&mut Transform, With<PlayerControlled>>,
+    mut player_query: Query<&mut Transform, With<Player>>,
     mut tile_query: Query<&mut TileTexture>,
     tile_storage_query: Query<&TileStorage>,
     mut spawn_enemies_writer: EventWriter<SpawnEnemiesEvent>,

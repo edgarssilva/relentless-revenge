@@ -11,4 +11,5 @@ bevy_ecs_tilemap = "0.8"
 bevy_rapier2d = "0.17.0"
 big-brain = "0.14.0"
 getrandom = {version = "0.2.7", features = ["js"]}# Works with rand to support browser runder numbers
+leafwing-input-manager = "0.6"
 rand = "0.8.5"

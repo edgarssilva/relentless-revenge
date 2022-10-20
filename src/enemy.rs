@@ -15,8 +15,8 @@ use crate::{
     animation::Animation,
     attack::{Damage, ProjectileBundle},
     collision::BodyLayers,
-    controller::PlayerControlled,
     movement::movement::{Follow, Velocity},
+    player::Player,
     stats::Stats,
 };
 
@@ -87,7 +87,7 @@ pub struct FindingPLayer;
 
 fn seeking_scorer(
     seekers: Query<&Transform, With<Enemy>>,
-    player: Query<&Transform, With<PlayerControlled>>,
+    player: Query<&Transform, With<Player>>,
     mut query: Query<(&Actor, &mut Score), With<FindingPLayer>>,
 ) {
     if let Ok(player_transform) = player.get_single() {
@@ -115,7 +115,7 @@ pub struct SeekPlayer;
 fn follow_player_action(
     mut commands: Commands,
     seekers: Query<(&Transform, Option<&Follow>), With<Enemy>>,
-    player: Query<(Entity, &Transform), With<PlayerControlled>>,
+    player: Query<(Entity, &Transform), With<Player>>,
     mut query: Query<(&Actor, &mut ActionState), With<SeekPlayer>>,
     //Temporary for projectiles
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
