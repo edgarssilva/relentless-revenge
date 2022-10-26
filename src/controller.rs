@@ -101,7 +101,7 @@ pub fn dash_ability(
             let new_pos = transform.translation.xy() + (dir.normalize() * 50.);
             commands
                 .entity(entity)
-                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutExpo, 1.));
+                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.75));
         }
     }
 }
@@ -118,10 +118,19 @@ pub fn finish_dash(
 }
 
 pub fn attack_ability(
-    mut query: Query<(&mut State, &mut Stats, &ActionState<PlayerActions>, Entity)>,
+    mut query: Query<(
+        &mut State,
+        &mut Stats,
+        &ActionState<PlayerActions>,
+        &Transform,
+        &Direction,
+        Entity,
+    )>,
     mut commands: Commands,
 ) {
-    if let Ok((mut state, mut stats, action_state, entity)) = query.get_single_mut() {
+    if let Ok((mut state, mut stats, action_state, transform, direction, entity)) =
+        query.get_single_mut()
+    {
         if state.equals(State::DASHING) {
             return;
         }
@@ -129,11 +138,18 @@ pub fn attack_ability(
         if action_state.just_pressed(PlayerActions::Attack) && stats.can_attack() {
             state.set(State::ATTACKING);
             stats.reset_attack_timer();
-            commands.entity(entity).insert(AttackPhase {
-                charge: Timer::from_seconds(0.25, false),
-                attack: Timer::from_seconds(0.05, false),
-                recover: Timer::from_seconds(0.25, false),
-            });
+
+            //TODO: Add attack dash stats
+            let new_pos = transform.translation.xy() + (direction.vec().normalize() * 5.);
+
+            commands
+                .entity(entity)
+                .insert(AttackPhase {
+                    charge: Timer::from_seconds(0.25, false),
+                    attack: Timer::from_seconds(0.15, false),
+                    recover: Timer::from_seconds(0.25, false),
+                })
+                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutExpo, 0.55));
         }
     }
 }
