@@ -1,21 +1,19 @@
-use std::time::Duration;
-
 use bevy::{
     prelude::{
-        default, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle, Quat, Query,
-        Res, Transform, Vec2, Vec3, With, Without,
+        default, BuildChildren, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle,
+        Quat, Query, Res, Transform, Vec2, Vec3, With,
     },
-    render::camera::Camera,
     sprite::{SpriteSheetBundle, TextureAtlas},
     time::{Time, Timer},
+    transform::TransformBundle,
 };
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, Sensor,
 };
 
 use crate::{
-    collision::BodyLayers, helper::Shake, movement::direction::Direction,
-    movement::movement::Velocity, player::Player, state::State, stats::Stats,
+    collision::BodyLayers, movement::direction::Direction, movement::movement::Velocity,
+    player::Player, state::State, stats::Stats,
 };
 
 #[derive(Component)]
@@ -28,19 +26,7 @@ pub struct Lifetime(pub Timer);
 pub struct Damage(pub u32);
 
 #[derive(Component)]
-pub struct MeleeSensor {
-    pub dir: Direction,
-    pub targets: Vec<Entity>,
-}
-
-impl MeleeSensor {
-    pub fn from(dir: Direction) -> Self {
-        Self {
-            dir,
-            targets: Vec::new(),
-        }
-    }
-}
+pub struct Damageable;
 
 #[derive(Component)]
 pub struct AttackPhase {
@@ -49,18 +35,75 @@ pub struct AttackPhase {
     pub recover: Timer,
 }
 
+/**
+ * Generic attack bundle, missing an transform that can be added alone or with an sprite
+ */
 #[derive(Bundle)]
-pub struct ProjectileBundle {
+struct AttackBundle {
     attack: Attack,
-    #[bundle]
-    spritesheet_bundle: SpriteSheetBundle,
     collider: Collider,
     sensor: Sensor,
     events: ActiveEvents,
     collision_types: ActiveCollisionTypes,
     collision_groups: CollisionGroups,
-    duration: Lifetime,
+    lifetime: Lifetime,
     damage: Damage,
+}
+
+impl AttackBundle {
+    pub fn new(size: Vec2, lifetime: Lifetime, damage: Damage, is_player_attack: bool) -> Self {
+        let collision_groups = if is_player_attack {
+            CollisionGroups::new(BodyLayers::PLAYER_ATTACK, BodyLayers::ENEMY)
+        } else {
+            CollisionGroups::new(BodyLayers::ENEMY_ATTACK, BodyLayers::PLAYER)
+        };
+
+        Self {
+            attack: Attack,
+            collider: Collider::cuboid(size.x / 2., size.y / 2.),
+            sensor: Sensor,
+            events: ActiveEvents::COLLISION_EVENTS,
+            collision_types: ActiveCollisionTypes::default()
+                | ActiveCollisionTypes::KINEMATIC_STATIC,
+            collision_groups,
+            lifetime,
+            damage,
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct MeleeAttackBundle {
+    #[bundle]
+    attack: AttackBundle,
+    #[bundle]
+    transform_bundle: TransformBundle,
+}
+
+impl MeleeAttackBundle {
+    pub fn new(
+        position: Vec3,
+        size: Vec2,
+        lifetime: Lifetime,
+        damage: Damage,
+        is_player_attack: bool,
+    ) -> Self {
+        Self {
+            attack: AttackBundle::new(size, lifetime, damage, is_player_attack),
+            transform_bundle: TransformBundle {
+                local: Transform::from_translation(position),
+                ..default()
+            },
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct ProjectileBundle {
+    #[bundle]
+    attack: AttackBundle,
+    #[bundle]
+    spritesheet_bundle: SpriteSheetBundle,
     velocity: Velocity,
 }
 
@@ -70,12 +113,18 @@ impl ProjectileBundle {
         position: Vec3,
         rotation: f32,
         size: Vec2,
-        duration: u64,
+        duration: f32,
         damage: Damage,
+        is_player_attack: bool,
         velocity: Velocity,
     ) -> Self {
         Self {
-            attack: Attack,
+            attack: AttackBundle::new(
+                size,
+                Lifetime(Timer::from_seconds(duration, false)),
+                damage,
+                is_player_attack,
+            ),
             spritesheet_bundle: SpriteSheetBundle {
                 texture_atlas: texture,
                 transform: Transform {
@@ -86,14 +135,6 @@ impl ProjectileBundle {
                 },
                 ..default()
             },
-            collider: Collider::cuboid(size.x / 2., size.y / 2.),
-            sensor: Sensor,
-            events: ActiveEvents::COLLISION_EVENTS,
-            collision_types: ActiveCollisionTypes::default()
-                | ActiveCollisionTypes::KINEMATIC_STATIC,
-            collision_groups: CollisionGroups::new(BodyLayers::ENEMY_ATTACK, BodyLayers::PLAYER),
-            duration: Lifetime(Timer::new(Duration::from_millis(duration), false)),
-            damage,
             velocity,
         }
     }
@@ -101,41 +142,29 @@ impl ProjectileBundle {
 
 pub fn attack_system(
     mut query: Query<(&mut State, &mut AttackPhase, &Direction, &Stats, Entity), With<Player>>,
-    mut stats_query: Query<&mut Stats, Without<Player>>,
-    camera_query: Query<Entity, With<Camera>>,
-    sensors_query: Query<&MeleeSensor>,
     time: Res<Time>,
     mut commands: Commands,
 ) {
     for (mut state, mut attack_phase, direction, stats, entity) in query.iter_mut() {
         if !attack_phase.charge.finished() {
             attack_phase.charge.tick(time.delta());
-            return;
-        }
 
-        if attack_phase.charge.just_finished() {
-            //TODO: Switch this into a collision event damagable aproach
-            for sensor in sensors_query
-                .iter()
-                .filter(|sensor| sensor.dir == *direction)
-            {
-                for &attacked_entity in sensor.targets.iter() {
-                    if let Ok(mut attacked_stats) = stats_query.get_mut(attacked_entity) {
-                        if attacked_stats.health < stats.damage {
-                            attacked_stats.health = 0;
-                        } else {
-                            attacked_stats.health -= stats.damage;
-                        }
+            if attack_phase.charge.just_finished() {
+                //TODO: Add player meta so we can get the stats, player size and attack size
+                commands.entity(entity).with_children(|children| {
+                    let player_size = Vec2::new(64., 64.) / 3.75;
+                    let offset = player_size.x * 0.75;
 
-                        //Switch this into a shake event
-                        if let Ok(camera) = camera_query.get_single() {
-                            commands.entity(camera).insert(Shake {
-                                duration: 0.25,
-                                strength: 7.5,
-                            });
-                        }
-                    }
-                }
+                    children.spawn_bundle(MeleeAttackBundle::new(
+                        (direction.vec() * offset).extend(10.),
+                        player_size,
+                        Lifetime(attack_phase.attack.clone()),
+                        Damage(stats.damage),
+                        true,
+                    ));
+                });
+            } else {
+                return;
             }
         }
 
@@ -152,6 +181,7 @@ pub fn attack_system(
     }
 }
 
+//TODO: Change attack lifetime to anything lifetime
 pub fn attack_lifetime(
     mut commands: Commands,
     mut attacks: Query<(Entity, &mut Lifetime), With<Attack>>,

@@ -18,6 +18,7 @@ impl Direction {
         }
     }
 
+    #[allow(dead_code)]
     pub fn values() -> [Self; 4] {
         [Self::NORTH, Self::SOUTH, Self::WEST, Self::EAST]
     }

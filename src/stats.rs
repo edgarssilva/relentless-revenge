@@ -26,6 +26,10 @@ impl Stats {
         }
     }
 
+    pub fn damage(&mut self, damage: u32) {
+        self.health = self.health.saturating_sub(damage);
+    }
+
     pub fn can_attack(&self) -> bool {
         self.attack_timer >= self.attack_speed
     }

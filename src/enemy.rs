@@ -13,7 +13,7 @@ use big_brain::{
 
 use crate::{
     animation::Animation,
-    attack::{Damage, ProjectileBundle},
+    attack::{Damage, Damageable, ProjectileBundle},
     collision::BodyLayers,
     movement::movement::{Follow, Velocity},
     player::Player,
@@ -40,6 +40,7 @@ pub struct EnemyBundle {
     #[bundle]
     pub sprisheet: SpriteSheetBundle,
     pub stats: Stats,
+    pub damageable: Damageable,
     pub animation: Animation,
     pub rigid_body: RigidBody,
     pub collider: Collider,
@@ -64,6 +65,7 @@ impl EnemyBundle {
                 ..default()
             },
             stats: Stats::new(100, 20, 20, 2., 5),
+            damageable: Damageable,
             animation: Animation {
                 frames: (0..7).collect(),
                 current_frame: 0,
@@ -147,8 +149,9 @@ fn follow_player_action(
                                 seeker_transform.translation.clone(),
                                 f32::atan2(direction.y, direction.x),
                                 Vec2::new(32., 32.) / 2.,
-                                3000,
+                                3.,
                                 Damage(10),
+                                false,
                                 Velocity(direction * 75.),
                             ))
                             .insert(Animation {

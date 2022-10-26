@@ -13,19 +13,16 @@ mod stats;
 
 use bevy::{prelude::*, render::texture::ImageSettings};
 use bevy_ecs_tilemap::prelude::*;
-use bevy_rapier2d::prelude::Sensor;
-use bevy_rapier2d::prelude::*;
 
 use animation::*;
 use attack::*;
-use collision::{BodyLayers, CollisionPlugin};
+use collision::CollisionPlugin;
 use controller::*;
 use enemy::EnemyBehaviourPlugin;
 use helper::*;
 use leafwing_input_manager::prelude::InputManagerPlugin;
 use level::LevelPlugin;
 use map::{generation::*, walkable::restrict_movement};
-use movement::direction::Direction;
 use movement::movement::{Follow, MovementPlugin};
 use player::{PlayerActions, PlayerBundle};
 use stats::*;
@@ -83,34 +80,8 @@ fn setup(
     asset_server: Res<AssetServer>,
     // mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    //TODO: Define player size and move sensors elsewhere
-    let player_size = Vec2::new(64., 64.) / 3.75;
-
     let player_entity = commands
         .spawn_bundle(PlayerBundle::new(asset_server, texture_atlases))
-        .insert(Controlled { move_to: None })
-        .with_children(|children| {
-            let offset = player_size.x * 0.75;
-            let width = player_size.x;
-            let height = player_size.y;
-
-            //Add attack sensors
-            for dir in Direction::values() {
-                children
-                    .spawn_bundle((
-                        Transform::from_translation((dir.vec() * offset).extend(10.)),
-                        GlobalTransform::default(),
-                    ))
-                    .insert(Sensor)
-                    .insert(Collider::cuboid(width / 2., height / 2.))
-                    .insert(CollisionGroups::new(
-                        BodyLayers::PLAYER_ATTACK,
-                        BodyLayers::ENEMY,
-                    ))
-                    .insert(MeleeSensor::from(dir))
-                    .insert(ActiveEvents::COLLISION_EVENTS);
-            }
-        })
         .id();
 
     //Add Camera after so we can give it the player entity

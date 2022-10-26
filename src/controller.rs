@@ -35,33 +35,34 @@ pub fn move_player(
     >,
     time: Res<Time>,
 ) {
-    let (mut state, mut direction, mut controlled, transform, stats, action_state) =
-        query.single_mut();
+    if let Ok((mut state, mut direction, mut controlled, transform, stats, action_state)) =
+        query.get_single_mut()
+    {
+        if !(state.equals(State::IDLE) || state.equals(State::WALKING)) {
+            return;
+        }
 
-    if !(state.equals(State::IDLE) || state.equals(State::WALKING)) {
-        return;
-    }
+        let mut dir = Vec2::ZERO;
 
-    let mut dir = Vec2::ZERO;
-
-    for action in PlayerActions::DIRECTIONS {
-        if action_state.pressed(action) {
-            if let Some(action_dir) = action.direction() {
-                dir += action_dir.vec();
-                direction.set(action_dir);
+        for action in PlayerActions::DIRECTIONS {
+            if action_state.pressed(action) {
+                if let Some(action_dir) = action.direction() {
+                    dir += action_dir.vec();
+                    direction.set(action_dir);
+                }
             }
         }
-    }
 
-    let dir = dir.normalize_or_zero() * stats.speed as f32 * time.delta_seconds();
+        let dir = dir.normalize_or_zero() * stats.speed as f32 * time.delta_seconds();
 
-    if dir.x == 0. && dir.y == 0. {
-        state.set(State::IDLE);
-        controlled.move_to = None;
-    } else {
-        state.set(State::WALKING);
-        let move_to = transform.translation.xy() + dir;
-        controlled.move_to = Some(move_to);
+        if dir.x == 0. && dir.y == 0. {
+            state.set(State::IDLE);
+            controlled.move_to = None;
+        } else {
+            state.set(State::WALKING);
+            let move_to = transform.translation.xy() + dir;
+            controlled.move_to = Some(move_to);
+        }
     }
 }
 
@@ -78,30 +79,30 @@ pub fn dash_ability(
     >,
     mut commands: Commands,
 ) {
-    let (mut state, transform, direction, action_state, entity) = query.single_mut();
+    if let Ok((mut state, transform, direction, action_state, entity)) = query.get_single_mut() {
+        let mut dir = Vec2::ZERO;
 
-    let mut dir = Vec2::ZERO;
-
-    for action in PlayerActions::DIRECTIONS {
-        if action_state.pressed(action) {
-            if let Some(action_dir) = action.direction() {
-                dir += action_dir.vec();
+        for action in PlayerActions::DIRECTIONS {
+            if action_state.pressed(action) {
+                if let Some(action_dir) = action.direction() {
+                    dir += action_dir.vec();
+                }
             }
         }
-    }
 
-    if dir == Vec2::ZERO {
-        dir = direction.vec();
-    }
+        if dir == Vec2::ZERO {
+            dir = direction.vec();
+        }
 
-    if action_state.just_pressed(PlayerActions::Dash) {
-        state.set(State::DASHING);
+        if action_state.just_pressed(PlayerActions::Dash) {
+            state.set(State::DASHING);
 
-        //TODO: Add dash stats
-        let new_pos = transform.translation.xy() + (dir.normalize() * 50.);
-        commands
-            .entity(entity)
-            .insert(EaseTo::new(new_pos, EaseFunction::EaseOutExpo, 1.));
+            //TODO: Add dash stats
+            let new_pos = transform.translation.xy() + (dir.normalize() * 50.);
+            commands
+                .entity(entity)
+                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutExpo, 1.));
+        }
     }
 }
 
@@ -120,19 +121,19 @@ pub fn attack_ability(
     mut query: Query<(&mut State, &mut Stats, &ActionState<PlayerActions>, Entity)>,
     mut commands: Commands,
 ) {
-    let (mut state, mut stats, action_state, entity) = query.single_mut();
+    if let Ok((mut state, mut stats, action_state, entity)) = query.get_single_mut() {
+        if state.equals(State::DASHING) {
+            return;
+        }
 
-    if state.equals(State::DASHING) {
-        return;
-    }
-
-    if action_state.just_pressed(PlayerActions::Attack) && stats.can_attack() {
-        state.set(State::ATTACKING);
-        stats.reset_attack_timer();
-        commands.entity(entity).insert(AttackPhase {
-            charge: Timer::from_seconds(0.5, false),
-            attack: Timer::from_seconds(0.25, false),
-            recover: Timer::from_seconds(0.5, false),
-        });
+        if action_state.just_pressed(PlayerActions::Attack) && stats.can_attack() {
+            state.set(State::ATTACKING);
+            stats.reset_attack_timer();
+            commands.entity(entity).insert(AttackPhase {
+                charge: Timer::from_seconds(0.25, false),
+                attack: Timer::from_seconds(0.05, false),
+                recover: Timer::from_seconds(0.25, false),
+            });
+        }
     }
 }

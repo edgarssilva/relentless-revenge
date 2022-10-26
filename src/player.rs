@@ -15,7 +15,7 @@ use leafwing_input_manager::{
 };
 
 use crate::{
-    animation::AnimationState, collision::BodyLayers, controller::Controlled,
+    animation::AnimationState, attack::Damageable, collision::BodyLayers, controller::Controlled,
     movement::direction::Direction, state::State, stats::Stats, PLAYER_Z,
 };
 
@@ -39,6 +39,7 @@ pub struct PlayerBundle {
     direction: Direction,
     state: State,
     stats: Stats,
+    damageable: Damageable,
     #[bundle]
     input: InputManagerBundle<PlayerActions>,
 }
@@ -111,7 +112,8 @@ impl PlayerBundle {
             ),
             direction: Direction::SOUTH,
             state: State::IDLE,
-            stats: Stats::new(100, 20, 75, 2., 0),
+            stats: Stats::new(100, 20, 75, 1., 0),
+            damageable: Damageable,
             input: InputManagerBundle::<PlayerActions> {
                 action_state: ActionState::default(),
                 input_map: Self::default_keybindings(),

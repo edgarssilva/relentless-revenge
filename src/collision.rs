@@ -1,10 +1,12 @@
 use bevy::prelude::{
-    App, Commands, DespawnRecursiveExt, Entity, EventReader, EventWriter, Plugin, Query, With,
+    App, Camera, Commands, DespawnRecursiveExt, Entity, EventReader, Plugin, Query, With,
 };
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 
 use crate::{
-    attack::{Attack, Damage, MeleeSensor},
+    attack::{Damage, Damageable},
+    helper::Shake,
+    player::Player,
     stats::Stats,
     XP,
 };
@@ -15,11 +17,8 @@ impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
             .add_plugin(RapierDebugRenderPlugin::default())
-            .add_event::<HandleCollisionEvent>()
-            .add_system(collision_events)
             .add_system(xp_system)
-            .add_system(player_attack_system)
-            .add_system(enemy_projectile_system);
+            .add_system(damagable_collision);
     }
 }
 
@@ -34,21 +33,11 @@ impl BodyLayers {
     pub const XP_LAYER: Group = Group::GROUP_5;
 }
 
-pub enum CollisionType {
-    PlayerAttack(Entity, Entity),
-    XPOnPlayer(Entity, Entity),
-    EnemyAttack(Entity, Entity),
-}
-
-pub struct HandleCollisionEvent {
-    pub collision_type: CollisionType,
-    pub started: bool,
-}
-
-pub fn collision_events(
+pub fn xp_system(
+    mut commands: Commands,
     mut events: EventReader<CollisionEvent>,
-    mut handle_writer: EventWriter<HandleCollisionEvent>,
-    query: Query<&CollisionGroups>,
+    query: Query<&XP>,
+    mut player_query: Query<&mut Stats, With<Player>>,
 ) {
     events.iter().for_each(|e| {
         let (e1, e2, started, flags) = match e {
@@ -61,101 +50,65 @@ pub fn collision_events(
             return;
         }
 
-        let collision_groups = (query.get(*e1), query.get(*e2));
-
-        if let (Ok(cg1), Ok(cg2)) = collision_groups {
-            let collision_type = match (cg1.memberships, cg2.memberships) {
-                (BodyLayers::PLAYER_ATTACK, BodyLayers::ENEMY) => {
-                    Some(CollisionType::PlayerAttack(*e1, *e2))
-                }
-                (BodyLayers::ENEMY, BodyLayers::PLAYER_ATTACK) => {
-                    Some(CollisionType::PlayerAttack(*e2, *e1))
-                }
-                (BodyLayers::XP_LAYER, BodyLayers::PLAYER) => {
-                    Some(CollisionType::XPOnPlayer(*e1, *e2))
-                }
-                (BodyLayers::PLAYER, BodyLayers::XP_LAYER) => {
-                    Some(CollisionType::XPOnPlayer(*e2, *e1))
-                }
-                (BodyLayers::ENEMY_ATTACK, BodyLayers::PLAYER) => {
-                    Some(CollisionType::EnemyAttack(*e1, *e2))
-                }
-                (BodyLayers::PLAYER, BodyLayers::ENEMY_ATTACK) => {
-                    Some(CollisionType::EnemyAttack(*e2, *e1))
-                }
-                _ => None,
-            };
-
-            if let Some(collision_type) = collision_type {
-                handle_writer.send(HandleCollisionEvent {
-                    collision_type,
-                    started,
-                });
+        //TODO: Prevent panic from XP
+        if let Ok(xp) = query.get(*e1) {
+            if let Ok(mut stats) = player_query.get_mut(*e2) {
+                stats.xp += xp.0;
+                commands.entity(*e1).despawn_recursive();
+            }
+        } else if let Ok(xp) = query.get(*e2) {
+            if let Ok(mut stats) = player_query.get_mut(*e1) {
+                stats.xp += xp.0;
+                commands.entity(*e2).despawn_recursive();
             }
         }
     });
 }
 
-pub fn xp_system(
+pub fn damagable_collision(
+    mut events: EventReader<CollisionEvent>,
+    damage_query: Query<&Damage>,
+    mut damageable_query: Query<&mut Stats, With<Damageable>>,
+    camera_query: Query<Entity, With<Camera>>,
     mut commands: Commands,
-    mut events: EventReader<HandleCollisionEvent>,
-    query: Query<&XP>,
-    mut player_query: Query<&mut Stats>,
 ) {
-    for e in events.iter() {
-        match e.collision_type {
-            CollisionType::XPOnPlayer(e_exp, e_player) => {
-                //TODO: Prevent panic from unwrap
-                if let Ok(xp) = query.get(e_exp) {
-                    let mut stats = player_query.get_mut(e_player).unwrap();
-                    stats.xp += xp.0;
-                    commands.entity(e_exp).despawn_recursive();
-                }
-            }
-            _ => {}
-        }
-    }
-}
+    events.iter().for_each(|e| {
+        let (e1, e2, started, flags) = match e {
+            CollisionEvent::Started(e1, e2, flags) => (e1, e2, true, flags),
+            CollisionEvent::Stopped(e1, e2, flags) => (e1, e2, false, flags),
+        };
 
-//TODO: Refractor for generic attack system
-pub fn player_attack_system(
-    mut events: EventReader<HandleCollisionEvent>,
-    mut query: Query<&mut MeleeSensor>,
-) {
-    for e in events.iter() {
-        match e.collision_type {
-            CollisionType::PlayerAttack(e_attacker, e_defender) => {
-                if let Ok(mut sensor) = query.get_mut(e_attacker) {
-                    if e.started {
-                        sensor.targets.push(e_defender);
-                    } else {
-                        sensor.targets.retain(|&e| e == e_defender);
-                    }
-                }
-            }
-            _ => {}
+        //If entity removed from world, don't handle collision
+        if !started && *flags == CollisionEventFlags::REMOVED {
+            return;
         }
-    }
-}
 
-//TODO: Refractor for generic attack system
-pub fn enemy_projectile_system(
-    mut commands: Commands,
-    mut events: EventReader<HandleCollisionEvent>,
-    query: Query<&Damage, With<Attack>>,
-    mut stats_query: Query<&mut Stats>,
-) {
-    for e in events.iter().filter(|e| e.started) {
-        match e.collision_type {
-            CollisionType::EnemyAttack(e_projectile, e_defender) => {
-                if let Ok(damage) = query.get(e_projectile) {
-                    if let Ok(mut stats) = stats_query.get_mut(e_defender) {
-                        stats.health -= damage.0;
-                        commands.entity(e_projectile).despawn_recursive();
-                    }
-                }
+        //TODO: Check what to do when both entities have damage and damageable
+        let collision = match (
+            damage_query.contains(*e1) && damageable_query.contains(*e2),
+            (damage_query.contains(*e2) && damageable_query.contains(*e1)),
+        ) {
+            (true, false) => Some((
+                damage_query.get(*e1).unwrap(),
+                damageable_query.get_mut(*e2).unwrap(),
+            )),
+            (false, true) => Some((
+                damage_query.get(*e2).unwrap(),
+                damageable_query.get_mut(*e1).unwrap(),
+            )),
+            _ => None,
+        };
+
+        if let Some((attack_damage, mut collider_stats)) = collision {
+            collider_stats.damage(attack_damage.0);
+
+            //Switch this into a shake event
+            if let Ok(camera) = camera_query.get_single() {
+                commands.entity(camera).insert(Shake {
+                    duration: 0.25,
+                    strength: 7.5,
+                });
             }
-            _ => {}
         }
-    }
+    });
 }
