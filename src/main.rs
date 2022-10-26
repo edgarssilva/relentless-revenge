@@ -70,6 +70,7 @@ fn main() {
         .add_system(shake_system)
         .add_system(remake_map)
         .add_system(attack_lifetime)
+        .add_system(projectile_break)
         .add_system_to_stage(CoreStage::PostUpdate, restrict_movement)
         .run();
 }

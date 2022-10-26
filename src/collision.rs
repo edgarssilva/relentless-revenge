@@ -4,7 +4,7 @@ use bevy::prelude::{
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 
 use crate::{
-    attack::{Damage, Damageable},
+    attack::{Breakable, Damage, Damageable},
     helper::Shake,
     player::Player,
     stats::Stats,
@@ -67,7 +67,7 @@ pub fn xp_system(
 
 pub fn damagable_collision(
     mut events: EventReader<CollisionEvent>,
-    damage_query: Query<&Damage>,
+    mut damage_query: Query<(&Damage, Option<&mut Breakable>)>,
     mut damageable_query: Query<&mut Stats, With<Damageable>>,
     camera_query: Query<Entity, With<Camera>>,
     mut commands: Commands,
@@ -89,18 +89,24 @@ pub fn damagable_collision(
             (damage_query.contains(*e2) && damageable_query.contains(*e1)),
         ) {
             (true, false) => Some((
-                damage_query.get(*e1).unwrap(),
+                damage_query.get_mut(*e1).unwrap(),
                 damageable_query.get_mut(*e2).unwrap(),
             )),
             (false, true) => Some((
-                damage_query.get(*e2).unwrap(),
+                damage_query.get_mut(*e2).unwrap(),
                 damageable_query.get_mut(*e1).unwrap(),
             )),
             _ => None,
         };
 
-        if let Some((attack_damage, mut collider_stats)) = collision {
+        if let Some(((attack_damage, breakable), mut collider_stats)) = collision {
             collider_stats.damage(attack_damage.0);
+
+            if let Some(mut breakable) = breakable {
+                if breakable.0 > 0 {
+                    breakable.0 -= 1;
+                }
+            }
 
             //Switch this into a shake event
             if let Ok(camera) = camera_query.get_single() {

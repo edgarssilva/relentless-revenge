@@ -23,6 +23,9 @@ pub struct Attack;
 pub struct Lifetime(pub Timer);
 
 #[derive(Component)]
+pub struct Breakable(pub u32);
+
+#[derive(Component)]
 pub struct Damage(pub u32);
 
 #[derive(Component)]
@@ -105,6 +108,7 @@ pub struct ProjectileBundle {
     #[bundle]
     spritesheet_bundle: SpriteSheetBundle,
     velocity: Velocity,
+    breakable: Breakable,
 }
 
 impl ProjectileBundle {
@@ -136,6 +140,7 @@ impl ProjectileBundle {
                 ..default()
             },
             velocity,
+            breakable: Breakable(1),
         }
     }
 }
@@ -191,6 +196,15 @@ pub fn attack_lifetime(
         lifetime.0.tick(time.delta());
 
         if lifetime.0.finished() {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+
+//TODO: Check the collisions in its own system
+pub fn projectile_break(mut commands: Commands, query: Query<(Entity, &Breakable)>) {
+    for (entity, breakable) in query.iter() {
+        if breakable.0 == 0 {
             commands.entity(entity).despawn_recursive();
         }
     }
