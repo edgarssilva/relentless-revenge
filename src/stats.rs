@@ -29,6 +29,10 @@ impl Stats {
     pub fn can_attack(&self) -> bool {
         self.attack_timer >= self.attack_speed
     }
+
+    pub fn reset_attack_timer(&mut self) {
+        self.attack_timer = 0.;
+    }
 }
 
 pub fn death_system(

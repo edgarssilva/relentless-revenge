@@ -1,10 +1,9 @@
 use std::time::Duration;
 
 use bevy::{
-    input::Input,
     prelude::{
-        default, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle, KeyCode, Quat,
-        Query, Res, Transform, Vec2, Vec3, With, Without,
+        default, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle, Quat, Query,
+        Res, Transform, Vec2, Vec3, With, Without,
     },
     render::camera::Camera,
     sprite::{SpriteSheetBundle, TextureAtlas},
@@ -15,13 +14,8 @@ use bevy_rapier2d::prelude::{
 };
 
 use crate::{
-    collision::BodyLayers,
-    helper::{KeyMaps, Shake},
-    movement::direction::Direction,
-    movement::movement::Velocity,
-    player::Player,
-    state::State,
-    stats::Stats,
+    collision::BodyLayers, helper::Shake, movement::direction::Direction,
+    movement::movement::Velocity, player::Player, state::State, stats::Stats,
 };
 
 #[derive(Component)]
@@ -46,6 +40,13 @@ impl MeleeSensor {
             targets: Vec::new(),
         }
     }
+}
+
+#[derive(Component)]
+pub struct AttackPhase {
+    pub charge: Timer,
+    pub attack: Timer,
+    pub recover: Timer,
 }
 
 #[derive(Bundle)]
@@ -99,44 +100,54 @@ impl ProjectileBundle {
 }
 
 pub fn attack_system(
-    mut player_query: Query<(&Stats, &Direction, &mut State), With<Player>>,
+    mut query: Query<(&mut State, &mut AttackPhase, &Direction, &Stats, Entity), With<Player>>,
     mut stats_query: Query<&mut Stats, Without<Player>>,
-    sensors_query: Query<&MeleeSensor>,
-    keys: Res<Input<KeyCode>>,
-    keymaps: Res<KeyMaps>,
     camera_query: Query<Entity, With<Camera>>,
+    sensors_query: Query<&MeleeSensor>,
+    time: Res<Time>,
     mut commands: Commands,
 ) {
-    if !keys.just_pressed(keymaps.attack) {
-        return;
-    }
-
-    if let Ok((attacker_stats, direction, mut state)) = player_query.get_single_mut() {
-        if !attacker_stats.can_attack() {
+    for (mut state, mut attack_phase, direction, stats, entity) in query.iter_mut() {
+        if !attack_phase.charge.finished() {
+            attack_phase.charge.tick(time.delta());
             return;
         }
 
-        state.set(State::ATTACKING);
+        if attack_phase.charge.just_finished() {
+            //TODO: Switch this into a collision event damagable aproach
+            for sensor in sensors_query
+                .iter()
+                .filter(|sensor| sensor.dir == *direction)
+            {
+                for &attacked_entity in sensor.targets.iter() {
+                    if let Ok(mut attacked_stats) = stats_query.get_mut(attacked_entity) {
+                        if attacked_stats.health < stats.damage {
+                            attacked_stats.health = 0;
+                        } else {
+                            attacked_stats.health -= stats.damage;
+                        }
 
-        for sensor in sensors_query
-            .iter()
-            .filter(|sensor| sensor.dir == *direction)
-        {
-            for &attacked_entity in sensor.targets.iter() {
-                if let Ok(mut attacked_stats) = stats_query.get_mut(attacked_entity) {
-                    if attacked_stats.health < attacker_stats.damage {
-                        attacked_stats.health = 0;
-                    } else {
-                        attacked_stats.health -= attacker_stats.damage;
-                    }
-                    if let Ok(camera) = camera_query.get_single() {
-                        commands.entity(camera).insert(Shake {
-                            duration: 0.25,
-                            strength: 7.5,
-                        });
+                        //Switch this into a shake event
+                        if let Ok(camera) = camera_query.get_single() {
+                            commands.entity(camera).insert(Shake {
+                                duration: 0.25,
+                                strength: 7.5,
+                            });
+                        }
                     }
                 }
             }
+        }
+
+        if !attack_phase.attack.finished() {
+            attack_phase.attack.tick(time.delta());
+            return;
+        }
+
+        attack_phase.recover.tick(time.delta());
+        if attack_phase.recover.finished() {
+            state.set(State::IDLE);
+            commands.entity(entity).remove::<AttackPhase>();
         }
     }
 }

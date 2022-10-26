@@ -59,6 +59,7 @@ fn main() {
         .add_system(move_player)
         .add_system(dash_ability)
         .add_system_to_stage(CoreStage::PostUpdate, finish_dash)
+        .add_system(attack_ability)
         .add_system(attack_system)
         .add_system(death_system)
         .add_system(attack_cooldown_system)
@@ -72,7 +73,7 @@ fn main() {
         .add_system(shake_system)
         .add_system(remake_map)
         .add_system(attack_lifetime)
-        .add_system(restrict_movement)
+        .add_system_to_stage(CoreStage::PostUpdate, restrict_movement)
         .run();
 }
 

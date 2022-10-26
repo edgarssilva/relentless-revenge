@@ -15,8 +15,8 @@ use leafwing_input_manager::{
 };
 
 use crate::{
-    animation::AnimationState, collision::BodyLayers, movement::direction::Direction, state::State,
-    stats::Stats, PLAYER_Z,
+    animation::AnimationState, collision::BodyLayers, controller::Controlled,
+    movement::direction::Direction, state::State, stats::Stats, PLAYER_Z,
 };
 
 use leafwing_input_manager::Actionlike;
@@ -30,6 +30,7 @@ pub struct PlayerBundle {
     #[bundle]
     sprite_bundle: SpriteSheetBundle,
     collider: Collider,
+    controlled: Controlled,
     rigid_body: RigidBody,
     animation_state: AnimationState,
     collision_events: ActiveEvents,
@@ -98,6 +99,7 @@ impl PlayerBundle {
                 },
                 ..default()
             },
+            controlled: Controlled { move_to: None },
             collider: Collider::cuboid(player_size.x / 2., player_size.y / 2.),
             rigid_body: RigidBody::KinematicPositionBased,
             animation_state: AnimationState::new(player_animations, 200, true),
@@ -109,7 +111,7 @@ impl PlayerBundle {
             ),
             direction: Direction::SOUTH,
             state: State::IDLE,
-            stats: Stats::new(100, 20, 70, 3., 0),
+            stats: Stats::new(100, 20, 75, 2., 0),
             input: InputManagerBundle::<PlayerActions> {
                 action_state: ActionState::default(),
                 input_map: Self::default_keybindings(),
