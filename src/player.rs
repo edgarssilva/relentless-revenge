@@ -112,7 +112,7 @@ impl PlayerBundle {
             ),
             direction: Direction::SOUTH,
             state: State::IDLE,
-            stats: Stats::new(100, 20, 75, 1., 0),
+            stats: Stats::new(100, 20, 75, 0.5, 0),
             damageable: Damageable,
             input: InputManagerBundle::<PlayerActions> {
                 action_state: ActionState::default(),
