@@ -3,14 +3,14 @@ use crate::map::room::Room;
 use crate::player::Player;
 use bevy::math::Vec2;
 use bevy::prelude::{
-    default, AssetServer, Commands, EventReader, EventWriter, Mut, Query, Res, Transform, UVec2,
-    With,
+    AssetServer, Commands, EventReader, EventWriter, Mut, Query, Res, Transform, UVec2, With,
 };
 
 use bevy_ecs_tilemap::prelude::{
-    TilemapGridSize, TilemapId, TilemapSize, TilemapTexture, TilemapTileSize, TilemapType,
+    fill_tilemap, TilemapGridSize, TilemapId, TilemapSize, TilemapTexture, TilemapTileSize,
+    TilemapType,
 };
-use bevy_ecs_tilemap::tiles::{TileBundle, TilePos, TileStorage, TileTexture};
+use bevy_ecs_tilemap::tiles::{TilePos, TileStorage, TileTexture};
 use bevy_ecs_tilemap::TilemapBundle;
 
 use rand;
@@ -30,21 +30,13 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
     let tile_size = TilemapTileSize { x: 32.0, y: 16.0 };
     let grid_size = TilemapGridSize { x: 32.0, y: 16.0 };
 
-    for x in 0..tilemap_size.x {
-        for y in 0..tilemap_size.y {
-            let tile_pos = TilePos { x, y };
-            let tile_entity = commands
-                .spawn()
-                .insert_bundle(TileBundle {
-                    position: tile_pos,
-                    tilemap_id,
-                    texture: TileTexture(3),
-                    ..default()
-                })
-                .id();
-            tile_storage.set(&tile_pos, tile_entity);
-        }
-    }
+    fill_tilemap(
+        TileTexture(3),
+        tilemap_size,
+        tilemap_id,
+        &mut commands,
+        &mut tile_storage,
+    );
 
     commands
         .entity(tilemap_entity)
