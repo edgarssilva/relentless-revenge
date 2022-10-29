@@ -1,11 +1,16 @@
-use bevy::prelude::{
-    App, Camera, Commands, DespawnRecursiveExt, Entity, EventReader, Plugin, Query, With,
+use bevy::{
+    math::Vec3Swizzles,
+    prelude::{
+        App, Camera, Commands, DespawnRecursiveExt, Entity, EventReader, Plugin, Query, Transform,
+        With,
+    },
 };
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 
 use crate::{
-    attack::{Breakable, Damage, Damageable},
+    attack::{Breakable, Damage, Damageable, Knockback},
     helper::Shake,
+    movement::easing::{EaseFunction, EaseTo},
     player::Player,
     stats::Stats,
     XP,
@@ -67,8 +72,8 @@ pub fn xp_system(
 
 pub fn damagable_collision(
     mut events: EventReader<CollisionEvent>,
-    mut damage_query: Query<(&Damage, Option<&mut Breakable>)>,
-    mut damageable_query: Query<&mut Stats, With<Damageable>>,
+    mut damage_query: Query<(&Damage, Option<&Knockback>, Option<&mut Breakable>)>,
+    mut damageable_query: Query<(&mut Stats, &Transform), With<Damageable>>,
     camera_query: Query<Entity, With<Camera>>,
     mut commands: Commands,
 ) {
@@ -84,23 +89,18 @@ pub fn damagable_collision(
         }
 
         //TODO: Check what to do when both entities have damage and damageable
-        let collision = match (
+        if let Some((damage_entity, damaged_entity)) = match (
             damage_query.contains(*e1) && damageable_query.contains(*e2),
             (damage_query.contains(*e2) && damageable_query.contains(*e1)),
         ) {
-            (true, false) => Some((
-                damage_query.get_mut(*e1).unwrap(),
-                damageable_query.get_mut(*e2).unwrap(),
-            )),
-            (false, true) => Some((
-                damage_query.get_mut(*e2).unwrap(),
-                damageable_query.get_mut(*e1).unwrap(),
-            )),
+            (true, false) => Some((*e1, *e2)),
+            (false, true) => Some((*e2, *e1)),
             _ => None,
-        };
+        } {
+            let (damage, knockback, breakable) = damage_query.get_mut(damage_entity).unwrap();
+            let (mut stats, transform) = damageable_query.get_mut(damaged_entity).unwrap();
 
-        if let Some(((attack_damage, breakable), mut collider_stats)) = collision {
-            collider_stats.damage(attack_damage.0);
+            stats.damage(damage.0);
 
             if let Some(mut breakable) = breakable {
                 if breakable.0 > 0 {
@@ -108,11 +108,21 @@ pub fn damagable_collision(
                 }
             }
 
+            if let Some(knockback) = knockback {
+                let new_pos =
+                    transform.translation.xy() + knockback.force * knockback.direction.vec();
+                commands.entity(damaged_entity).insert(EaseTo::new(
+                    new_pos,
+                    EaseFunction::EaseOutExpo,
+                    1.,
+                ));
+            }
+
             //Switch this into a shake event
             if let Ok(camera) = camera_query.get_single() {
                 commands.entity(camera).insert(Shake {
-                    duration: 0.25,
-                    strength: 7.5,
+                    duration: 0.35,
+                    strength: 9.5,
                 });
             }
         }

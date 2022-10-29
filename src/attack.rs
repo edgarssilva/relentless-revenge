@@ -32,6 +32,12 @@ pub struct Damage(pub u32);
 pub struct Damageable;
 
 #[derive(Component)]
+pub struct Knockback {
+    pub force: f32,
+    pub direction: Direction,
+}
+
+#[derive(Component)]
 pub struct AttackPhase {
     pub charge: Timer,
     pub attack: Timer,
@@ -81,6 +87,7 @@ pub struct MeleeAttackBundle {
     attack: AttackBundle,
     #[bundle]
     transform_bundle: TransformBundle,
+    knockback: Knockback,
 }
 
 impl MeleeAttackBundle {
@@ -89,6 +96,7 @@ impl MeleeAttackBundle {
         size: Vec2,
         lifetime: Lifetime,
         damage: Damage,
+        knockback: Knockback,
         is_player_attack: bool,
     ) -> Self {
         Self {
@@ -97,6 +105,7 @@ impl MeleeAttackBundle {
                 local: Transform::from_translation(position),
                 ..default()
             },
+            knockback,
         }
     }
 }
@@ -165,6 +174,10 @@ pub fn attack_system(
                         player_size,
                         Lifetime(attack_phase.attack.clone()),
                         Damage(stats.damage),
+                        Knockback {
+                            force: 7.,
+                            direction: direction.clone(),
+                        },
                         true,
                     ));
                 });
