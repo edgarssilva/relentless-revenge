@@ -31,7 +31,7 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
     let grid_size = TilemapGridSize { x: 32.0, y: 16.0 };
 
     fill_tilemap(
-        TileTexture(3),
+        TileTexture(8),
         tilemap_size,
         tilemap_id,
         &mut commands,
@@ -64,7 +64,7 @@ pub fn remake_map(
 
         //Change all tiles to clear texture
         for mut tile in tile_query.iter_mut() {
-            tile.0 = 3;
+            tile.0 = 8;
         }
 
         let mut enemies = SpawnEnemiesEvent {
@@ -120,7 +120,7 @@ fn build_map(
                 if let Some(tile_entity) = tile_storage.get(&tile_pos) {
                     commands.entity(tile_entity).insert(WalkableTile);
                     if let Ok(mut tile_texture) = tile_query.get_mut(tile_entity) {
-                        tile_texture.0 = 2;
+                        tile_texture.0 = 3;
                     }
                 }
 
@@ -146,7 +146,7 @@ fn build_map(
             if let Some(tile_entity) = tile_storage.get(&TilePos { x, y }) {
                 commands.entity(tile_entity).insert(WalkableTile);
                 if let Ok(mut tile_texture) = tile_query.get_mut(tile_entity) {
-                    tile_texture.0 = 2;
+                    tile_texture.0 = 3;
                 }
             }
         }
