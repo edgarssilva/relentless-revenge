@@ -101,7 +101,7 @@ pub fn dash_ability(
             let new_pos = transform.translation.xy() + (dir.normalize() * 50.);
             commands
                 .entity(entity)
-                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.75));
+                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.5));
         }
     }
 }

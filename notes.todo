@@ -2,11 +2,25 @@ Theme notes
     - Player is an agile {BLANK CHARACTER} that leeps around using daggers and emits lightning
     - He evolves taking bosses skills and becomes strong with each kill (should be represented with color)
         ^- Maybe he should suck the boss into him becoming stronger and darker 
+
+    {BIG FINAL BOSS} drags us into {DEFINE PLACE} where he throws at different platforms full of enemies
+    we have to fight our way through them to reach him by defiting the bosses of each platform.
+    After killing the boss the ground gets magicly destroyed and we fall into the next platform.
+
+    {BIG FINAL BOSS} is scared of the player potential and tries to kill him before he becomes too strong
+    but in doing so it only feeds his power and he becomes stronger and stronger and now is coming for revenge.
+
     x MISSING THEME STYLE AND WHAT MONSTERS ARE AND WHY THE PLAYER IS FIGHTING THEM
+
+Name ideas
+    - *Something* Revenge
+        ^- Relentless
+        ^- Unstopable
+        ^- Inescapable
 
 Mechanics notes
     - Combat should be smooth and quick with increasing speed through level
-    - Travel down an level using maybe a portal or spining around 
+    - We have to fight our way through the platforms to reach the boss
     - Levels should be procedurally generated with open spaces
     - There should be a dash effects that maybe locks on targets (prevent unwanted ones)
     - Later on the ability to attack mid dash should be obtained
@@ -33,7 +47,7 @@ Sound Notes
     - Try to go for a pixel arty style but without sounding 8 bitty
 
 References
-    - Player mechanis and look (Solo leveling)
+    - Player mechanis and feel (Solo leveling)
     - Map and enemies (Quadropus Rampage)
 
 Similar Games Found
