@@ -32,9 +32,6 @@ pub const MAP_Z: f32 = 36.;
 pub const BACKGROUND_Z: f32 = 1.;
 pub const DEBUG_Z: f32 = 100.;
 
-#[derive(Component, Clone, Copy)]
-pub struct XP(u32);
-
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(20. / 255., 0. / 255., 25. / 255.)))
@@ -59,6 +56,7 @@ fn main() {
         .add_system(attack_ability)
         .add_system(attack_system)
         .add_system(death_system)
+        .add_system(drop_xp_system)
         .add_system(attack_cooldown_system)
         .add_system_set(
             SystemSet::new()
