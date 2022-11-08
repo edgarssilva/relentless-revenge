@@ -8,6 +8,8 @@ use bevy::render::camera::{Camera, OrthographicProjection};
 use bevy::render::render_resource::TextureUsages;
 use rand::Rng;
 
+use crate::movement::movement::Follow;
+
 #[derive(Component)]
 pub struct Parallax;
 
@@ -57,7 +59,7 @@ pub fn set_texture_filters_to_nearest(
 
 //Helper camera controller
 pub fn helper_camera_controller(
-    mut query: Query<(&mut OrthographicProjection, &mut Transform)>,
+    mut query: Query<(&mut OrthographicProjection, &mut Transform), With<Follow>>,
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
@@ -93,7 +95,7 @@ pub fn run_on_camera_move(query: Query<(), (Changed<Transform>, With<Camera>)>) 
 }
 
 pub fn parallax_system(
-    cam_query: Query<&Transform, With<Camera>>,
+    cam_query: Query<&Transform, (With<Camera>, With<Follow>)>,
     mut query: Query<&mut Transform, (With<Parallax>, Without<Camera>)>,
 ) {
     let cam_trans = cam_query.single();

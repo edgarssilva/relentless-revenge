@@ -11,8 +11,13 @@ mod player;
 mod state;
 mod stats;
 
-use bevy::{prelude::*, render::texture::ImageSettings};
+use bevy::{
+    diagnostic::{EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin},
+    prelude::*,
+    render::texture::ImageSettings,
+};
 use bevy_ecs_tilemap::prelude::*;
+use bevy_editor_pls::prelude::*;
 
 use animation::*;
 use attack::*;
@@ -37,11 +42,13 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(20. / 255., 0. / 255., 25. / 255.)))
         .insert_resource(ImageSettings::default_nearest())
         .insert_resource(KeyMaps::default())
-        // .insert_resource(ImageSettings::default_nearest())
         .add_plugins(DefaultPlugins)
+        .add_plugin(EditorPlugin)
+        //Diagnostic plugins
+        .add_plugin(FrameTimeDiagnosticsPlugin)
+        .add_plugin(EntityCountDiagnosticsPlugin)
         .add_plugin(TilemapPlugin)
         .add_plugin(InputManagerPlugin::<PlayerActions>::default())
-        // .add_plugin(TiledMapPlugin)
         .add_plugin(CollisionPlugin)
         .add_plugin(AnimationPlugin)
         .add_plugin(EnemyBehaviourPlugin)
@@ -49,7 +56,6 @@ fn main() {
         .add_plugin(MovementPlugin)
         .add_system(set_texture_filters_to_nearest)
         .add_system(helper_camera_controller)
-        // .add_system(sprite_animation)
         .add_system(move_player)
         .add_system(dash_ability)
         .add_system_to_stage(CoreStage::PostUpdate, finish_dash)
@@ -77,7 +83,6 @@ fn setup(
     mut commands: Commands,
     texture_atlases: ResMut<Assets<TextureAtlas>>,
     asset_server: Res<AssetServer>,
-    // mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let player_entity = commands
         .spawn_bundle(PlayerBundle::new(asset_server, texture_atlases))
@@ -86,6 +91,7 @@ fn setup(
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = Camera2dBundle::default();
     camera_bundle.projection.scale = 0.15;
+
     commands
         .spawn_bundle(camera_bundle)
         .insert(Follow::new(player_entity, 3., true, 5.));

@@ -8,6 +8,7 @@ version = "0.1.0"
 [dependencies]
 bevy = "0.8.1"
 bevy_ecs_tilemap = "0.8"
+bevy_editor_pls = "0.1.1"
 bevy_rapier2d = "0.17.0"
 big-brain = "0.14.0"
 getrandom = {version = "0.2.7", features = ["js"]}# Works with rand to support browser runder numbers
