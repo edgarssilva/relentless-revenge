@@ -6,12 +6,7 @@ use bevy::prelude::{
     AssetServer, Commands, EventReader, EventWriter, Mut, Query, Res, Transform, UVec2, With,
 };
 
-use bevy_ecs_tilemap::prelude::{
-    fill_tilemap, TilemapGridSize, TilemapId, TilemapSize, TilemapTexture, TilemapTileSize,
-    TilemapType,
-};
-use bevy_ecs_tilemap::tiles::{TilePos, TileStorage, TileTexture};
-use bevy_ecs_tilemap::TilemapBundle;
+use bevy_ecs_tilemap::prelude::*;
 
 use rand;
 use rand::prelude::*;
@@ -24,37 +19,35 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let tilemap_size = TilemapSize { x: 160, y: 160 };
     let mut tile_storage = TileStorage::empty(tilemap_size);
-    let tilemap_entity = commands.spawn().id();
+    let tilemap_entity = commands.spawn_empty().id();
     let tilemap_id = TilemapId(tilemap_entity);
 
     let tile_size = TilemapTileSize { x: 32.0, y: 16.0 };
     let grid_size = TilemapGridSize { x: 32.0, y: 16.0 };
 
     fill_tilemap(
-        TileTexture(8),
+        TileTextureIndex(8),
         tilemap_size,
         tilemap_id,
         &mut commands,
         &mut tile_storage,
     );
 
-    commands
-        .entity(tilemap_entity)
-        .insert_bundle(TilemapBundle {
-            grid_size: grid_size,
-            size: tilemap_size,
-            storage: tile_storage,
-            texture: TilemapTexture::Single(texture_handle),
-            tile_size,
-            map_type: TilemapType::isometric_diamond(true),
-            ..Default::default()
-        });
+    commands.entity(tilemap_entity).insert(TilemapBundle {
+        grid_size,
+        size: tilemap_size,
+        storage: tile_storage,
+        texture: TilemapTexture::Single(texture_handle),
+        tile_size,
+        map_type: TilemapType::Isometric(IsoCoordSystem::Diamond),
+        ..Default::default()
+    });
 }
 
 pub fn remake_map(
     mut event: EventReader<GenerateMapEvent>,
     mut player_query: Query<&mut Transform, With<Player>>,
-    mut tile_query: Query<&mut TileTexture>,
+    mut tile_query: Query<&mut TileTextureIndex>,
     tile_storage_query: Query<&TileStorage>,
     mut spawn_enemies_writer: EventWriter<SpawnEnemiesEvent>,
     mut commands: Commands,
@@ -89,7 +82,7 @@ pub fn remake_map(
 
 fn build_map(
     mut player_transform: Mut<Transform>,
-    mut tile_query: Query<&mut TileTexture>,
+    mut tile_query: Query<&mut TileTextureIndex>,
     tile_storage: &TileStorage,
     enemies: &mut SpawnEnemiesEvent,
     commands: &mut Commands,
@@ -108,7 +101,7 @@ fn build_map(
                 //TODO: Get the grid-size and map type from the current map
                 let world_pos = tile_pos.center_in_world(
                     &TilemapGridSize { x: 32., y: 16. },
-                    &TilemapType::isometric_diamond(true),
+                    &TilemapType::Isometric(IsoCoordSystem::Diamond),
                 );
 
                 //Cut corners

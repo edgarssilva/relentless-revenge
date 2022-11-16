@@ -95,7 +95,7 @@ impl XPBundle {
         player: Entity,
     ) -> Entity {
         commands
-            .spawn_bundle(XPBundle {
+            .spawn(XPBundle {
                 xp: XP(xp),
                 sprite_bundle: SpriteBundle {
                     texture,

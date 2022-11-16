@@ -134,7 +134,7 @@ impl ProjectileBundle {
         Self {
             attack: AttackBundle::new(
                 size,
-                Lifetime(Timer::from_seconds(duration, false)),
+                Lifetime(Timer::from_seconds(duration, bevy::time::TimerMode::Once)),
                 damage,
                 is_player_attack,
             ),
@@ -169,7 +169,7 @@ pub fn attack_system(
                     let player_size = Vec2::new(64., 64.) / 3.75;
                     let offset = player_size.x * 0.75;
 
-                    children.spawn_bundle(MeleeAttackBundle::new(
+                    children.spawn(MeleeAttackBundle::new(
                         (direction.vec() * offset).extend(10.),
                         player_size,
                         Lifetime(attack_phase.attack.clone()),

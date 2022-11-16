@@ -14,7 +14,6 @@ mod stats;
 use bevy::{
     diagnostic::{EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin},
     prelude::*,
-    render::texture::ImageSettings,
 };
 use bevy_ecs_tilemap::prelude::*;
 use bevy_editor_pls::prelude::*;
@@ -40,9 +39,8 @@ pub const DEBUG_Z: f32 = 100.;
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(20. / 255., 0. / 255., 25. / 255.)))
-        .insert_resource(ImageSettings::default_nearest())
         .insert_resource(KeyMaps::default())
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugin(EditorPlugin)
         //Diagnostic plugins
         .add_plugin(FrameTimeDiagnosticsPlugin)
@@ -85,14 +83,12 @@ fn setup(
     asset_server: Res<AssetServer>,
 ) {
     let player_entity = commands
-        .spawn_bundle(PlayerBundle::new(asset_server, texture_atlases))
+        .spawn(PlayerBundle::new(asset_server, texture_atlases))
         .id();
 
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = Camera2dBundle::default();
     camera_bundle.projection.scale = 0.15;
 
-    commands
-        .spawn_bundle(camera_bundle)
-        .insert(Follow::new(player_entity, 3., true, 5.));
+    commands.spawn((camera_bundle, Follow::new(player_entity, 3., true, 5.)));
 }

@@ -54,7 +54,7 @@ impl PlayerBundle {
 
         //Load the textures
         let texture_handle = asset_server.load("tiny_hero.png");
-        let texture_atlas = TextureAtlas::from_grid(texture_handle, player_size, 8, 8);
+        let texture_atlas = TextureAtlas::from_grid(texture_handle, player_size, 8, 8, None, None);
         let texture_atlas_handle = texture_atlases.add(texture_atlas);
         let player_size = player_size / 3.75;
 

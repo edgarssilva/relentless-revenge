@@ -4,6 +4,7 @@ use bevy::{
         App, Commands, Component, Entity, Plugin, Query, Res, TextureAtlasSprite, Time, Timer,
         With, Without,
     },
+    time::TimerMode,
     utils::{Duration, HashMap},
 };
 
@@ -86,7 +87,11 @@ pub fn animation_state(
                     animation
                         .timer
                         .set_duration(Duration::from_millis(animation_state.duration));
-                    animation.timer.set_repeating(animation_state.repeat);
+
+                    animation.timer.set_mode(match animation_state.repeat {
+                        true => TimerMode::Repeating,
+                        false => TimerMode::Once,
+                    });
                     animation.reset();
 
                     animation_state.previous_state.set(*state);
@@ -114,7 +119,7 @@ pub fn animation_cycling(
         }
 
         if animation.current_frame >= animation.frames.len() {
-            if animation.timer.repeating() {
+            if animation.timer.mode() == TimerMode::Repeating {
                 animation.current_frame = 0;
             } else {
                 animation.current_frame = animation.frames.len() - 1;

@@ -1,7 +1,7 @@
 use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::{
     AssetEvent, Assets, Changed, Commands, Component, Entity, EventReader, Image, Input, KeyCode,
-    Query, Res, ResMut, Time, Transform, With, Without,
+    Query, Res, ResMut, Resource, Time, Transform, With, Without,
 };
 use bevy::render::camera::{Camera, OrthographicProjection};
 
@@ -63,26 +63,26 @@ pub fn helper_camera_controller(
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
-    let (mut projection, mut transform) = query.single_mut();
+    if let Ok((mut projection, mut transform)) = query.get_single_mut() {
+        if keys.pressed(KeyCode::Up) {
+            transform.translation.y += 150.0 * time.delta_seconds();
+        }
+        if keys.pressed(KeyCode::Left) {
+            transform.translation.x -= 150.0 * time.delta_seconds();
+        }
+        if keys.pressed(KeyCode::Down) {
+            transform.translation.y -= 150.0 * time.delta_seconds();
+        }
+        if keys.pressed(KeyCode::Right) {
+            transform.translation.x += 150.0 * time.delta_seconds();
+        }
 
-    if keys.pressed(KeyCode::Up) {
-        transform.translation.y += 150.0 * time.delta_seconds();
-    }
-    if keys.pressed(KeyCode::Left) {
-        transform.translation.x -= 150.0 * time.delta_seconds();
-    }
-    if keys.pressed(KeyCode::Down) {
-        transform.translation.y -= 150.0 * time.delta_seconds();
-    }
-    if keys.pressed(KeyCode::Right) {
-        transform.translation.x += 150.0 * time.delta_seconds();
-    }
-
-    if keys.pressed(KeyCode::Z) {
-        projection.scale -= 1. * time.delta_seconds();
-    }
-    if keys.pressed(KeyCode::X) {
-        projection.scale += 1. * time.delta_seconds();
+        if keys.pressed(KeyCode::Z) {
+            projection.scale -= 1. * time.delta_seconds();
+        }
+        if keys.pressed(KeyCode::X) {
+            projection.scale += 1. * time.delta_seconds();
+        }
     }
 }
 
@@ -108,6 +108,7 @@ pub fn parallax_system(
     }
 }
 
+#[derive(Resource)]
 pub struct KeyMaps {
     pub walk_up: KeyCode,
     pub walk_left: KeyCode,

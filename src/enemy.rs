@@ -69,7 +69,7 @@ impl EnemyBundle {
             animation: Animation {
                 frames: (0..7).collect(),
                 current_frame: 0,
-                timer: Timer::new(Duration::from_millis(250), true),
+                timer: Timer::new(Duration::from_millis(250), bevy::time::TimerMode::Once),
             },
             rigid_body: RigidBody::KinematicPositionBased,
             collider: Collider::cuboid(256. * 0.2, 256. * 0.2),
@@ -134,8 +134,14 @@ fn follow_player_action(
                         //Temporary projectile spawning
                         //Load the textures
                         let texture_handle = asset_server.load("arrow.png");
-                        let texture_atlas =
-                            TextureAtlas::from_grid(texture_handle, Vec2::splat(100.), 6, 5);
+                        let texture_atlas = TextureAtlas::from_grid(
+                            texture_handle,
+                            Vec2::splat(100.),
+                            6,
+                            5,
+                            None,
+                            None,
+                        );
                         let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
                         let seeker_position = seeker_transform.translation.xy();
@@ -143,8 +149,8 @@ fn follow_player_action(
 
                         let direction = (player_position - seeker_position).normalize();
 
-                        commands
-                            .spawn_bundle(ProjectileBundle::new(
+                        commands.spawn((
+                            ProjectileBundle::new(
                                 texture_atlas_handle,
                                 seeker_transform.translation.clone(),
                                 f32::atan2(direction.y, direction.x),
@@ -153,13 +159,17 @@ fn follow_player_action(
                                 Damage(10),
                                 false,
                                 Velocity(direction * 75.),
-                            ))
-                            .insert(Animation {
+                            ),
+                            Animation {
                                 //TODO: Add animation to projectile
                                 frames: (0..(6 * 5)).collect(),
                                 current_frame: 0,
-                                timer: Timer::new(Duration::from_millis(300), true),
-                            });
+                                timer: Timer::new(
+                                    Duration::from_millis(300),
+                                    bevy::time::TimerMode::Once,
+                                ),
+                            },
+                        ));
                         *state = ActionState::Executing;
                     }
 

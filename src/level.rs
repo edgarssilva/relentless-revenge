@@ -2,14 +2,15 @@ use bevy::{
     input::Input,
     math::Vec2,
     prelude::{
-        App, AssetServer, Assets, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res, ResMut,
+        App, AssetServer, Assets, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res,
+        ResMut, Resource,
     },
     sprite::TextureAtlas,
 };
 
 use crate::enemy::EnemyBundle;
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct LevelResource {
     pub level: i32,
     pub enemies: Vec<Entity>,
@@ -67,13 +68,14 @@ fn spawn_enemies(
     for e in event.iter() {
         //Load the textures
         let texture_handle = asset_server.load("monster_flesh_eye_sheet.png");
-        let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(256.), 3, 3);
+        let texture_atlas =
+            TextureAtlas::from_grid(texture_handle, Vec2::splat(256.), 3, 3, None, None);
         let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
         for pos in e.positions.iter() {
             level.enemies.push(
                 commands
-                    .spawn_bundle(EnemyBundle::new(
+                    .spawn(EnemyBundle::new(
                         texture_atlas_handle.clone(),
                         pos.extend(1.0),
                     ))
