@@ -1,10 +1,13 @@
+use std::time::Duration;
+
 use bevy::{
     math::Vec3Swizzles,
     prelude::{
         AssetServer, Bundle, Commands, Component, DespawnRecursiveExt, Entity, EventReader,
-        EventWriter, Handle, Image, Query, Res, Time, Transform, Vec2, Vec3, With,
+        EventWriter, Handle, Image, Query, Res, Transform, Vec2, Vec3, With,
     },
     sprite::SpriteBundle,
+    time::Timer,
 };
 use bevy_rapier2d::prelude::{ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups};
 
@@ -14,47 +17,99 @@ use crate::{
 };
 
 #[derive(Component)]
-pub struct Stats {
-    pub health: u32,
-    pub damage: u32,
-    pub speed: u32,
-    pub attack_speed: f32,
-    attack_timer: f32,
-    pub xp: u32,
+pub struct Health {
+    pub current: u32,
+    pub max: u32,
 }
 
-impl Stats {
-    pub fn new(health: u32, damage: u32, speed: u32, attack_speed: f32, xp: u32) -> Self {
-        Stats {
-            health,
-            damage,
-            speed,
-            attack_speed,
-            attack_timer: 0.,
-            xp,
+impl Health {
+    pub fn new(max: u32) -> Self {
+        Self { current: max, max }
+    }
+
+    pub fn damage(&mut self, damage: &Damage) {
+        self.current -= damage.amount;
+    }
+}
+
+#[derive(Component, Clone, Copy)]
+pub struct Damage {
+    pub amount: u32,
+}
+
+impl Damage {
+    pub fn new(amount: u32) -> Self {
+        Self { amount }
+    }
+}
+
+#[derive(Component)]
+pub struct MovementSpeed {
+    pub speed: u32,
+}
+
+impl MovementSpeed {
+    pub fn new(speed: u32) -> Self {
+        Self { speed }
+    }
+}
+
+#[derive(Component)]
+pub struct XP {
+    pub amount: u32,
+}
+
+impl XP {
+    pub fn new(xp: u32) -> Self {
+        Self { amount: xp }
+    }
+
+    pub fn add(&mut self, other: &Self) {
+        self.amount += other.amount;
+    }
+}
+
+#[derive(Component)]
+pub struct Cooldown {
+    pub timer: Timer,
+}
+impl Cooldown {
+    pub fn new(millis: u32) -> Self {
+        Self {
+            timer: Timer::from_seconds(millis as f32 / 1000., bevy::time::TimerMode::Once),
         }
     }
 
-    pub fn damage(&mut self, damage: u32) {
-        self.health = self.health.saturating_sub(damage);
+    pub fn is_ready(&self) -> bool {
+        self.timer.finished()
     }
 
-    pub fn can_attack(&self) -> bool {
-        self.attack_timer >= self.attack_speed
+    pub fn reset(&mut self) {
+        self.timer.reset();
     }
 
-    pub fn reset_attack_timer(&mut self) {
-        self.attack_timer = 0.;
+    pub fn update(&mut self, time: Duration) {
+        self.timer.tick(time);
     }
+}
+
+//TODO: Check if a new method is needed
+#[derive(Bundle)]
+pub struct StatsBundle {
+    pub health: Health,
+    pub damage: Damage,
+    pub speed: MovementSpeed,
+    pub xp: XP,
+    pub cooldown: Cooldown,
 }
 
 pub fn death_system(
     mut commands: Commands,
-    query: Query<(Entity, &Stats, Option<&Enemy>)>,
+    query: Query<(Entity, &Health, Option<&Enemy>)>,
     mut enemy_kill_writer: EventWriter<EnemyKilledEvent>,
 ) {
-    for (entity, stats, enemy) in query.iter() {
-        if stats.health <= 0 {
+    for (entity, health, enemy) in query.iter() {
+        if health.current <= 0 {
             commands.entity(entity).despawn_recursive();
 
             if enemy.is_some() {
@@ -64,17 +119,13 @@ pub fn death_system(
     }
 }
 
-pub fn attack_cooldown_system(mut query: Query<&mut Stats>, time: Res<Time>) {
-    for mut stats in query.iter_mut() {
-        stats.attack_timer += time.delta_seconds();
-    }
-}
-
-#[derive(Component, Clone, Copy)]
-pub struct XP(pub u32);
+//TODO: Move this to a separate file
+#[derive(Component)]
+pub struct Drop;
 
 #[derive(Bundle)]
-pub struct XPBundle {
+pub struct XPDropBundle {
+    pub drop: Drop,
     pub xp: XP,
     //TODO: Check if this a simple sprite or a sprite sheet animation
     #[bundle]
@@ -86,7 +137,7 @@ pub struct XPBundle {
     pub collision_groups: CollisionGroups,
 }
 
-impl XPBundle {
+impl XPDropBundle {
     pub fn spawn_enemy_drop(
         location: Vec2,
         xp: u32,
@@ -95,8 +146,9 @@ impl XPBundle {
         player: Entity,
     ) -> Entity {
         commands
-            .spawn(XPBundle {
-                xp: XP(xp),
+            .spawn(XPDropBundle {
+                drop: Drop,
+                xp: XP::new(xp),
                 sprite_bundle: SpriteBundle {
                     texture,
                     transform: Transform::from_translation(Vec3::new(location.x, location.y, 3.)),
@@ -115,16 +167,16 @@ impl XPBundle {
 pub fn drop_xp_system(
     mut commands: Commands,
     mut enemy_kill_reader: EventReader<EnemyKilledEvent>,
-    query: Query<(&Transform, &Stats)>,
+    query: Query<&Transform, With<Drop>>,
     asset_server: Res<AssetServer>,
     player_query: Query<Entity, With<Player>>,
 ) {
     if let Ok(player) = player_query.get_single() {
         for event in enemy_kill_reader.iter() {
-            if let Ok((transform, stats)) = query.get(event.0) {
-                XPBundle::spawn_enemy_drop(
+            if let Ok(transform) = query.get(event.0) {
+                XPDropBundle::spawn_enemy_drop(
                     transform.translation.xy(),
-                    stats.xp,
+                    5, // stats.xp,
                     &mut commands,
                     asset_server.load("xp.png"),
                     player,

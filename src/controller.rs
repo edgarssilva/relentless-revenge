@@ -6,7 +6,7 @@ use crate::{
     },
     player::{Player, PlayerActions},
     state::State,
-    stats::Stats,
+    stats::{Cooldown, MovementSpeed},
 };
 use bevy::{
     math::Vec2,
@@ -28,14 +28,14 @@ pub fn move_player(
             &mut Direction,
             &mut Controlled,
             &Transform,
-            &Stats,
+            &MovementSpeed,
             &ActionState<PlayerActions>, // Entity,
         ),
         With<Player>,
     >,
     time: Res<Time>,
 ) {
-    if let Ok((mut state, mut direction, mut controlled, transform, stats, action_state)) =
+    if let Ok((mut state, mut direction, mut controlled, transform, mv_speed, action_state)) =
         query.get_single_mut()
     {
         if !(state.equals(State::IDLE) || state.equals(State::WALKING)) {
@@ -53,7 +53,7 @@ pub fn move_player(
             }
         }
 
-        let dir = dir.normalize_or_zero() * stats.speed as f32 * time.delta_seconds();
+        let dir = dir.normalize_or_zero() * mv_speed.speed as f32 * time.delta_seconds();
 
         if dir.x == 0. && dir.y == 0. {
             state.set(State::IDLE);
@@ -73,13 +73,16 @@ pub fn dash_ability(
             &mut Transform,
             &Direction,
             &ActionState<PlayerActions>,
+            &mut Cooldown,
             Entity,
         ),
         With<Player>,
     >,
     mut commands: Commands,
 ) {
-    if let Ok((mut state, transform, direction, action_state, entity)) = query.get_single_mut() {
+    if let Ok((mut state, transform, direction, action_state, mut cooldown, entity)) =
+        query.get_single_mut()
+    {
         let mut dir = Vec2::ZERO;
 
         for action in PlayerActions::DIRECTIONS {
@@ -94,8 +97,9 @@ pub fn dash_ability(
             dir = direction.vec();
         }
 
-        if action_state.just_pressed(PlayerActions::Dash) {
+        if action_state.just_pressed(PlayerActions::Dash) && cooldown.is_ready() {
             state.set(State::DASHING);
+            cooldown.reset();
 
             //TODO: Add dash stats
             let new_pos = transform.translation.xy() + (dir.normalize() * 50.);
@@ -120,24 +124,24 @@ pub fn finish_dash(
 pub fn attack_ability(
     mut query: Query<(
         &mut State,
-        &mut Stats,
         &ActionState<PlayerActions>,
         &Transform,
         &Direction,
+        &mut Cooldown,
         Entity,
     )>,
     mut commands: Commands,
 ) {
-    if let Ok((mut state, mut stats, action_state, transform, direction, entity)) =
+    if let Ok((mut state, action_state, transform, direction, mut cooldown, entity)) =
         query.get_single_mut()
     {
         if state.equals(State::DASHING) {
             return;
         }
 
-        if action_state.just_pressed(PlayerActions::Attack) && stats.can_attack() {
+        if action_state.just_pressed(PlayerActions::Attack) && cooldown.is_ready() {
             state.set(State::ATTACKING);
-            stats.reset_attack_timer();
+            cooldown.reset();
 
             //TODO: Add attack dash stats
             let new_pos = transform.translation.xy() + (direction.vec().normalize() * 5.);

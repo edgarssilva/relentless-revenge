@@ -13,11 +13,11 @@ use big_brain::{
 
 use crate::{
     animation::Animation,
-    attack::{Damage, Damageable, ProjectileBundle},
+    attack::{Damageable, ProjectileBundle},
     collision::BodyLayers,
     movement::movement::{Follow, Velocity},
     player::Player,
-    stats::Stats,
+    stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
 };
 
 pub struct EnemyBehaviourPlugin;
@@ -39,7 +39,8 @@ pub struct EnemyBundle {
     enemy: Enemy,
     #[bundle]
     pub sprisheet: SpriteSheetBundle,
-    pub stats: Stats,
+    #[bundle]
+    pub stats: StatsBundle,
     pub damageable: Damageable,
     pub animation: Animation,
     pub rigid_body: RigidBody,
@@ -64,7 +65,13 @@ impl EnemyBundle {
                 },
                 ..default()
             },
-            stats: Stats::new(100, 20, 20, 2., 5),
+            stats: StatsBundle {
+                health: Health::new(100),
+                damage: Damage::new(10),
+                speed: MovementSpeed::new(20),
+                xp: XP::new(10),
+                cooldown: Cooldown::new(500),
+            },
             damageable: Damageable,
             animation: Animation {
                 frames: (0..7).collect(),
@@ -156,7 +163,7 @@ fn follow_player_action(
                                 f32::atan2(direction.y, direction.x),
                                 Vec2::new(32., 32.) / 2.,
                                 3.,
-                                Damage(10),
+                                Damage::new(10),
                                 false,
                                 Velocity(direction * 75.),
                             ),

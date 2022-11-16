@@ -12,8 +12,12 @@ use bevy_rapier2d::prelude::{
 };
 
 use crate::{
-    collision::BodyLayers, movement::direction::Direction, movement::movement::Velocity,
-    player::Player, state::State, stats::Stats,
+    collision::BodyLayers,
+    movement::direction::Direction,
+    movement::movement::Velocity,
+    player::Player,
+    state::State,
+    stats::{Cooldown, Damage},
 };
 
 #[derive(Component)]
@@ -24,9 +28,6 @@ pub struct Lifetime(pub Timer);
 
 #[derive(Component)]
 pub struct Breakable(pub u32);
-
-#[derive(Component)]
-pub struct Damage(pub u32);
 
 #[derive(Component)]
 pub struct Damageable;
@@ -155,11 +156,11 @@ impl ProjectileBundle {
 }
 
 pub fn attack_system(
-    mut query: Query<(&mut State, &mut AttackPhase, &Direction, &Stats, Entity), With<Player>>,
+    mut query: Query<(&mut State, &mut AttackPhase, &Direction, &Damage, Entity), With<Player>>,
     time: Res<Time>,
     mut commands: Commands,
 ) {
-    for (mut state, mut attack_phase, direction, stats, entity) in query.iter_mut() {
+    for (mut state, mut attack_phase, direction, damage, entity) in query.iter_mut() {
         if !attack_phase.charge.finished() {
             attack_phase.charge.tick(time.delta());
 
@@ -173,7 +174,7 @@ pub fn attack_system(
                         (direction.vec() * offset).extend(10.),
                         player_size,
                         Lifetime(attack_phase.attack.clone()),
-                        Damage(stats.damage),
+                        *damage,
                         Knockback {
                             force: 7.,
                             direction: direction.clone(),
@@ -220,5 +221,11 @@ pub fn projectile_break(mut commands: Commands, query: Query<(Entity, &Breakable
         if breakable.0 == 0 {
             commands.entity(entity).despawn_recursive();
         }
+    }
+}
+
+pub fn tick_cooldown(mut query: Query<&mut Cooldown>, time: Res<Time>) {
+    for mut cooldown in query.iter_mut() {
+        cooldown.update(time.delta());
     }
 }

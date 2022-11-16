@@ -2,17 +2,17 @@ use bevy::{
     math::Vec3Swizzles,
     prelude::{
         App, Camera, Commands, DespawnRecursiveExt, Entity, EventReader, Plugin, Query, Transform,
-        With,
+        With, Without,
     },
 };
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 
 use crate::{
-    attack::{Breakable, Damage, Damageable, Knockback},
+    attack::{Breakable, Damageable, Knockback},
     helper::Shake,
     movement::easing::{EaseFunction, EaseTo},
     player::Player,
-    stats::Stats,
+    stats::{Damage, Drop, Health},
     XP,
 };
 
@@ -41,8 +41,8 @@ impl BodyLayers {
 pub fn xp_system(
     mut commands: Commands,
     mut events: EventReader<CollisionEvent>,
-    query: Query<&XP>,
-    mut player_query: Query<&mut Stats, With<Player>>,
+    drop_query: Query<&XP, (With<Drop>, Without<Player>)>,
+    mut player_query: Query<&mut XP, (With<Player>, Without<Drop>)>,
 ) {
     events.iter().for_each(|e| {
         let (e1, e2, started, flags) = match e {
@@ -55,17 +55,19 @@ pub fn xp_system(
             return;
         }
 
-        //TODO: Prevent panic from XP
-        if let Ok(xp) = query.get(*e1) {
-            if let Ok(mut stats) = player_query.get_mut(*e2) {
-                stats.xp += xp.0;
-                commands.entity(*e1).despawn_recursive();
-            }
-        } else if let Ok(xp) = query.get(*e2) {
-            if let Ok(mut stats) = player_query.get_mut(*e1) {
-                stats.xp += xp.0;
-                commands.entity(*e2).despawn_recursive();
-            }
+        if let Some((drop_entity, player_entity)) = match (
+            drop_query.contains(*e1) && player_query.contains(*e2),
+            (player_query.contains(*e2) && drop_query.contains(*e1)),
+        ) {
+            (true, false) => Some((*e1, *e2)),
+            (false, true) => Some((*e2, *e1)),
+            _ => None,
+        } {
+            let drop_xp = drop_query.get(drop_entity).unwrap();
+            let mut player_xp = player_query.get_mut(player_entity).unwrap();
+
+            player_xp.add(drop_xp);
+            commands.entity(drop_entity).despawn_recursive();
         }
     });
 }
@@ -73,7 +75,7 @@ pub fn xp_system(
 pub fn damagable_collision(
     mut events: EventReader<CollisionEvent>,
     mut damage_query: Query<(&Damage, Option<&Knockback>, Option<&mut Breakable>)>,
-    mut damageable_query: Query<(&mut Stats, &Transform), With<Damageable>>,
+    mut damageable_query: Query<(&mut Health, &Transform), With<Damageable>>,
     camera_query: Query<Entity, With<Camera>>,
     mut commands: Commands,
 ) {
@@ -98,10 +100,11 @@ pub fn damagable_collision(
             _ => None,
         } {
             let (damage, knockback, breakable) = damage_query.get_mut(damage_entity).unwrap();
-            let (mut stats, transform) = damageable_query.get_mut(damaged_entity).unwrap();
+            let (mut health, transform) = damageable_query.get_mut(damaged_entity).unwrap();
 
-            stats.damage(damage.0);
+            health.damage(damage);
 
+            //TODO: Handle on separate system
             if let Some(mut breakable) = breakable {
                 if breakable.0 > 0 {
                     breakable.0 -= 1;

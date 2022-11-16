@@ -61,7 +61,7 @@ fn main() {
         .add_system(attack_system)
         .add_system(death_system)
         .add_system(drop_xp_system)
-        .add_system(attack_cooldown_system)
+        .add_system(tick_cooldown)
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(run_on_camera_move)

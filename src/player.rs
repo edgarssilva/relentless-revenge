@@ -15,8 +15,14 @@ use leafwing_input_manager::{
 };
 
 use crate::{
-    animation::AnimationState, attack::Damageable, collision::BodyLayers, controller::Controlled,
-    movement::direction::Direction, state::State, stats::Stats, PLAYER_Z,
+    animation::AnimationState,
+    attack::Damageable,
+    collision::BodyLayers,
+    controller::Controlled,
+    movement::direction::Direction,
+    state::State,
+    stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
+    PLAYER_Z,
 };
 
 use leafwing_input_manager::Actionlike;
@@ -38,7 +44,8 @@ pub struct PlayerBundle {
     collision_groups: CollisionGroups,
     direction: Direction,
     state: State,
-    stats: Stats,
+    #[bundle]
+    stats: StatsBundle,
     damageable: Damageable,
     #[bundle]
     input: InputManagerBundle<PlayerActions>,
@@ -112,7 +119,13 @@ impl PlayerBundle {
             ),
             direction: Direction::SOUTH,
             state: State::IDLE,
-            stats: Stats::new(100, 20, 75, 0.35, 0),
+            stats: StatsBundle {
+                health: Health::new(100),
+                damage: Damage::new(20),
+                speed: MovementSpeed::new(70),
+                xp: XP::new(0),
+                cooldown: Cooldown::new(350),
+            },
             damageable: Damageable,
             input: InputManagerBundle::<PlayerActions> {
                 action_state: ActionState::default(),
