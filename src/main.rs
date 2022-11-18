@@ -3,10 +3,10 @@ mod attack;
 mod collision;
 mod controller;
 mod enemy;
+mod game_states;
 mod helper;
 mod level;
 mod map;
-mod menus;
 mod movement;
 mod player;
 mod state;
@@ -16,7 +16,7 @@ use bevy::prelude::*;
 use helper::KeyMaps;
 use iyes_loopless::prelude::*;
 
-use menus::{ingame::InGamePlugin, main_menu::MainMenuPlugin};
+use game_states::{ingame::InGamePlugin, menu::MainMenuPlugin};
 use stats::*;
 
 pub const PLAYER_Z: f32 = 39.;
