@@ -1,6 +1,6 @@
 use bevy::prelude::Component;
 
-#[derive(Component, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Component, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum State {
     IDLE,
     WALKING,

@@ -10,6 +10,7 @@ use big_brain::{
     thinker::{Actor, Thinker, ThinkerBuilder},
     BigBrainPlugin, BigBrainStage,
 };
+use iyes_loopless::prelude::ConditionSet;
 
 use crate::{
     animation::Animation,
@@ -18,6 +19,7 @@ use crate::{
     movement::movement::{Follow, Velocity},
     player::Player,
     stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
+    GameState,
 };
 
 pub struct EnemyBehaviourPlugin;
@@ -25,9 +27,15 @@ pub struct EnemyBehaviourPlugin;
 impl Plugin for EnemyBehaviourPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(BigBrainPlugin)
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(GameState::InGame)
+                    .with_system(follow_player_action)
+                    .with_system(seeking_scorer)
+                    .into(),
+            )
             .add_system_to_stage(BigBrainStage::Actions, follow_player_action)
-            .add_system_to_stage(BigBrainStage::Scorers, seeking_scorer)
-            .add_system(seeking_scorer);
+            .add_system_to_stage(BigBrainStage::Scorers, seeking_scorer);
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{movement::direction::Direction, state::State};
+use crate::{movement::direction::Direction, state::State, GameState};
 use bevy::{
     prelude::{
         App, Commands, Component, Entity, Plugin, Query, Res, TextureAtlasSprite, Time, Timer,
@@ -7,14 +7,20 @@ use bevy::{
     time::TimerMode,
     utils::{Duration, HashMap},
 };
+use iyes_loopless::prelude::ConditionSet;
 
 pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(animation_spawner)
-            .add_system(animation_cycling)
-            .add_system(animation_state);
+        app.add_system_set(
+            ConditionSet::new()
+                .run_in_state(GameState::InGame)
+                .with_system(animation_spawner)
+                .with_system(animation_cycling)
+                .with_system(animation_state)
+                .into(),
+        );
     }
 }
 

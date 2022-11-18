@@ -15,3 +15,4 @@ getrandom = {version = "0.2.7", features = ["js"]}# Works with rand to support b
 leafwing-input-manager = "0.7"
 rand = "0.8.5"
 nalgebra = "0.31.4"
+iyes_loopless = {git= "https://github.com/IyesGames/iyes_loopless.git", features=["states"]}

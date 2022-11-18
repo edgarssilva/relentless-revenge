@@ -7,8 +7,9 @@ use bevy::{
     },
     sprite::TextureAtlas,
 };
+use iyes_loopless::prelude::ConditionSet;
 
-use crate::enemy::EnemyBundle;
+use crate::{enemy::EnemyBundle, GameState};
 
 #[derive(Default, Resource)]
 pub struct LevelResource {
@@ -33,10 +34,15 @@ impl Plugin for LevelPlugin {
             .add_event::<GenerateMapEvent>()
             .add_event::<SpawnEnemiesEvent>()
             .add_event::<EnemyKilledEvent>()
-            .add_system(enemy_killed)
-            .add_system(spawn_enemies)
-            .add_system(generate_level)
-            .add_system(keymap_generate);
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(GameState::InGame)
+                    .with_system(enemy_killed)
+                    .with_system(spawn_enemies)
+                    .with_system(generate_level)
+                    .with_system(keymap_generate)
+                    .into(),
+            );
     }
 }
 

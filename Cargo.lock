@@ -2085,6 +2085,7 @@ dependencies = [
  "bevy_rapier2d",
  "big-brain",
  "getrandom",
+ "iyes_loopless",
  "leafwing-input-manager",
  "nalgebra",
  "rand",
@@ -2104,6 +2105,17 @@ name = "itoa"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
+
+[[package]]
+name = "iyes_loopless"
+version = "0.9.0"
+source = "git+https://github.com/IyesGames/iyes_loopless.git#92ecd3cc6e97a833581f8a7caeb4a155fa649c08"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_time",
+ "bevy_utils",
+]
 
 [[package]]
 name = "jni"

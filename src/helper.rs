@@ -1,9 +1,8 @@
-use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::{
-    AssetEvent, Assets, Changed, Commands, Component, Entity, EventReader, Image, Input, KeyCode,
-    Query, Res, ResMut, Resource, Time, Transform, With, Without,
+    AssetEvent, Assets, Commands, Component, Entity, EventReader, Image, Input, KeyCode, Query,
+    Res, ResMut, Resource, Time, Transform, With,
 };
-use bevy::render::camera::{Camera, OrthographicProjection};
+use bevy::render::camera::OrthographicProjection;
 
 use bevy::render::render_resource::TextureUsages;
 use rand::Rng;
@@ -83,28 +82,6 @@ pub fn helper_camera_controller(
         if keys.pressed(KeyCode::X) {
             projection.scale += 1. * time.delta_seconds();
         }
-    }
-}
-
-pub fn run_on_camera_move(query: Query<(), (Changed<Transform>, With<Camera>)>) -> ShouldRun {
-    if query.get_single().is_ok() {
-        ShouldRun::Yes
-    } else {
-        ShouldRun::No
-    }
-}
-
-pub fn parallax_system(
-    cam_query: Query<&Transform, (With<Camera>, With<Follow>)>,
-    mut query: Query<&mut Transform, (With<Parallax>, Without<Camera>)>,
-) {
-    let cam_trans = cam_query.single();
-
-    for mut trans in query.iter_mut() {
-        trans.translation.x =
-            -cam_trans.translation.x * (0.002 * (trans.translation.z - crate::BACKGROUND_Z));
-        trans.translation.y =
-            -cam_trans.translation.y * (0.001 * (trans.translation.z - crate::BACKGROUND_Z));
     }
 }
 

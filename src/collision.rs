@@ -6,6 +6,7 @@ use bevy::{
     },
 };
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
+use iyes_loopless::prelude::ConditionSet;
 
 use crate::{
     attack::{Breakable, Damageable, Knockback},
@@ -13,7 +14,7 @@ use crate::{
     movement::easing::{EaseFunction, EaseTo},
     player::Player,
     stats::{Damage, Drop, Health},
-    XP,
+    GameState, XP,
 };
 
 pub struct CollisionPlugin;
@@ -22,8 +23,13 @@ impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
             .add_plugin(RapierDebugRenderPlugin::default())
-            .add_system(xp_system)
-            .add_system(damagable_collision);
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(GameState::InGame)
+                    .with_system(xp_system)
+                    .with_system(damagable_collision)
+                    .into(),
+            );
     }
 }
 
