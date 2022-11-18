@@ -10,7 +10,7 @@ use crate::{
 };
 use bevy::{
     math::Vec2,
-    prelude::{Commands, Component, Entity, Query, Res, Transform, With},
+    prelude::{Commands, Component, Entity, Query, Res, Transform, With, Without},
     time::{Time, Timer},
 };
 use bevy::{math::Vec3Swizzles, prelude::RemovedComponents};
@@ -31,13 +31,14 @@ pub fn move_player(
             &MovementSpeed,
             &ActionState<PlayerActions>, // Entity,
         ),
-        With<Player>,
+        (With<Player>, Without<AttackPhase>), // Can't move while attacking
     >,
     time: Res<Time>,
 ) {
     if let Ok((mut state, mut direction, mut controlled, transform, mv_speed, action_state)) =
         query.get_single_mut()
     {
+        // println!("state: {:?}", state);
         if !(state.equals(State::IDLE) || state.equals(State::WALKING)) {
             return;
         }
@@ -76,7 +77,7 @@ pub fn dash_ability(
             &mut Cooldown,
             Entity,
         ),
-        With<Player>,
+        (With<Player>, Without<AttackPhase>), // Can't dash while attacking
     >,
     mut commands: Commands,
 ) {
@@ -84,6 +85,10 @@ pub fn dash_ability(
         query.get_single_mut()
     {
         let mut dir = Vec2::ZERO;
+
+        if state.equals(State::ATTACKING) || state.equals(State::DASHING) {
+            return;
+        }
 
         for action in PlayerActions::DIRECTIONS {
             if action_state.pressed(action) {
@@ -116,7 +121,9 @@ pub fn finish_dash(
 ) {
     for entity in removals.iter() {
         if let Ok(mut state) = query.get_mut(entity) {
-            state.set(State::IDLE);
+            if state.equals(State::DASHING) {
+                state.set(State::IDLE);
+            }
         }
     }
 }
@@ -135,7 +142,7 @@ pub fn attack_ability(
     if let Ok((mut state, action_state, transform, direction, mut cooldown, entity)) =
         query.get_single_mut()
     {
-        if state.equals(State::DASHING) {
+        if state.equals(State::DASHING) || state.equals(State::ATTACKING) {
             return;
         }
 

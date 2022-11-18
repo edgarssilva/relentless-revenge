@@ -182,9 +182,8 @@ pub fn attack_system(
                         true,
                     ));
                 });
-            } else {
-                return;
             }
+            return;
         }
 
         if !attack_phase.attack.finished() {
