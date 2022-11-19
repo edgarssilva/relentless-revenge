@@ -8,11 +8,10 @@ version = "0.1.0"
 [dependencies]
 bevy = "0.9.0"
 bevy_ecs_tilemap = "0.9"
-bevy_editor_pls = { git = "https://github.com/jakobhellermann/bevy_editor_pls.git", branch = "bevy-main" }
-bevy_rapier2d = { git="https://github.com/devil-ira/bevy_rapier.git", branch="bevy-0.9" }
+bevy_rapier2d="0.19.0"
 big-brain = "0.15.0"
 getrandom = {version = "0.2.7", features = ["js"]}# Works with rand to support browser runder numbers
 leafwing-input-manager = "0.7"
 rand = "0.8.5"
 nalgebra = "0.31.4"
-iyes_loopless = {git= "https://github.com/IyesGames/iyes_loopless.git", features=["states"]}
+iyes_loopless = {version="0.9.0", features=["states"]}
