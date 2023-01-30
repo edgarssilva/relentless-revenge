@@ -3,8 +3,8 @@ use std::time::Duration;
 use bevy::{
     math::Vec3Swizzles,
     prelude::{
-        AssetServer, Bundle, Commands, Component, DespawnRecursiveExt, Entity, EventReader,
-        EventWriter, Handle, Image, Query, Res, Transform, Vec2, Vec3, With,
+        Bundle, Commands, Component, DespawnRecursiveExt, Entity, EventReader, EventWriter, Handle,
+        Image, Query, Res, Transform, Vec2, Vec3, With,
     },
     sprite::SpriteBundle,
     time::Timer,
@@ -12,8 +12,8 @@ use bevy::{
 use bevy_rapier2d::prelude::{ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups};
 
 use crate::{
-    collision::BodyLayers, enemy::Enemy, level::EnemyKilledEvent, movement::movement::Follow,
-    player::Player,
+    collision::BodyLayers, enemy::Enemy, game_states::loading::TextureAssets,
+    level::EnemyKilledEvent, movement::movement::Follow, player::Player,
 };
 
 #[derive(Component)]
@@ -168,7 +168,7 @@ pub fn drop_xp_system(
     mut commands: Commands,
     mut enemy_kill_reader: EventReader<EnemyKilledEvent>,
     query: Query<&Transform, With<Drop>>,
-    asset_server: Res<AssetServer>,
+    texture_assets: Res<TextureAssets>,
     player_query: Query<Entity, With<Player>>,
 ) {
     if let Ok(player) = player_query.get_single() {
@@ -178,7 +178,7 @@ pub fn drop_xp_system(
                     transform.translation.xy(),
                     5, // stats.xp,
                     &mut commands,
-                    asset_server.load("xp.png"),
+                    texture_assets.xp_texture.clone(),
                     player,
                 );
             }

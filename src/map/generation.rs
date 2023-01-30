@@ -1,10 +1,9 @@
+use crate::game_states::loading::TextureAssets;
 use crate::level::{GenerateMapEvent, SpawnEnemiesEvent};
 use crate::map::room::Room;
 use crate::player::Player;
 use bevy::math::Vec2;
-use bevy::prelude::{
-    AssetServer, Commands, EventReader, EventWriter, Mut, Query, Res, Transform, UVec2, With,
-};
+use bevy::prelude::{Commands, EventReader, EventWriter, Mut, Query, Res, Transform, UVec2, With};
 
 use bevy_ecs_tilemap::prelude::*;
 
@@ -14,9 +13,7 @@ use rand::prelude::*;
 use super::bridge::Bridge;
 use super::walkable::WalkableTile;
 
-pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let texture_handle = asset_server.load("tileset.png");
-
+pub fn setup_map(mut commands: Commands, texture_assets: Res<TextureAssets>) {
     let tilemap_size = TilemapSize { x: 160, y: 160 };
     let mut tile_storage = TileStorage::empty(tilemap_size);
     let tilemap_entity = commands.spawn_empty().id();
@@ -37,7 +34,7 @@ pub fn setup_map(mut commands: Commands, asset_server: Res<AssetServer>) {
         grid_size,
         size: tilemap_size,
         storage: tile_storage,
-        texture: TilemapTexture::Single(texture_handle),
+        texture: TilemapTexture::Single(texture_assets.map_texture.clone()),
         tile_size,
         map_type: TilemapType::Isometric(IsoCoordSystem::Diamond),
         ..Default::default()

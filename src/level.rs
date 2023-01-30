@@ -2,14 +2,12 @@ use bevy::{
     input::Input,
     math::Vec2,
     prelude::{
-        App, AssetServer, Assets, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res,
-        ResMut, Resource,
+        App, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res, ResMut, Resource,
     },
-    sprite::TextureAtlas,
 };
 use iyes_loopless::prelude::ConditionSet;
 
-use crate::{enemy::EnemyBundle, GameState};
+use crate::{enemy::EnemyBundle, game_states::loading::TextureAssets, GameState};
 
 #[derive(Default, Resource)]
 pub struct LevelResource {
@@ -67,22 +65,15 @@ fn generate_level(
 fn spawn_enemies(
     mut event: EventReader<SpawnEnemiesEvent>,
     mut commands: Commands,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    asset_server: Res<AssetServer>,
+    texture_assets: Res<TextureAssets>,
     mut level: ResMut<LevelResource>,
 ) {
     for e in event.iter() {
-        //Load the textures
-        let texture_handle = asset_server.load("monster_flesh_eye_sheet.png");
-        let texture_atlas =
-            TextureAtlas::from_grid(texture_handle, Vec2::splat(256.), 3, 3, None, None);
-        let texture_atlas_handle = texture_atlases.add(texture_atlas);
-
         for pos in e.positions.iter() {
             level.enemies.push(
                 commands
                     .spawn(EnemyBundle::new(
-                        texture_atlas_handle.clone(),
+                        texture_assets.enemy_atlas.clone(),
                         pos.extend(1.0),
                     ))
                     .id(),

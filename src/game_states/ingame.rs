@@ -1,7 +1,4 @@
-use bevy::{
-    prelude::{App, AssetServer, Assets, Camera2dBundle, Commands, CoreStage, Plugin, Res, ResMut},
-    sprite::TextureAtlas,
-};
+use bevy::prelude::{App, Camera2dBundle, Commands, CoreStage, Plugin, Res};
 use bevy_ecs_tilemap::TilemapPlugin;
 use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet};
 use leafwing_input_manager::prelude::InputManagerPlugin;
@@ -23,6 +20,8 @@ use crate::{
     stats::{death_system, drop_xp_system},
     GameState,
 };
+
+use super::loading::TextureAssets;
 
 pub struct InGamePlugin;
 
@@ -56,19 +55,20 @@ impl Plugin for InGamePlugin {
                     .with_system(projectile_break)
                     .into(),
             )
-            .add_system_to_stage(CoreStage::PostUpdate, restrict_movement)
-            .add_system_to_stage(CoreStage::PostUpdate, finish_dash);
+            .add_system_set_to_stage(
+                CoreStage::PostUpdate,
+                ConditionSet::new()
+                    .run_in_state(GameState::InGame)
+                    .with_system(restrict_movement)
+                    .with_system(finish_dash)
+                    .into(),
+            );
     }
 }
 
-fn setup_game(
-    mut commands: Commands,
-    texture_atlases: ResMut<Assets<TextureAtlas>>,
-    asset_server: Res<AssetServer>,
-) {
-    let player_entity = commands
-        .spawn(PlayerBundle::new(asset_server, texture_atlases))
-        .id();
+fn setup_game(mut commands: Commands, texture_assets: Res<TextureAssets>) {
+    println!("InGamePlugin::setup_game");
+    let player_entity = commands.spawn(PlayerBundle::new(texture_assets)).id();
 
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = Camera2dBundle::default();

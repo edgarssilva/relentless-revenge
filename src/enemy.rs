@@ -16,6 +16,7 @@ use crate::{
     animation::Animation,
     attack::{Damageable, ProjectileBundle},
     collision::BodyLayers,
+    game_states::loading::TextureAssets,
     movement::movement::{Follow, Velocity},
     player::Player,
     stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
@@ -34,8 +35,20 @@ impl Plugin for EnemyBehaviourPlugin {
                     .with_system(seeking_scorer)
                     .into(),
             )
-            .add_system_to_stage(BigBrainStage::Actions, follow_player_action)
-            .add_system_to_stage(BigBrainStage::Scorers, seeking_scorer);
+            .add_system_set_to_stage(
+                BigBrainStage::Actions,
+                ConditionSet::new()
+                    .run_in_state(GameState::InGame)
+                    .with_system(follow_player_action)
+                    .into(),
+            )
+            .add_system_set_to_stage(
+                BigBrainStage::Scorers,
+                ConditionSet::new()
+                    .run_in_state(GameState::InGame)
+                    .with_system(seeking_scorer)
+                    .into(),
+            );
     }
 }
 
@@ -135,8 +148,7 @@ fn follow_player_action(
     player: Query<(Entity, &Transform), With<Player>>,
     mut query: Query<(&Actor, &mut ActionState), With<SeekPlayer>>,
     //Temporary for projectiles
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    asset_server: Res<AssetServer>,
+    texture_assets: Res<TextureAssets>,
 ) {
     if let Ok((player, player_transform)) = player.get_single() {
         for (Actor(actor), mut state) in query.iter_mut() {
@@ -147,17 +159,6 @@ fn follow_player_action(
                             .entity(*actor)
                             .insert(Follow::new(player, 0.10, true, 0.5));
                         //Temporary projectile spawning
-                        //Load the textures
-                        let texture_handle = asset_server.load("arrow.png");
-                        let texture_atlas = TextureAtlas::from_grid(
-                            texture_handle,
-                            Vec2::splat(100.),
-                            6,
-                            5,
-                            None,
-                            None,
-                        );
-                        let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
                         let seeker_position = seeker_transform.translation.xy();
                         let player_position = player_transform.translation.xy();
@@ -166,7 +167,7 @@ fn follow_player_action(
 
                         commands.spawn((
                             ProjectileBundle::new(
-                                texture_atlas_handle,
+                                texture_assets.arrow_atlas.clone(),
                                 seeker_transform.translation.clone(),
                                 f32::atan2(direction.y, direction.x),
                                 Vec2::new(32., 32.) / 2.,

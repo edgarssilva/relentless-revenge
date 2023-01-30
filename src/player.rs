@@ -1,9 +1,6 @@
 use bevy::{
-    prelude::{
-        default, AssetServer, Assets, Bundle, Component, KeyCode, Res, ResMut, Transform, Vec2,
-        Vec3,
-    },
-    sprite::{SpriteSheetBundle, TextureAtlas},
+    prelude::{default, Bundle, Component, KeyCode, Res, Transform, Vec2, Vec3},
+    sprite::SpriteSheetBundle,
     utils::HashMap,
 };
 use bevy_rapier2d::prelude::{
@@ -19,6 +16,7 @@ use crate::{
     attack::Damageable,
     collision::BodyLayers,
     controller::Controlled,
+    game_states::loading::TextureAssets,
     movement::direction::Direction,
     state::State,
     stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
@@ -52,17 +50,9 @@ pub struct PlayerBundle {
 }
 
 impl PlayerBundle {
-    pub fn new(
-        asset_server: Res<AssetServer>,
-        mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    ) -> Self {
+    pub fn new(texture_assets: Res<TextureAssets>) -> Self {
         //Player Creation
         let player_size = Vec2::new(64., 64.);
-
-        //Load the textures
-        let texture_handle = asset_server.load("tiny_hero.png");
-        let texture_atlas = TextureAtlas::from_grid(texture_handle, player_size, 8, 8, None, None);
-        let texture_atlas_handle = texture_atlases.add(texture_atlas);
         let player_size = player_size / 3.75;
 
         let mut player_animations = HashMap::new();
@@ -99,7 +89,7 @@ impl PlayerBundle {
         PlayerBundle {
             player: Player,
             sprite_bundle: SpriteSheetBundle {
-                texture_atlas: texture_atlas_handle,
+                texture_atlas: texture_assets.player_atlas.clone(),
                 transform: Transform {
                     translation: Vec3::new(0., 0., PLAYER_Z),
                     scale: Vec3::new(1.25, 1.25, 1.),
