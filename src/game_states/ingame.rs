@@ -1,3 +1,4 @@
+use bevy::asset::Assets;
 use bevy::prelude::{App, Camera2dBundle, Commands, CoreStage, Plugin, Res};
 use bevy_ecs_tilemap::TilemapPlugin;
 use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet};
@@ -9,6 +10,7 @@ use crate::{
     collision::CollisionPlugin,
     controller::{attack_ability, dash_ability, finish_dash, move_player},
     enemy::EnemyBehaviourPlugin,
+    GameState,
     helper::{helper_camera_controller, set_texture_filters_to_nearest, shake_system},
     level::LevelPlugin,
     map::{
@@ -18,8 +20,9 @@ use crate::{
     movement::movement::{Follow, MovementPlugin},
     player::{PlayerActions, PlayerBundle},
     stats::{death_system, drop_xp_system},
-    GameState,
 };
+use crate::metadata::{EnemyMeta, GameMeta};
+use crate::ui::setup_ui;
 
 use super::loading::TextureAssets;
 
@@ -36,9 +39,11 @@ impl Plugin for InGamePlugin {
             .add_plugin(MovementPlugin)
             .add_enter_system(GameState::InGame, setup_game)
             .add_enter_system(GameState::InGame, setup_map)
+            .add_enter_system(GameState::InGame, exit_loading)
             .add_system_set(
                 ConditionSet::new()
                     .run_in_state(GameState::InGame)
+                    .with_system(setup_ui)
                     .with_system(set_texture_filters_to_nearest)
                     .with_system(helper_camera_controller)
                     .with_system(move_player)
@@ -65,6 +70,12 @@ impl Plugin for InGamePlugin {
             );
     }
 }
+fn exit_loading(game_meta: Res<GameMeta>, assets: Res<Assets<EnemyMeta>>) {
+    let enemy = assets.get(&game_meta.enemy).unwrap();
+    println!("Loaded image: {:?}", enemy.texture.atlas_handle);
+    println!("Enemy name: {:?}", enemy.name);
+}
+
 
 fn setup_game(mut commands: Commands, texture_assets: Res<TextureAssets>) {
     println!("InGamePlugin::setup_game");

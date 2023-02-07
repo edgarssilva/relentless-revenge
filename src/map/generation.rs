@@ -1,14 +1,13 @@
+use bevy::math::Vec2;
+use bevy::prelude::{Commands, EventReader, EventWriter, Mut, Query, Res, Transform, UVec2, With};
+use bevy_ecs_tilemap::prelude::*;
+use rand;
+use rand::prelude::*;
+
 use crate::game_states::loading::TextureAssets;
 use crate::level::{GenerateMapEvent, SpawnEnemiesEvent};
 use crate::map::room::Room;
 use crate::player::Player;
-use bevy::math::Vec2;
-use bevy::prelude::{Commands, EventReader, EventWriter, Mut, Query, Res, Transform, UVec2, With};
-
-use bevy_ecs_tilemap::prelude::*;
-
-use rand;
-use rand::prelude::*;
 
 use super::bridge::Bridge;
 use super::walkable::WalkableTile;
@@ -42,14 +41,14 @@ pub fn setup_map(mut commands: Commands, texture_assets: Res<TextureAssets>) {
 }
 
 pub fn remake_map(
-    mut event: EventReader<GenerateMapEvent>,
+    event: EventReader<GenerateMapEvent>,
     mut player_query: Query<&mut Transform, With<Player>>,
     mut tile_query: Query<&mut TileTextureIndex>,
     tile_storage_query: Query<&TileStorage>,
     mut spawn_enemies_writer: EventWriter<SpawnEnemiesEvent>,
     mut commands: Commands,
 ) {
-    for _ in event.iter() {
+    if !event.is_empty() {
         let transform = player_query.single_mut();
 
         //Change all tiles to clear texture
@@ -72,8 +71,7 @@ pub fn remake_map(
         }
 
         spawn_enemies_writer.send(enemies);
-
-        return;
+        event.clear();
     }
 }
 
@@ -84,7 +82,7 @@ fn build_map(
     enemies: &mut SpawnEnemiesEvent,
     commands: &mut Commands,
 ) {
-    let mut rng = rand::thread_rng();
+    let mut rng = thread_rng();
 
     let mut first_room = true;
 
@@ -144,7 +142,7 @@ fn build_map(
 }
 
 fn generate_level() -> (Vec<Room>, Vec<Bridge>) {
-    let mut rng = rand::thread_rng();
+    let mut rng = thread_rng();
 
     let mut rooms = Vec::<Room>::new();
     let mut bridges = Vec::<Bridge>::new();
@@ -188,7 +186,7 @@ fn generate_level() -> (Vec<Room>, Vec<Bridge>) {
 }
 
 fn generate_bridge(from: UVec2, to: UVec2) -> Bridge {
-    let mut rng = rand::thread_rng();
+    let mut rng = thread_rng();
     let mut current = from.clone().as_vec2();
     let to = to.as_vec2();
 
@@ -196,11 +194,11 @@ fn generate_bridge(from: UVec2, to: UVec2) -> Bridge {
 
     while current != to {
         let mut dir = (to.y - current.y).atan2(to.x - current.x).to_degrees();
-        dir = dir + [-90., 0., 90.].choose(&mut rng).unwrap(); //Add randomness
+        dir += [-90., 0., 90.].choose(&mut rng).unwrap(); //Add randomness
         dir = (dir / 90.).round() * 90.; //Increments of 90
         dir = dir.to_radians();
 
-        current = current + Vec2::new(dir.cos(), dir.sin()).round();
+        current += Vec2::new(dir.cos(), dir.sin()).round();
 
         positions.push(current.as_uvec2());
     }

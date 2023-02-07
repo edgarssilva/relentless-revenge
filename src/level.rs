@@ -1,3 +1,4 @@
+use bevy::asset::Assets;
 use bevy::{
     input::Input,
     math::Vec2,
@@ -7,6 +8,7 @@ use bevy::{
 };
 use iyes_loopless::prelude::ConditionSet;
 
+use crate::metadata::{EnemyMeta, GameMeta};
 use crate::{enemy::EnemyBundle, game_states::loading::TextureAssets, GameState};
 
 #[derive(Default, Resource)]
@@ -51,29 +53,35 @@ fn keymap_generate(keys: Res<Input<KeyCode>>, mut map_writer: EventWriter<Genera
 }
 
 fn generate_level(
-    mut event: EventReader<GenerateLevelEvent>,
+    event: EventReader<GenerateLevelEvent>,
     mut level: ResMut<LevelResource>,
     mut map_writer: EventWriter<GenerateMapEvent>,
 ) {
-    for _ in event.iter() {
+    if !event.is_empty() {
         level.level += 1;
         map_writer.send(GenerateMapEvent);
-        return;
+
+        event.clear();
     }
 }
 
 fn spawn_enemies(
     mut event: EventReader<SpawnEnemiesEvent>,
     mut commands: Commands,
-    texture_assets: Res<TextureAssets>,
+    // texture_assets: Res<TextureAssets>,
+    game_meta: Res<GameMeta>,
+    enemies: Res<Assets<EnemyMeta>>,
     mut level: ResMut<LevelResource>,
 ) {
+    let enemy_texture = &enemies.get(&game_meta.enemy).unwrap().texture.atlas_handle;
+
     for e in event.iter() {
         for pos in e.positions.iter() {
             level.enemies.push(
                 commands
                     .spawn(EnemyBundle::new(
-                        texture_assets.enemy_atlas.clone(),
+                        enemy_texture.clone(),
+                        // texture_assets.enemy_atlas.clone(),
                         pos.extend(1.0),
                     ))
                     .id(),
@@ -90,7 +98,7 @@ fn enemy_killed(
     for killed in event.iter() {
         level.enemies.retain(|e| *e != killed.0);
 
-        if level.enemies.len() == 0 {
+        if level.enemies.is_empty() {
             level_writer.send(GenerateLevelEvent);
         }
     }

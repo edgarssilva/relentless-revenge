@@ -1,0 +1,15 @@
+name: "Cool Enemy"
+health: 100
+damage: 10
+attack_speed: 1.0
+xp: 50
+texture:
+  path: "../../monster_flesh_eye_sheet.png"
+  tile_size: [256, 256]
+  rows: 3
+  columns: 3
+  frames: [0, 1, 2, 3, 4, 5, 6, 7]
+  duration: 0.1
+hitbox:
+  width: 32
+  height: 32

@@ -158,7 +158,7 @@ pub fn attack_ability(
                 .insert(AttackPhase {
                     charge: Timer::from_seconds(0.05, bevy::time::TimerMode::Once),
                     attack: Timer::from_seconds(0.25, bevy::time::TimerMode::Once),
-                    recover: Timer::from_seconds(0.25, bevy::time::TimerMode::Once),
+                    recover: Timer::from_seconds(0.1, bevy::time::TimerMode::Once),
                 })
                 .insert(EaseTo::new(new_pos, EaseFunction::EaseOutExpo, 0.55));
         }

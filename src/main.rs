@@ -11,6 +11,8 @@ mod movement;
 mod player;
 mod state;
 mod stats;
+mod ui;
+mod metadata;
 
 use bevy::prelude::*;
 use helper::KeyMaps;

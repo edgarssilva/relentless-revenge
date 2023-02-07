@@ -7,12 +7,17 @@ version = "0.1.0"
 
 [dependencies]
 bevy = "0.9.0"
+bevy_egui = "0.19.0"
+bevy_rapier2d = "0.20.0"
 bevy_ecs_tilemap = "0.9"
-bevy_rapier2d="0.19.0"
 big-brain = "0.15.0"
-getrandom = {version = "0.2.7", features = ["js"]}# Works with rand to support browser runder numbers
-leafwing-input-manager = "0.7"
+leafwing-input-manager = "0.8.0"
+iyes_loopless = { version = "0.9.1", features = ["states"] }
+
+bevy_asset_loader = { version = "0.14.1", features = ["2d", "stageless"] }
+bevy_common_assets = { version = "0.4.0", features = ["yaml"] }
+
 rand = "0.8.5"
-nalgebra = "0.31.4"
-iyes_loopless = {version="0.9.1", features=["states"]}
-bevy_asset_loader={version="0.14.1", features=["2d", "stageless"]}
+getrandom = "0.2.7"
+serde = "1.0"
+serde_yaml = "0.9"
