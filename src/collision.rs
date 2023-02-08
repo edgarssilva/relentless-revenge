@@ -96,6 +96,8 @@ pub fn damagable_collision(
             return;
         }
 
+
+
         //TODO: Check what to do when both entities have damage and damageable
         if let Some((damage_entity, damaged_entity)) = match (
             damage_query.contains(*e1) && damageable_query.contains(*e2),
@@ -105,6 +107,7 @@ pub fn damagable_collision(
             (false, true) => Some((*e2, *e1)),
             _ => None,
         } {
+
             let (damage, knockback, breakable) = damage_query.get_mut(damage_entity).unwrap();
             let (mut health, transform) = damageable_query.get_mut(damaged_entity).unwrap();
 
@@ -131,7 +134,7 @@ pub fn damagable_collision(
             if let Ok(camera) = camera_query.get_single() {
                 commands.entity(camera).insert(Shake {
                     duration: 0.35,
-                    strength: 9.5,
+                    strength: 12.5,
                 });
             }
         }

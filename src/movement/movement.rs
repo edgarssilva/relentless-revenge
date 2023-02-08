@@ -17,18 +17,18 @@ impl Plugin for MovementPlugin {
 pub struct Follow {
     pub target: Entity,
     pub speed: f32,
-    pub continous: bool,
-    pub treshhold: f32,
+    pub continuous: bool,
+    pub threshold: f32,
     pub(crate) on_target: bool,
 }
 
 impl Follow {
-    pub fn new(target: Entity, speed: f32, continous: bool, treshhold: f32) -> Self {
+    pub fn new(target: Entity, speed: f32, continuous: bool, threshold: f32) -> Self {
         Self {
             target,
             speed,
-            continous,
-            treshhold,
+            continuous,
+            threshold,
             on_target: false,
         }
     }
@@ -56,7 +56,7 @@ pub fn follow_entity_system(
 
         if let Ok(mut transform) = transform_query.get_mut(entity) {
             //TODO: Check distance threshold (This was added because of Changed<>)
-            if transform.translation.xy().distance(pos) > follow.treshhold {
+            if transform.translation.xy().distance(pos) > follow.threshold {
                 transform.translation = transform
                     .translation
                     .xy()
@@ -67,7 +67,7 @@ pub fn follow_entity_system(
             } else {
                 follow.on_target = true;
 
-                if !follow.continous {
+                if !follow.continuous {
                     commands.entity(entity).remove::<Follow>();
                 }
             }

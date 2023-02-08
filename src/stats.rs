@@ -1,4 +1,3 @@
-use std::thread::current;
 use std::time::Duration;
 
 use bevy::{
@@ -29,7 +28,11 @@ impl Health {
     }
 
     pub fn damage(&mut self, damage: &Damage) {
-        let _ = self.current.checked_sub(damage.amount);
+        if let Some(health) = self.current.checked_sub(damage.amount){
+            self.current = health;
+        } else {
+            self.current = 0;
+        }
     }
 }
 
@@ -110,7 +113,7 @@ pub fn death_system(
     mut enemy_kill_writer: EventWriter<EnemyKilledEvent>,
 ) {
     for (entity, health, enemy) in query.iter() {
-        if health.current <= 0 {
+        if health.current == 0 {
             commands.entity(entity).despawn_recursive();
 
             if enemy.is_some() {

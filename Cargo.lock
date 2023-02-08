@@ -951,11 +951,23 @@ dependencies = [
 
 [[package]]
 name = "big-brain"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9b71b1b0fda97b3e5021da6982afc74f8e6f61c8c7042e240a9de63baafec40"
+checksum = "e1a1c00b7ed8de3a19a03ccbee00a8f49d8eb165882279d07adb8ef6179ff3f4"
 dependencies = [
  "bevy",
+ "big-brain-derive",
+]
+
+[[package]]
+name = "big-brain-derive"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6354e78f8cfa12cf2605827088676613a6f02f6b053379d60ffd7efcb944868c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

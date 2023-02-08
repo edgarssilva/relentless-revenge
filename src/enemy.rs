@@ -4,6 +4,8 @@ use bevy::{math::Vec3Swizzles, prelude::*};
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
 };
+use big_brain::actions::Steps;
+use big_brain::prelude::{ActionBuilder, ScorerBuilder};
 use big_brain::{
     prelude::{ActionState, FirstToScore},
     scorers::Score,
@@ -29,18 +31,12 @@ pub struct EnemyBehaviourPlugin;
 impl Plugin for EnemyBehaviourPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(BigBrainPlugin)
-            .add_system_set(
-                ConditionSet::new()
-                    .run_in_state(GameState::InGame)
-                    .with_system(follow_player_action)
-                    .with_system(seeking_scorer)
-                    .into(),
-            )
             .add_system_set_to_stage(
                 BigBrainStage::Actions,
                 ConditionSet::new()
                     .run_in_state(GameState::InGame)
                     .with_system(follow_player_action)
+                    .with_system(attack_player_action)
                     .into(),
             )
             .add_system_set_to_stage(
@@ -110,19 +106,26 @@ impl EnemyBundle {
             active_collision_types: ActiveCollisionTypes::all(),
             // finding_player: FindingPLayer,
             thinker: Thinker::build()
+                .label("Enemy Behaviour")
                 .picker(FirstToScore { threshold: 0.8 })
-                .when(FindingPLayer, SeekPlayer),
+                .when(
+                    NearPlayer,
+                    Steps::build()
+                        .label("Find then attack player")
+                        .step(SeekPlayer)
+                        .step(AttackPlayer),
+                ),
         }
     }
 }
 
-#[derive(Debug, Clone, Component)]
-pub struct FindingPLayer;
+#[derive(Debug, Clone, Component, ScorerBuilder)]
+pub struct NearPlayer;
 
 fn seeking_scorer(
     seekers: Query<&Transform, With<Enemy>>,
     player: Query<&Transform, With<Player>>,
-    mut query: Query<(&Actor, &mut Score), With<FindingPLayer>>,
+    mut query: Query<(&Actor, &mut Score), With<NearPlayer>>,
 ) {
     if let Ok(player_transform) = player.get_single() {
         for (Actor(actor), mut score) in query.iter_mut() {
@@ -133,7 +136,7 @@ fn seeking_scorer(
                     .distance(seeker_transform.translation.xy());
 
                 //TODO: Define a distance threshold
-                if distance < 128. {
+                if distance < 120. {
                     score.set(0.8);
                 } else {
                     score.set(0.);
@@ -143,27 +146,65 @@ fn seeking_scorer(
     }
 }
 
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Component, ActionBuilder)]
 pub struct SeekPlayer;
 
 fn follow_player_action(
     mut commands: Commands,
-    seekers: Query<(&Transform, Option<&Follow>), With<Enemy>>,
-    player: Query<(Entity, &Transform), With<Player>>,
+    seekers: Query<&Follow, With<Enemy>>,
+    player: Query<Entity, With<Player>>,
     mut query: Query<(&Actor, &mut ActionState), With<SeekPlayer>>,
-    //Temporary for projectiles
-    texture_assets: Res<TextureAssets>,
 ) {
-    if let Ok((player, player_transform)) = player.get_single() {
-        for (Actor(actor), mut state) in query.iter_mut() {
-            if let Ok((seeker_transform, follow)) = seekers.get(*actor) {
-                match *state {
-                    ActionState::Requested => {
-                        commands
-                            .entity(*actor)
-                            .insert(Follow::new(player, 0.10, true, 0.5));
-                        //Temporary projectile spawning
+    for (Actor(actor), mut state) in query.iter_mut() {
+        match *state {
+            ActionState::Requested => {
+                if let Ok(player) = player.get_single() {
+                    commands
+                        .entity(*actor)
+                        .insert(Follow::new(player, 0.10, true, 90.));
+                    *state = ActionState::Executing;
+                } else {
+                    *state = ActionState::Failure;
+                }
+            }
 
+            ActionState::Executing => {
+                if let Ok(follow) = seekers.get(*actor) {
+                    if follow.on_target {
+                        *state = ActionState::Success;
+                    }
+                }
+            }
+
+            ActionState::Success => {
+                commands.entity(*actor).remove::<Follow>();
+            }
+
+            ActionState::Cancelled => {
+                *state = ActionState::Failure;
+            }
+            _ => {}
+        }
+    }
+}
+
+#[derive(Debug, Clone, Component, ActionBuilder)]
+pub struct AttackPlayer;
+
+fn attack_player_action(
+    mut commands: Commands,
+    seekers: Query<&Transform, With<Enemy>>,
+    mut cooldowns: Query<&mut Cooldown, With<Enemy>>,
+    player: Query<&Transform, With<Player>>,
+    mut query: Query<(&Actor, &mut ActionState), With<AttackPlayer>>,
+    texture_assets: Res<TextureAssets>,
+    delta_time: Res<Time>,
+) {
+    for (Actor(actor), mut state) in query.iter_mut() {
+        match *state {
+            ActionState::Requested => {
+                if let Ok(seeker_transform) = seekers.get(*actor) {
+                    if let Ok(player_transform) = player.get_single() {
                         let seeker_position = seeker_transform.translation.xy();
                         let player_position = player_transform.translation.xy();
 
@@ -172,13 +213,13 @@ fn follow_player_action(
                         commands.spawn((
                             ProjectileBundle::new(
                                 texture_assets.arrow_atlas.clone(),
-                                seeker_transform.translation.clone(),
+                                seeker_transform.translation,
                                 f32::atan2(direction.y, direction.x),
                                 Vec2::new(32., 32.) / 2.,
                                 3.,
                                 Damage::new(10),
                                 false,
-                                Velocity(direction * 75.),
+                                Velocity(direction * 70.),
                             ),
                             Animation {
                                 //TODO: Add animation to projectile
@@ -190,27 +231,35 @@ fn follow_player_action(
                                 ),
                             },
                         ));
-                        *state = ActionState::Executing;
-                    }
 
-                    ActionState::Executing => {
-                        if let Some(follow) = follow {
-                            if follow.on_target {
-                                *state = ActionState::Success;
-                            }
+                        if let Ok(mut cooldown) = cooldowns.get_mut(*actor) {
+                            cooldown.reset();
                         }
-                    }
 
-                    ActionState::Success => {
-                        commands.entity(*actor).remove::<Follow>();
+                        *state = ActionState::Executing;
+                        continue;
                     }
+                }
+                *state = ActionState::Failure;
+            }
+            ActionState::Executing => {
+                if let Ok(mut cooldown) = cooldowns.get_mut(*actor) {
+                    cooldown.update(delta_time.delta());
 
-                    ActionState::Cancelled => {
-                        *state = ActionState::Failure;
+                    // println!("Cooldown: {:?}", cooldown.timer);
+
+                    if cooldown.is_ready() {
+                        *state = ActionState::Success;
                     }
-                    _ => {}
                 }
             }
+
+            ActionState::Success => {}
+
+            ActionState::Cancelled => {
+                *state = ActionState::Failure;
+            }
+            _ => {}
         }
     }
 }

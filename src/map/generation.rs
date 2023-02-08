@@ -113,7 +113,7 @@ fn build_map(
                 }
 
                 //TODO: Move enemy spawns to a separate system
-                if rng.gen_bool(1. / 40.) {
+                if rng.gen_bool(1. / 45.) {
                     enemies.positions.push(world_pos);
                 }
 
