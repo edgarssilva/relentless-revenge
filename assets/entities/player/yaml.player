@@ -1,0 +1,16 @@
+size: [ 64, 64 ]
+hitbox: [ 16, 16 ]
+
+xp: 0
+speed: 50
+health: 100
+damage: 20
+cooldown: 350
+
+texture:
+  path: "../../tiny_hero.png"
+  tile_size: [ 64, 64 ]
+  columns: 8
+  rows: 8
+  duration: 175
+

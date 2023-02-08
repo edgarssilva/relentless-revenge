@@ -1,3 +1,4 @@
+use std::thread::current;
 use std::time::Duration;
 
 use bevy::{
@@ -28,7 +29,7 @@ impl Health {
     }
 
     pub fn damage(&mut self, damage: &Damage) {
-        self.current -= damage.amount;
+        let _ = self.current.checked_sub(damage.amount);
     }
 }
 

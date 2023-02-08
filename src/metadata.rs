@@ -1,9 +1,9 @@
-pub mod asset_loaders;
-
-use bevy::asset::{ AssetPath, LoadContext, LoadedAsset};
+use bevy::asset::{AssetPath, LoadContext, LoadedAsset};
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy_asset_loader::asset_collection::AssetCollection;
+
+pub mod asset_loaders;
 
 #[derive(serde::Deserialize, Debug, Clone)]
 pub struct TextureMeta {
@@ -20,8 +20,9 @@ pub struct TextureMeta {
     pub(crate) offset: Option<Vec2>,
     #[serde(skip)]
     pub atlas_handle: Handle<TextureAtlas>,
-    pub frames: Option<Vec<u32>>,
-    pub duration: f32,
+    #[serde(default)]
+    pub frames: Vec<usize>,
+    pub duration: u64,
 }
 
 //TODO: Find a way to organize this better and make sure the label don't collide
@@ -44,36 +45,47 @@ impl TextureMeta {
             .with_dependency(texture_path),
         );
 
-        if self.frames.is_none() {
-            self.frames = Some((0..(self.columns * self.rows) as u32).collect());
+        if self.frames.is_empty() {
+            self.frames = (0..self.columns * self.rows).collect();
         }
     }
-}
-
-#[derive(serde::Deserialize, Debug, Clone)]
-pub struct HitboxMeta {
-    pub width: u32,
-    pub height: u32,
 }
 
 #[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "5e14f87b-d4f1-40e7-a2c8-b10ac660972b"]
 pub struct EnemyMeta {
-    pub name: String,
+    // pub name: String,
     pub health: u32,
     pub damage: u32,
-    pub attack_speed: f32,
+    pub speed: u32,
+    pub cooldown: u32,
     pub xp: u32,
     pub texture: TextureMeta,
-    pub hitbox: HitboxMeta,
+    pub hitbox: Vec2,
+}
+
+#[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
+#[uuid = "1b7e6673-6604-445a-b877-3735243a0b42"]
+pub struct PlayerMeta {
+    pub size: Vec2,
+    pub health: u32,
+    pub damage: u32,
+    pub speed: u32,
+    pub cooldown: u32,
+    pub xp: u32,
+    pub texture: TextureMeta,
+    pub hitbox: Vec2,
+    //TODO: Add animation data
 }
 
 #[derive(AssetCollection, Resource)]
 pub struct GameMeta {
-    #[asset(path = "entities/enemies/enemy.yaml")]
+    #[asset(path = "entities/enemies/yaml.enemy")]
     pub enemy: Handle<EnemyMeta>,
+    #[asset(path = "entities/player/yaml.player")]
+    pub player: Handle<PlayerMeta>,
 }
 
 pub fn register_assets(app: &mut App) {
-    app.add_asset::<EnemyMeta>();
+    app.add_asset::<EnemyMeta>().add_asset::<PlayerMeta>();
 }

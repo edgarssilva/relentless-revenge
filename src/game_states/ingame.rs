@@ -4,13 +4,14 @@ use bevy_ecs_tilemap::TilemapPlugin;
 use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet};
 use leafwing_input_manager::prelude::InputManagerPlugin;
 
+use crate::metadata::{GameMeta, PlayerMeta};
+use crate::ui::setup_ui;
 use crate::{
     animation::AnimationPlugin,
     attack::{attack_lifetime, attack_system, projectile_break, tick_cooldown},
     collision::CollisionPlugin,
     controller::{attack_ability, dash_ability, finish_dash, move_player},
     enemy::EnemyBehaviourPlugin,
-    GameState,
     helper::{helper_camera_controller, set_texture_filters_to_nearest, shake_system},
     level::LevelPlugin,
     map::{
@@ -20,11 +21,8 @@ use crate::{
     movement::movement::{Follow, MovementPlugin},
     player::{PlayerActions, PlayerBundle},
     stats::{death_system, drop_xp_system},
+    GameState,
 };
-use crate::metadata::{EnemyMeta, GameMeta};
-use crate::ui::setup_ui;
-
-use super::loading::TextureAssets;
 
 pub struct InGamePlugin;
 
@@ -39,7 +37,6 @@ impl Plugin for InGamePlugin {
             .add_plugin(MovementPlugin)
             .add_enter_system(GameState::InGame, setup_game)
             .add_enter_system(GameState::InGame, setup_map)
-            .add_enter_system(GameState::InGame, exit_loading)
             .add_system_set(
                 ConditionSet::new()
                     .run_in_state(GameState::InGame)
@@ -70,16 +67,17 @@ impl Plugin for InGamePlugin {
             );
     }
 }
-fn exit_loading(game_meta: Res<GameMeta>, assets: Res<Assets<EnemyMeta>>) {
-    let enemy = assets.get(&game_meta.enemy).unwrap();
-    println!("Loaded image: {:?}", enemy.texture.atlas_handle);
-    println!("Enemy name: {:?}", enemy.name);
-}
 
-
-fn setup_game(mut commands: Commands, texture_assets: Res<TextureAssets>) {
+fn setup_game(
+    mut commands: Commands,
+    game_meta: Res<GameMeta>,
+    player_meta: Res<Assets<PlayerMeta>>,
+) {
     println!("InGamePlugin::setup_game");
-    let player_entity = commands.spawn(PlayerBundle::new(texture_assets)).id();
+    let player = player_meta
+        .get(&game_meta.player)
+        .expect("Player Meta not found");
+    let player_entity = commands.spawn(PlayerBundle::new(player)).id();
 
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = Camera2dBundle::default();

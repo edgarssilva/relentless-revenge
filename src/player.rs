@@ -1,5 +1,5 @@
 use bevy::{
-    prelude::{default, Bundle, Component, KeyCode, Res, Transform, Vec2, Vec3},
+    prelude::{default, Bundle, Component, KeyCode, Transform, Vec3},
     sprite::SpriteSheetBundle,
     utils::HashMap,
 };
@@ -16,7 +16,6 @@ use crate::{
     attack::Damageable,
     collision::BodyLayers,
     controller::Controlled,
-    game_states::loading::TextureAssets,
     movement::direction::Direction,
     state::State,
     stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
@@ -24,6 +23,7 @@ use crate::{
 };
 
 use leafwing_input_manager::Actionlike;
+use crate::metadata::PlayerMeta;
 
 #[derive(Component)]
 pub struct Player;
@@ -50,11 +50,7 @@ pub struct PlayerBundle {
 }
 
 impl PlayerBundle {
-    pub fn new(texture_assets: Res<TextureAssets>) -> Self {
-        //Player Creation
-        let player_size = Vec2::new(64., 64.);
-        let player_size = player_size / 3.75;
-
+    pub fn new(meta: &PlayerMeta) -> Self {
         let mut player_animations = HashMap::new();
 
         let mut idle_animations = HashMap::new();
@@ -89,7 +85,7 @@ impl PlayerBundle {
         PlayerBundle {
             player: Player,
             sprite_bundle: SpriteSheetBundle {
-                texture_atlas: texture_assets.player_atlas.clone(),
+                texture_atlas: meta.texture.atlas_handle.clone(),
                 transform: Transform {
                     translation: Vec3::new(0., 0., PLAYER_Z),
                     scale: Vec3::new(1.25, 1.25, 1.),
@@ -98,9 +94,9 @@ impl PlayerBundle {
                 ..default()
             },
             controlled: Controlled { move_to: None },
-            collider: Collider::cuboid(player_size.x / 2., player_size.y / 2.),
+            collider: Collider::cuboid(meta.hitbox.x / 2., meta.hitbox.y / 2.),
             rigid_body: RigidBody::KinematicPositionBased,
-            animation_state: AnimationState::new(player_animations, 200, true),
+            animation_state: AnimationState::new(player_animations, meta.texture.duration, true),
             collision_events: ActiveEvents::COLLISION_EVENTS,
             collision_types: ActiveCollisionTypes::all(),
             collision_groups: CollisionGroups::new(
@@ -110,11 +106,11 @@ impl PlayerBundle {
             direction: Direction::SOUTH,
             state: State::IDLE,
             stats: StatsBundle {
-                health: Health::new(100),
-                damage: Damage::new(20),
-                speed: MovementSpeed::new(70),
-                xp: XP::new(0),
-                cooldown: Cooldown::new(350),
+                health: Health::new(meta.health),
+                damage: Damage::new(meta.damage),
+                speed: MovementSpeed::new(meta.speed),
+                xp: XP::new(meta.xp),
+                cooldown: Cooldown::new(meta.cooldown),
             },
             damageable: Damageable,
             input: InputManagerBundle::<PlayerActions> {

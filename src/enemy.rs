@@ -12,6 +12,7 @@ use big_brain::{
 };
 use iyes_loopless::prelude::ConditionSet;
 
+use crate::metadata::EnemyMeta;
 use crate::{
     animation::Animation,
     attack::{Damageable, ProjectileBundle},
@@ -74,11 +75,11 @@ pub struct EnemyBundle {
 }
 
 impl EnemyBundle {
-    pub fn new(texture_handle: Handle<TextureAtlas>, translation: Vec3) -> Self {
+    pub fn new(meta: &EnemyMeta, translation: Vec3) -> Self {
         Self {
             enemy: Enemy,
             sprisheet: SpriteSheetBundle {
-                texture_atlas: texture_handle,
+                texture_atlas: meta.texture.atlas_handle.clone(),
                 transform: Transform {
                     translation,
                     scale: Vec3::new(0.25, 0.25, 1.0),
@@ -87,20 +88,23 @@ impl EnemyBundle {
                 ..default()
             },
             stats: StatsBundle {
-                health: Health::new(100),
-                damage: Damage::new(10),
-                speed: MovementSpeed::new(20),
-                xp: XP::new(10),
-                cooldown: Cooldown::new(500),
+                health: Health::new(meta.health),
+                damage: Damage::new(meta.damage),
+                speed: MovementSpeed::new(meta.speed),
+                xp: XP::new(meta.xp),
+                cooldown: Cooldown::new(meta.cooldown),
             },
             damageable: Damageable,
             animation: Animation {
-                frames: (0..7).collect(),
+                frames: meta.texture.frames.clone(),
                 current_frame: 0,
-                timer: Timer::new(Duration::from_millis(250), bevy::time::TimerMode::Once),
+                timer: Timer::new(
+                    Duration::from_millis(meta.texture.duration),
+                    bevy::time::TimerMode::Once,
+                ),
             },
             rigid_body: RigidBody::KinematicPositionBased,
-            collider: Collider::cuboid(256. * 0.2, 256. * 0.2),
+            collider: Collider::cuboid(meta.hitbox.x / 2., meta.hitbox.y / 2.),
             collision_groups: CollisionGroups::new(BodyLayers::ENEMY, BodyLayers::PLAYER_ATTACK),
             active_events: ActiveEvents::COLLISION_EVENTS,
             active_collision_types: ActiveCollisionTypes::all(),

@@ -5,7 +5,7 @@ use bevy::asset::{
 };
 use bevy::prelude::App;
 
-use crate::metadata::EnemyMeta;
+use crate::metadata::{EnemyMeta, PlayerMeta};
 
 /// Calculate an asset's full path relative to another asset
 fn relative_asset_path(asset_path: &Path, relative_path: &str) -> PathBuf {
@@ -63,10 +63,43 @@ impl AssetLoader for EnemyMetaAssetLoader {
     }
 
     fn extensions(&self) -> &[&str] {
-        &["yaml"]
+        &["enemy"]
+    }
+}
+
+pub struct PlayerMetaAssetLoader;
+
+impl AssetLoader for PlayerMetaAssetLoader {
+    fn load<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<(), Error>> {
+        Box::pin(async move {
+            let self_path = load_context.path().to_owned();
+
+            // let mut dependencies = vec![];
+
+            let mut meta: PlayerMeta = serde_yaml::from_slice(bytes)?;
+
+            meta.texture.load(
+                load_context,
+                get_relative_asset(load_context, &self_path, &meta.texture.path),
+            );
+
+            load_context.set_default_asset(
+                LoadedAsset::new(meta), // .with_dependencies(dependencies)
+            );
+            Ok(())
+        })
+    }
+
+    fn extensions(&self) -> &[&str] {
+        &["player"]
     }
 }
 
 pub fn register_asset_loaders(app: &mut App) {
-    app.add_asset_loader(EnemyMetaAssetLoader);
+    app.add_asset_loader(EnemyMetaAssetLoader)
+        .add_asset_loader(PlayerMetaAssetLoader);
 }

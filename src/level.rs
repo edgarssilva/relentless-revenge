@@ -9,7 +9,7 @@ use bevy::{
 use iyes_loopless::prelude::ConditionSet;
 
 use crate::metadata::{EnemyMeta, GameMeta};
-use crate::{enemy::EnemyBundle, game_states::loading::TextureAssets, GameState};
+use crate::{enemy::EnemyBundle, GameState};
 
 #[derive(Default, Resource)]
 pub struct LevelResource {
@@ -68,22 +68,16 @@ fn generate_level(
 fn spawn_enemies(
     mut event: EventReader<SpawnEnemiesEvent>,
     mut commands: Commands,
-    // texture_assets: Res<TextureAssets>,
     game_meta: Res<GameMeta>,
     enemies: Res<Assets<EnemyMeta>>,
     mut level: ResMut<LevelResource>,
 ) {
-    let enemy_texture = &enemies.get(&game_meta.enemy).unwrap().texture.atlas_handle;
 
     for e in event.iter() {
         for pos in e.positions.iter() {
             level.enemies.push(
                 commands
-                    .spawn(EnemyBundle::new(
-                        enemy_texture.clone(),
-                        // texture_assets.enemy_atlas.clone(),
-                        pos.extend(1.0),
-                    ))
+                    .spawn(EnemyBundle::new(enemies.get(&game_meta.enemy).unwrap(), pos.extend(1.0)))
                     .id(),
             );
         }
