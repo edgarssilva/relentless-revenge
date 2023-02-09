@@ -81,7 +81,6 @@ fn setup_game(
     game_meta: Res<GameMeta>,
     player_meta: Res<Assets<PlayerMeta>>,
 ) {
-    println!("InGamePlugin::setup_game");
     let player = player_meta
         .get(&game_meta.player)
         .expect("Player Meta not found");
@@ -89,7 +88,7 @@ fn setup_game(
 
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = Camera2dBundle::default();
-    camera_bundle.projection.scale = 0.15;
+    camera_bundle.projection.scale = 0.25;
 
     commands.spawn((camera_bundle, Follow::new(player_entity, 3., true, 5.)));
 }
