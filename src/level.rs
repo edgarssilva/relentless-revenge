@@ -10,6 +10,8 @@ use iyes_loopless::prelude::ConditionSet;
 
 use crate::metadata::{EnemyMeta, GameMeta};
 use crate::{enemy::EnemyBundle, GameState};
+use crate::map::generation::open_level_portal;
+use crate::map::walkable::travel_through_portal;
 
 #[derive(Default, Resource)]
 pub struct LevelResource {
@@ -25,6 +27,9 @@ pub struct EnemyKilledEvent(pub Entity);
 pub struct SpawnEnemiesEvent {
     pub positions: Vec<Vec2>,
 }
+
+pub struct OpenLevelPortalEvent;
+
 pub struct LevelPlugin;
 
 impl Plugin for LevelPlugin {
@@ -34,6 +39,7 @@ impl Plugin for LevelPlugin {
             .add_event::<GenerateMapEvent>()
             .add_event::<SpawnEnemiesEvent>()
             .add_event::<EnemyKilledEvent>()
+            .add_event::<OpenLevelPortalEvent>()
             .add_system_set(
                 ConditionSet::new()
                     .run_in_state(GameState::InGame)
@@ -41,6 +47,8 @@ impl Plugin for LevelPlugin {
                     .with_system(spawn_enemies)
                     .with_system(generate_level)
                     .with_system(keymap_generate)
+                    .with_system(open_level_portal)
+                    .with_system(travel_through_portal)
                     .into(),
             );
     }
@@ -87,13 +95,15 @@ fn spawn_enemies(
 fn enemy_killed(
     mut event: EventReader<EnemyKilledEvent>,
     mut level: ResMut<LevelResource>,
-    mut level_writer: EventWriter<GenerateLevelEvent>,
+
+    mut portal_writer: EventWriter<OpenLevelPortalEvent>,
 ) {
     for killed in event.iter() {
         level.enemies.retain(|e| *e != killed.0);
 
         if level.enemies.is_empty() {
-            level_writer.send(GenerateLevelEvent);
+            portal_writer.send(OpenLevelPortalEvent);
+
         }
     }
 }

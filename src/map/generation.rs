@@ -1,18 +1,21 @@
 use bevy::math::Vec2;
 use bevy::prelude::{
-    Commands, EventReader, EventWriter, IVec2, Mut, Query, Res, Transform, With,
+    Commands, Component, EventReader, EventWriter, IVec2, Mut, Query, Res, Transform, With,
 };
 use bevy_ecs_tilemap::prelude::*;
 use rand;
 use rand::prelude::*;
 
 use crate::game_states::loading::TextureAssets;
-use crate::level::{GenerateMapEvent, SpawnEnemiesEvent};
+use crate::level::{GenerateMapEvent, OpenLevelPortalEvent, SpawnEnemiesEvent};
 use crate::map::room::Room;
 use crate::player::Player;
 
 use super::bridge::Bridge;
 use super::walkable::WalkableTile;
+
+#[derive(Component)]
+pub struct LevelPortalTile;
 
 pub fn setup_map(mut commands: Commands, texture_assets: Res<TextureAssets>) {
     let tilemap_size = TilemapSize { x: 160, y: 160 };
@@ -86,13 +89,11 @@ fn build_map(
 ) {
     let mut rng = thread_rng();
 
-    let mut first_room = true;
-
     let (rooms, bridges) = generate_level();
 
     let max_enemies_per_room = 3;
 
-    for room in rooms {
+    for (i, room) in rooms.iter().enumerate() {
         let mut num_enemies = 0;
         for x in room.pos.x - room.radius..room.pos.x + room.radius {
             for y in room.pos.y - room.radius..room.pos.y + room.radius + 1 {
@@ -126,13 +127,18 @@ fn build_map(
                     num_enemies += 1;
                 }
 
-                if first_room && room.pos.to_array() == [x, y] {
+                if i == 0 && room.pos.to_array() == [x, y] {
                     player_transform.translation.x = world_pos.x;
                     player_transform.translation.y = world_pos.y;
                 }
+
+                if i == rooms.len() - 1 && room.pos.to_array() == [x, y] {
+                    if let Some(tile_entity) = tile_storage.get(&tile_pos) {
+                        commands.entity(tile_entity).insert(LevelPortalTile);
+                    }
+                }
             }
         }
-        first_room = false;
     }
 
     for bridge in bridges {
@@ -150,6 +156,19 @@ fn build_map(
                 }
             }
         }
+    }
+}
+
+pub fn open_level_portal(
+    events: EventReader<OpenLevelPortalEvent>,
+    mut tile_query: Query<&mut TileTextureIndex, With<LevelPortalTile>>,
+) {
+    if !events.is_empty() {
+        for mut tile in tile_query.iter_mut() {
+            tile.0 = 0;
+        }
+
+        events.clear();
     }
 }
 
