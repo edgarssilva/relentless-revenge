@@ -1,13 +1,13 @@
-use bevy::prelude::UVec2;
+use bevy::prelude::IVec2;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Room {
-    pub pos: UVec2,
-    pub radius: u32,
+    pub pos: IVec2,
+    pub radius: i32,
 }
 
 impl Room {
-    pub fn new(pos: UVec2, radius: u32) -> Self {
+    pub fn new(pos: IVec2, radius: i32) -> Self {
         Room { pos, radius }
     }
 }

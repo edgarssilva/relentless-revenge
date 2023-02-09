@@ -4,7 +4,7 @@ xp: 50
 damage: 5
 health: 100
 speed: 20
-cooldown: 3500
+cooldown: 5500
 
 texture:
   path: "../../monster_flesh_eye_sheet.png"

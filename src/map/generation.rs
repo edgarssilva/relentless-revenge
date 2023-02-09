@@ -1,5 +1,7 @@
 use bevy::math::Vec2;
-use bevy::prelude::{Commands, EventReader, EventWriter, Mut, Query, Res, Transform, UVec2, With};
+use bevy::prelude::{
+    Commands, EventReader, EventWriter, IVec2, Mut, Query, Res, Transform, With,
+};
 use bevy_ecs_tilemap::prelude::*;
 use rand;
 use rand::prelude::*;
@@ -88,10 +90,16 @@ fn build_map(
 
     let (rooms, bridges) = generate_level();
 
+    let max_enemies_per_room = 3;
+
     for room in rooms {
+        let mut num_enemies = 0;
         for x in room.pos.x - room.radius..room.pos.x + room.radius {
             for y in room.pos.y - room.radius..room.pos.y + room.radius + 1 {
-                let tile_pos = TilePos { x, y };
+                let tile_pos = TilePos {
+                    x: x as u32,
+                    y: y as u32,
+                };
 
                 //TODO: Get the grid-size and map type from the current map
                 let world_pos = tile_pos.center_in_world(
@@ -100,7 +108,7 @@ fn build_map(
                 );
 
                 //Cut corners
-                if UVec2::new(x, y).as_vec2().distance(room.pos.as_vec2()) > room.radius as f32 {
+                if IVec2::new(x, y).as_vec2().distance(room.pos.as_vec2()) > room.radius as f32 {
                     continue;
                 }
 
@@ -113,8 +121,9 @@ fn build_map(
                 }
 
                 //TODO: Move enemy spawns to a separate system
-                if rng.gen_bool(1. / 45.) {
+                if rng.gen_bool(1. / 45.) && num_enemies < max_enemies_per_room {
                     enemies.positions.push(world_pos);
+                    num_enemies += 1;
                 }
 
                 if first_room && room.pos.to_array() == [x, y] {
@@ -131,7 +140,10 @@ fn build_map(
             let x = pos.x;
             let y = pos.y;
 
-            if let Some(tile_entity) = tile_storage.get(&TilePos { x, y }) {
+            if let Some(tile_entity) = tile_storage.get(&TilePos {
+                x: x as u32,
+                y: y as u32,
+            }) {
                 commands.entity(tile_entity).insert(WalkableTile);
                 if let Ok(mut tile_texture) = tile_query.get_mut(tile_entity) {
                     tile_texture.0 = 3;
@@ -147,29 +159,29 @@ fn generate_level() -> (Vec<Room>, Vec<Bridge>) {
     let mut rooms = Vec::<Room>::new();
     let mut bridges = Vec::<Bridge>::new();
 
-    let num_rooms = rng.gen_range(6..10);
+    let num_rooms = rng.gen_range(6..12);
     let room_min_radius = 4;
     let room_max_radius = 6;
 
     let mut old_room = Room::new(
-        UVec2::new(80, 80),
+        IVec2::new(80, 80),
         rng.gen_range(room_min_radius..room_max_radius),
     );
 
-    let main_direction: i32 = rng.gen_range(0..360);
-    let angle_range = 130;
+    let main_direction: f32 = rng.gen_range(0.0..360.);
+    let angle_range = 180.;
 
     while rooms.len() < num_rooms {
         let radius = rng.gen_range(room_min_radius..room_max_radius);
-        let direction = (main_direction + rng.gen_range(-angle_range..angle_range)) as f32;
-        let bridge_length = rng.gen_range(1..3);
-        let distance = old_room.radius + bridge_length + radius;
+        let direction = main_direction + rng.gen_range(-angle_range..angle_range);
+        let direction = direction.to_radians();
+        let bridge_length = rng.gen_range(1..4);
+        let distance = old_room.radius + bridge_length + (radius / 2);
 
         let new_room = Room::new(
-            Vec2::new(direction.cos(), direction.sin())
+            (Vec2::new(direction.cos(), direction.sin()) * distance as f32)
                 .round()
-                .as_uvec2()
-                * distance
+                .as_ivec2()
                 + old_room.pos,
             radius,
         );
@@ -185,12 +197,12 @@ fn generate_level() -> (Vec<Room>, Vec<Bridge>) {
     (rooms, bridges)
 }
 
-fn generate_bridge(from: UVec2, to: UVec2) -> Bridge {
+fn generate_bridge(from: IVec2, to: IVec2) -> Bridge {
     let mut rng = thread_rng();
     let mut current = from.clone().as_vec2();
     let to = to.as_vec2();
 
-    let mut positions = Vec::<UVec2>::new();
+    let mut positions = Vec::<IVec2>::new();
 
     while current != to {
         let mut dir = (to.y - current.y).atan2(to.x - current.x).to_degrees();
@@ -200,7 +212,7 @@ fn generate_bridge(from: UVec2, to: UVec2) -> Bridge {
 
         current += Vec2::new(dir.cos(), dir.sin()).round();
 
-        positions.push(current.as_uvec2());
+        positions.push(current.as_ivec2());
     }
 
     Bridge::new(positions)
