@@ -56,7 +56,7 @@ pub struct Enemy;
 pub struct EnemyBundle {
     enemy: Enemy,
     #[bundle]
-    pub sprisheet: SpriteSheetBundle,
+    pub spritesheet: SpriteSheetBundle,
     #[bundle]
     pub stats: StatsBundle,
     pub damageable: Damageable,
@@ -74,7 +74,7 @@ impl EnemyBundle {
     pub fn new(meta: &EnemyMeta, translation: Vec3) -> Self {
         Self {
             enemy: Enemy,
-            sprisheet: SpriteSheetBundle {
+            spritesheet: SpriteSheetBundle {
                 texture_atlas: meta.texture.atlas_handle.clone(),
                 transform: Transform {
                     translation,
@@ -245,8 +245,6 @@ fn attack_player_action(
             ActionState::Executing => {
                 if let Ok(mut cooldown) = cooldowns.get_mut(*actor) {
                     cooldown.update(delta_time.delta());
-
-                    // println!("Cooldown: {:?}", cooldown.timer);
 
                     if cooldown.is_ready() {
                         *state = ActionState::Success;

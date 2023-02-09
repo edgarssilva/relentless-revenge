@@ -1,7 +1,7 @@
 name: "Cool Enemy"
 
 xp: 50
-damage: 10
+damage: 5
 health: 100
 speed: 20
 cooldown: 3500

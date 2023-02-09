@@ -14,7 +14,7 @@ pub fn restrict_movement(
     query: Query<(&TileStorage, &TilemapType, &TilemapSize, &TilemapGridSize)>,
     walkable_tiles_query: Query<&WalkableTile>,
 ) {
-    for (tile_storage, tilemap_type, map_size, grid_size) in query.iter() {
+    if let Some((tile_storage, tilemap_type, map_size, grid_size)) = query.iter().next() {
         for (controlled, mut transform, state) in controlled_query.iter_mut() {
             if let Some(move_to) = controlled.move_to {
                 if let Some(tile_pos) =
@@ -35,6 +35,5 @@ pub fn restrict_movement(
                 }
             }
         }
-        return;
     }
 }
