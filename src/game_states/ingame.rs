@@ -5,6 +5,7 @@ use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet};
 use leafwing_input_manager::prelude::InputManagerPlugin;
 
 use crate::metadata::{GameMeta, PlayerMeta};
+use crate::stats::despawn_dead_system;
 use crate::ui::setup_ui;
 use crate::{
     animation::AnimationPlugin,
@@ -12,7 +13,7 @@ use crate::{
     collision::CollisionPlugin,
     controller::{attack_ability, dash_ability, finish_dash, move_player},
     enemy::EnemyBehaviourPlugin,
-    helper::{helper_camera_controller, set_texture_filters_to_nearest, shake_system},
+    helper::{helper_camera_controller, shake_system},
     level::LevelPlugin,
     map::{
         generation::{remake_map, setup_map},
@@ -40,14 +41,20 @@ impl Plugin for InGamePlugin {
             .add_system_set(
                 ConditionSet::new()
                     .run_in_state(GameState::InGame)
+                    .label("death_system")
+                    .with_system(death_system) //Mark entities for despawn
+                    .into(),
+            )
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(GameState::InGame)
+                    .after("death_system")
                     .with_system(setup_ui)
-                    .with_system(set_texture_filters_to_nearest)
                     .with_system(helper_camera_controller)
                     .with_system(move_player)
                     .with_system(dash_ability)
                     .with_system(attack_ability)
                     .with_system(attack_system)
-                    .with_system(death_system)
                     .with_system(drop_xp_system)
                     .with_system(tick_cooldown)
                     //run_on_camera_move  .with_system(parallax_system),
@@ -63,6 +70,7 @@ impl Plugin for InGamePlugin {
                     .run_in_state(GameState::InGame)
                     .with_system(restrict_movement)
                     .with_system(finish_dash)
+                    .with_system(despawn_dead_system)
                     .into(),
             );
     }

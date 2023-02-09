@@ -9,6 +9,7 @@ use bevy::{
     sprite::SpriteBundle,
     time::Timer,
 };
+use bevy::prelude::Without;
 use bevy_rapier2d::prelude::{ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups};
 
 use crate::{
@@ -28,7 +29,7 @@ impl Health {
     }
 
     pub fn damage(&mut self, damage: &Damage) {
-        if let Some(health) = self.current.checked_sub(damage.amount){
+        if let Some(health) = self.current.checked_sub(damage.amount) {
             self.current = health;
         } else {
             self.current = 0;
@@ -97,6 +98,9 @@ impl Cooldown {
     }
 }
 
+#[derive(Component)]
+pub struct Dead;
+
 //TODO: Check if a new method is needed
 #[derive(Bundle)]
 pub struct StatsBundle {
@@ -109,17 +113,22 @@ pub struct StatsBundle {
 
 pub fn death_system(
     mut commands: Commands,
-    query: Query<(Entity, &Health, Option<&Enemy>)>,
+    query: Query<(Entity, &Health, Option<&Enemy>), Without<Dead>>,
     mut enemy_kill_writer: EventWriter<EnemyKilledEvent>,
 ) {
     for (entity, health, enemy) in query.iter() {
         if health.current == 0 {
-            commands.entity(entity).despawn_recursive();
-
+            commands.entity(entity).insert(Dead);
             if enemy.is_some() {
                 enemy_kill_writer.send(EnemyKilledEvent(entity));
             }
         }
+    }
+}
+
+pub fn despawn_dead_system(mut commands: Commands, query: Query<Entity, With<Dead>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn_recursive();
     }
 }
 
@@ -158,7 +167,7 @@ impl XPDropBundle {
                     transform: Transform::from_translation(Vec3::new(location.x, location.y, 3.)),
                     ..Default::default()
                 },
-                follow: Follow::new(player, 2., false, 0.5),
+                follow: Follow::new(player, 2.5, false, 0.1),
                 collider: Collider::ball(4.),
                 collision_events: ActiveEvents::COLLISION_EVENTS,
                 collision_types: ActiveCollisionTypes::all(),
@@ -171,16 +180,16 @@ impl XPDropBundle {
 pub fn drop_xp_system(
     mut commands: Commands,
     mut enemy_kill_reader: EventReader<EnemyKilledEvent>,
-    query: Query<&Transform, With<Drop>>,
+    query: Query<(&Transform, &XP), With<Enemy>>,
     texture_assets: Res<TextureAssets>,
     player_query: Query<Entity, With<Player>>,
 ) {
     if let Ok(player) = player_query.get_single() {
         for event in enemy_kill_reader.iter() {
-            if let Ok(transform) = query.get(event.0) {
+            if let Ok((transform, xp)) = query.get(event.0) {
                 XPDropBundle::spawn_enemy_drop(
                     transform.translation.xy(),
-                    5, // stats.xp,
+                    xp.amount,
                     &mut commands,
                     texture_assets.xp_texture.clone(),
                     player,

@@ -27,7 +27,7 @@ impl Plugin for CollisionPlugin {
                 ConditionSet::new()
                     .run_in_state(GameState::InGame)
                     .with_system(xp_system)
-                    .with_system(damagable_collision)
+                    .with_system(damageable_collision)
                     .into(),
             );
     }
@@ -63,7 +63,7 @@ pub fn xp_system(
 
         if let Some((drop_entity, player_entity)) = match (
             drop_query.contains(*e1) && player_query.contains(*e2),
-            (player_query.contains(*e2) && drop_query.contains(*e1)),
+            (player_query.contains(*e1) && drop_query.contains(*e2)),
         ) {
             (true, false) => Some((*e1, *e2)),
             (false, true) => Some((*e2, *e1)),
@@ -78,7 +78,7 @@ pub fn xp_system(
     });
 }
 
-pub fn damagable_collision(
+pub fn damageable_collision(
     mut events: EventReader<CollisionEvent>,
     mut damage_query: Query<(&Damage, Option<&Knockback>, Option<&mut Breakable>)>,
     mut damageable_query: Query<(&mut Health, &Transform), With<Damageable>>,
@@ -96,8 +96,6 @@ pub fn damagable_collision(
             return;
         }
 
-
-
         //TODO: Check what to do when both entities have damage and damageable
         if let Some((damage_entity, damaged_entity)) = match (
             damage_query.contains(*e1) && damageable_query.contains(*e2),
@@ -107,7 +105,6 @@ pub fn damagable_collision(
             (false, true) => Some((*e2, *e1)),
             _ => None,
         } {
-
             let (damage, knockback, breakable) = damage_query.get_mut(damage_entity).unwrap();
             let (mut health, transform) = damageable_query.get_mut(damaged_entity).unwrap();
 

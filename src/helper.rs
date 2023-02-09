@@ -1,10 +1,7 @@
 use bevy::prelude::{
-    AssetEvent, Assets, Commands, Component, Entity, EventReader, Image, Input, KeyCode, Query,
-    Res, ResMut, Resource, Time, Transform, With,
+    Commands, Component, Entity, Input, KeyCode, Query, Res, Resource, Time, Transform, With,
 };
 use bevy::render::camera::OrthographicProjection;
-
-use bevy::render::render_resource::TextureUsages;
 use rand::Rng;
 
 use crate::movement::movement::Follow;
@@ -33,25 +30,6 @@ pub fn shake_system(
             shake.duration -= time.delta_seconds();
         } else {
             commands.entity(entity).remove::<Shake>();
-        }
-    }
-}
-
-pub fn set_texture_filters_to_nearest(
-    mut texture_events: EventReader<AssetEvent<Image>>,
-    mut textures: ResMut<Assets<Image>>,
-) {
-    // quick and dirty, run this for all textures anytime a texture is created.
-    for event in texture_events.iter() {
-        match event {
-            AssetEvent::Created { handle } => {
-                if let Some(mut texture) = textures.get_mut(handle) {
-                    texture.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
-                        | TextureUsages::COPY_SRC
-                        | TextureUsages::COPY_DST;
-                }
-            }
-            _ => (),
         }
     }
 }

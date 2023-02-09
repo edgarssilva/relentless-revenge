@@ -1,11 +1,11 @@
 size: [ 64, 64 ]
-hitbox: [ 16, 16 ]
+hitbox: [ 8, 12 ]
 
 xp: 0
-speed: 100
-health: 100
-damage: 20
-cooldown: 350
+speed: 75
+health: 250
+damage: 55
+cooldown: 400
 
 texture:
   path: "../../tiny_hero.png"
