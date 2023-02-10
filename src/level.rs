@@ -1,4 +1,3 @@
-use bevy::asset::Assets;
 use bevy::{
     input::Input,
     math::Vec2,
@@ -6,12 +5,13 @@ use bevy::{
         App, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res, ResMut, Resource,
     },
 };
+use bevy::asset::Assets;
 use iyes_loopless::prelude::ConditionSet;
 
-use crate::metadata::{EnemyMeta, GameMeta};
 use crate::{enemy::EnemyBundle, GameState};
 use crate::map::generation::open_level_portal;
 use crate::map::walkable::travel_through_portal;
+use crate::metadata::{EnemyMeta, GameMeta};
 
 #[derive(Default, Resource)]
 pub struct LevelResource {
@@ -80,12 +80,14 @@ fn spawn_enemies(
     enemies: Res<Assets<EnemyMeta>>,
     mut level: ResMut<LevelResource>,
 ) {
-
     for e in event.iter() {
         for pos in e.positions.iter() {
             level.enemies.push(
                 commands
-                    .spawn(EnemyBundle::new(enemies.get(&game_meta.enemy).unwrap(), pos.extend(1.0)))
+                    .spawn(EnemyBundle::new(
+                        enemies.get(&game_meta.enemy).unwrap(),
+                        pos.extend(1.0),
+                    ))
                     .id(),
             );
         }
@@ -103,7 +105,6 @@ fn enemy_killed(
 
         if level.enemies.is_empty() {
             portal_writer.send(OpenLevelPortalEvent);
-
         }
     }
 }

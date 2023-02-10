@@ -122,7 +122,7 @@ fn build_map(
                 }
 
                 //TODO: Move enemy spawns to a separate system
-                if rng.gen_bool(1. / 55.) && num_enemies < max_enemies_per_room {
+                if rng.gen_bool(1. / 75.) && num_enemies < max_enemies_per_room {
                     enemies.positions.push(world_pos);
                     num_enemies += 1;
                 }

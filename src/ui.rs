@@ -6,7 +6,7 @@ use bevy_egui::egui::{Image, Rect};
 use crate::player::Player;
 use crate::stats::Health;
 
-pub fn setup_ui(mut egui_context: ResMut<EguiContext>, asset_server: Res<AssetServer>, query: Query<&Health, With<Player>>) {
+pub fn draw_hud(mut egui_context: ResMut<EguiContext>, asset_server: Res<AssetServer>, query: Query<&Health, With<Player>>) {
     let health_bar_fill = egui_context.add_image(asset_server.load("health_bar_fill.png"));
     let health_bar_border = egui_context.add_image(asset_server.load("health_bar_border.png"));
 

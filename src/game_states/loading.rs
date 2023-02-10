@@ -35,4 +35,5 @@ pub struct TextureAssets {
 
     #[asset(path = "tileset.png")]
     pub map_texture: Handle<Image>,
+
 }

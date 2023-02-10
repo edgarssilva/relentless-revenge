@@ -4,27 +4,27 @@ use bevy::{math::Vec3Swizzles, prelude::*};
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
 };
+use big_brain::{
+    BigBrainPlugin,
+    BigBrainStage,
+    prelude::{ActionState, FirstToScore},
+    scorers::Score, thinker::{Actor, Thinker, ThinkerBuilder},
+};
 use big_brain::actions::Steps;
 use big_brain::prelude::{ActionBuilder, ScorerBuilder};
-use big_brain::{
-    prelude::{ActionState, FirstToScore},
-    scorers::Score,
-    thinker::{Actor, Thinker, ThinkerBuilder},
-    BigBrainPlugin, BigBrainStage,
-};
 use iyes_loopless::prelude::ConditionSet;
 
-use crate::metadata::EnemyMeta;
 use crate::{
     animation::Animation,
     attack::{Damageable, ProjectileBundle},
     collision::BodyLayers,
     game_states::loading::TextureAssets,
+    GameState,
     movement::movement::{Follow, Velocity},
     player::Player,
     stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
-    GameState,
 };
+use crate::metadata::EnemyMeta;
 
 pub struct EnemyBehaviourPlugin;
 
@@ -96,7 +96,7 @@ impl EnemyBundle {
                 current_frame: 0,
                 timer: Timer::new(
                     Duration::from_millis(meta.texture.duration),
-                    bevy::time::TimerMode::Once,
+                    TimerMode::Repeating,
                 ),
             },
             rigid_body: RigidBody::KinematicPositionBased,

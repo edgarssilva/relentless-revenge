@@ -1,3 +1,5 @@
+use std::time::Duration;
+use bevy::prelude::{Color, Res, Text, Text2dBundle, TextAlignment, TextStyle, Timer, Vec2};
 use bevy::{
     math::Vec3Swizzles,
     prelude::{
@@ -5,9 +7,11 @@ use bevy::{
         With, Without,
     },
 };
+use bevy::time::TimerMode;
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 use iyes_loopless::prelude::ConditionSet;
 
+use crate::metadata::GameMeta;
 use crate::{
     attack::{Breakable, Damageable, Knockback},
     helper::Shake,
@@ -16,6 +20,7 @@ use crate::{
     stats::{Damage, Drop, Health},
     GameState, XP,
 };
+use crate::attack::Lifetime;
 
 pub struct CollisionPlugin;
 
@@ -84,6 +89,7 @@ pub fn damageable_collision(
     mut damageable_query: Query<(&mut Health, &Transform), With<Damageable>>,
     camera_query: Query<Entity, With<Camera>>,
     mut commands: Commands,
+    game_meta: Res<GameMeta>,
 ) {
     events.iter().for_each(|e| {
         let (e1, e2, started, flags) = match e {
@@ -134,6 +140,30 @@ pub fn damageable_collision(
                     strength: 12.5,
                 });
             }
+
+            //TODO: Move this into a separate system using events
+            let text_style = TextStyle {
+                font: game_meta.text_font.clone(),
+                font_size: 12.0,
+                color: Color::WHITE,
+            };
+            let text_alignment = TextAlignment::CENTER;
+
+            //Spawn damage indicator text
+            commands.spawn((
+                Text2dBundle {
+                    text: Text::from_section(format!("-{}", damage.amount), text_style)
+                        .with_alignment(text_alignment),
+                    transform: Transform::from_translation(transform.translation.xy().extend(500.)),
+                    ..Default::default()
+                },
+                EaseTo::new(
+                    transform.translation.xy() + Vec2::new(0., 20.),
+                    EaseFunction::EaseOutExpo,
+                    1.,
+                ),
+                Lifetime(Timer::new(Duration::from_secs_f32(1.), TimerMode::Once)
+            )));
         }
     });
 }

@@ -84,6 +84,8 @@ pub struct GameMeta {
     pub enemy: Handle<EnemyMeta>,
     #[asset(path = "entities/player/yaml.player")]
     pub player: Handle<PlayerMeta>,
+    #[asset(path = "BitPotionExt.ttf")]
+    pub text_font: Handle<Font>
 }
 
 pub fn register_assets(app: &mut App) {

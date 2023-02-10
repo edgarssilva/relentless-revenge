@@ -199,13 +199,12 @@ pub fn attack_system(
     }
 }
 
-//TODO: Change attack lifetime to anything lifetime
-pub fn attack_lifetime(
+pub fn lifetimes(
     mut commands: Commands,
-    mut attacks: Query<(Entity, &mut Lifetime), With<Attack>>,
+    mut lifetimes: Query<(Entity, &mut Lifetime)>,
     time: Res<Time>,
 ) {
-    for (entity, mut lifetime) in attacks.iter_mut() {
+    for (entity, mut lifetime) in lifetimes.iter_mut() {
         lifetime.0.tick(time.delta());
 
         if lifetime.0.finished() {
