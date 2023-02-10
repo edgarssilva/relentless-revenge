@@ -167,7 +167,7 @@ pub fn attack_system(
             if attack_phase.charge.just_finished() {
                 //TODO: Add player meta so we can get the stats, player size and attack size
                 commands.entity(entity).with_children(|children| {
-                    let player_size = Vec2::new(64., 64.) / 3.75;
+                    let player_size = Vec2::new(32., 24.) * 0.75;
                     let offset = player_size.x * 0.75;
 
                     children.spawn(MeleeAttackBundle::new(

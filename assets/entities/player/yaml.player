@@ -1,5 +1,5 @@
-size: [ 64, 64 ]
-hitbox: [ 8, 12 ]
+size: [ 24, 32 ]
+hitbox: [ 24, 32 ]
 
 xp: 0
 speed: 75
@@ -8,9 +8,9 @@ damage: 55
 cooldown: 400
 
 texture:
-  path: "../../tiny_hero.png"
+  path: "GUMDROP.E64.R.PNG"
   tile_size: [ 64, 64 ]
   columns: 8
-  rows: 8
-  duration: 175
+  rows: 48
+  duration: 69
 

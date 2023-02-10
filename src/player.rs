@@ -54,28 +54,28 @@ impl PlayerBundle {
         let mut player_animations = HashMap::new();
 
         let mut idle_animations = HashMap::new();
-        idle_animations.insert(Direction::SOUTH, (16..19).collect());
-        idle_animations.insert(Direction::NORTH, (28..31).collect());
-        idle_animations.insert(Direction::EAST, (24..27).collect());
-        idle_animations.insert(Direction::WEST, (20..23).collect());
+        idle_animations.insert(Direction::SOUTH, (0..7).collect());
+        idle_animations.insert(Direction::EAST, (8..15).collect());
+        idle_animations.insert(Direction::NORTH, (16..23).collect());
+        idle_animations.insert(Direction::WEST, (24..31).collect());
 
         let mut walk_animations = HashMap::new();
-        walk_animations.insert(Direction::SOUTH, (48..51).collect());
-        walk_animations.insert(Direction::NORTH, (60..63).collect());
-        walk_animations.insert(Direction::EAST, (56..59).collect());
-        walk_animations.insert(Direction::WEST, (52..55).collect());
+        walk_animations.insert(Direction::SOUTH, (32..39).collect());
+        walk_animations.insert(Direction::EAST, (40..47).collect());
+        walk_animations.insert(Direction::NORTH, (48..55).collect());
+        walk_animations.insert(Direction::WEST, (56..63).collect());
 
         let mut attack_animations = HashMap::new();
-        attack_animations.insert(Direction::SOUTH, (0..3).collect());
-        attack_animations.insert(Direction::NORTH, (13..16).collect());
-        attack_animations.insert(Direction::EAST, (8..12).collect());
-        attack_animations.insert(Direction::WEST, (4..7).collect());
+        attack_animations.insert(Direction::SOUTH, (96..101).collect());
+        attack_animations.insert(Direction::EAST, (104..109).collect());
+        attack_animations.insert(Direction::NORTH, (112..117).collect());
+        attack_animations.insert(Direction::WEST, (120..125).collect());
 
         let mut dash_animations = HashMap::new();
-        dash_animations.insert(Direction::SOUTH, (32..35).collect());
-        dash_animations.insert(Direction::NORTH, (45..48).collect());
-        dash_animations.insert(Direction::EAST, (40..44).collect());
-        dash_animations.insert(Direction::WEST, (36..39).collect());
+        dash_animations.insert(Direction::SOUTH, (64..71).collect());
+        dash_animations.insert(Direction::EAST, (72..79).collect());
+        dash_animations.insert(Direction::NORTH, (80..87).collect());
+        dash_animations.insert(Direction::WEST, (88..95).collect());
 
         player_animations.insert(State::IDLE, idle_animations);
         player_animations.insert(State::WALKING, walk_animations);
@@ -88,7 +88,7 @@ impl PlayerBundle {
                 texture_atlas: meta.texture.atlas_handle.clone(),
                 transform: Transform {
                     translation: Vec3::new(0., 0., PLAYER_Z),
-                    scale: Vec3::new(1.25, 1.25, 1.),
+                    scale: Vec3::new(0.75, 0.75, 0.75),
                     ..default()
                 },
                 ..default()
