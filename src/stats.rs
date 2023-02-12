@@ -9,7 +9,6 @@ use bevy::{
     sprite::SpriteBundle,
     time::Timer,
 };
-use bevy::prelude::Without;
 use bevy_rapier2d::prelude::{ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups};
 
 use crate::{
@@ -98,9 +97,6 @@ impl Cooldown {
     }
 }
 
-#[derive(Component)]
-pub struct Dead;
-
 //TODO: Check if a new method is needed
 #[derive(Bundle)]
 pub struct StatsBundle {
@@ -113,22 +109,17 @@ pub struct StatsBundle {
 
 pub fn death_system(
     mut commands: Commands,
-    query: Query<(Entity, &Health, Option<&Enemy>), Without<Dead>>,
+    query: Query<(Entity, &Health, Option<&Enemy>)>,
     mut enemy_kill_writer: EventWriter<EnemyKilledEvent>,
 ) {
     for (entity, health, enemy) in query.iter() {
         if health.current == 0 {
-            commands.entity(entity).insert(Dead);
+            commands.entity(entity).despawn_recursive();
+
             if enemy.is_some() {
                 enemy_kill_writer.send(EnemyKilledEvent(entity));
             }
         }
-    }
-}
-
-pub fn despawn_dead_system(mut commands: Commands, query: Query<Entity, With<Dead>>) {
-    for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
     }
 }
 

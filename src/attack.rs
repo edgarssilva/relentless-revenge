@@ -208,7 +208,7 @@ pub fn lifetimes(
         lifetime.0.tick(time.delta());
 
         if lifetime.0.finished() {
-            commands.entity(entity).despawn_recursive();
+           commands.entity(entity).despawn_recursive();
         }
     }
 }

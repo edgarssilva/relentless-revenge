@@ -97,7 +97,6 @@ fn spawn_enemies(
 fn enemy_killed(
     mut event: EventReader<EnemyKilledEvent>,
     mut level: ResMut<LevelResource>,
-
     mut portal_writer: EventWriter<OpenLevelPortalEvent>,
 ) {
     for killed in event.iter() {

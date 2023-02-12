@@ -4,27 +4,27 @@ use bevy::{math::Vec3Swizzles, prelude::*};
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
 };
-use big_brain::{
-    BigBrainPlugin,
-    BigBrainStage,
-    prelude::{ActionState, FirstToScore},
-    scorers::Score, thinker::{Actor, Thinker, ThinkerBuilder},
-};
 use big_brain::actions::Steps;
 use big_brain::prelude::{ActionBuilder, ScorerBuilder};
+use big_brain::{
+    prelude::{ActionState, FirstToScore},
+    scorers::Score,
+    thinker::{Actor, Thinker, ThinkerBuilder},
+    BigBrainPlugin, BigBrainStage,
+};
 use iyes_loopless::prelude::ConditionSet;
 
+use crate::metadata::EnemyMeta;
 use crate::{
     animation::Animation,
     attack::{Damageable, ProjectileBundle},
     collision::BodyLayers,
     game_states::loading::TextureAssets,
-    GameState,
     movement::movement::{Follow, Velocity},
     player::Player,
     stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
+    GameState,
 };
-use crate::metadata::EnemyMeta;
 
 pub struct EnemyBehaviourPlugin;
 
@@ -159,13 +159,13 @@ fn follow_player_action(
         match *state {
             ActionState::Requested => {
                 if let Ok(player) = player.get_single() {
-                    commands
-                        .entity(*actor)
-                        .insert(Follow::new(player, 0.10, true, 90.));
-                    *state = ActionState::Executing;
-                } else {
-                    *state = ActionState::Failure;
+                    if let Some(mut ec) = commands.get_entity(*actor) {
+                        ec.insert(Follow::new(player, 0.10, true, 90.));
+                        *state = ActionState::Executing;
+                        continue;
+                    }
                 }
+                *state = ActionState::Failure;
             }
 
             ActionState::Executing => {
@@ -177,7 +177,9 @@ fn follow_player_action(
             }
 
             ActionState::Success => {
-                commands.entity(*actor).remove::<Follow>();
+                if let Some(mut ec) = commands.get_entity(*actor) {
+                    ec.remove::<Follow>();
+                }
             }
 
             ActionState::Cancelled => {
@@ -215,7 +217,7 @@ fn attack_player_action(
                                 texture_assets.arrow_atlas.clone(),
                                 seeker_transform.translation,
                                 f32::atan2(direction.y, direction.x),
-                                Vec2::new(32., 32.) / 2.,
+                                Vec2::new(100., 20.) / 2.,
                                 3.,
                                 Damage::new(10),
                                 false,
@@ -227,7 +229,7 @@ fn attack_player_action(
                                 current_frame: 0,
                                 timer: Timer::new(
                                     Duration::from_millis(300),
-                                    bevy::time::TimerMode::Once,
+                                    TimerMode::Once,
                                 ),
                             },
                         ));
@@ -240,7 +242,7 @@ fn attack_player_action(
                         continue;
                     }
                 }
-                *state = ActionState::Failure;
+                *state = ActionState::Cancelled;
             }
             ActionState::Executing => {
                 if let Ok(mut cooldown) = cooldowns.get_mut(*actor) {
@@ -249,6 +251,8 @@ fn attack_player_action(
                     if cooldown.is_ready() {
                         *state = ActionState::Success;
                     }
+                } else {
+                    *state = ActionState::Cancelled;
                 }
             }
 
