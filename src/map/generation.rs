@@ -1,6 +1,6 @@
 use bevy::math::Vec2;
 use bevy::prelude::{
-    Commands, Component, EventReader, EventWriter, IVec2, Mut, Query, Res, Transform, With,
+    Commands, Component, Entity, EventReader, EventWriter, IVec2, Mut, Query, Res, Transform, With,
 };
 use bevy_ecs_tilemap::prelude::*;
 use rand;
@@ -48,7 +48,7 @@ pub fn setup_map(mut commands: Commands, texture_assets: Res<TextureAssets>) {
 pub fn remake_map(
     event: EventReader<GenerateMapEvent>,
     mut player_query: Query<&mut Transform, With<Player>>,
-    mut tile_query: Query<&mut TileTextureIndex>,
+    mut tile_query: Query<(Entity, &mut TileTextureIndex)>,
     tile_storage_query: Query<&TileStorage>,
     mut spawn_enemies_writer: EventWriter<SpawnEnemiesEvent>,
     mut commands: Commands,
@@ -57,8 +57,10 @@ pub fn remake_map(
         let transform = player_query.single_mut();
 
         //Change all tiles to clear texture
-        for mut tile in tile_query.iter_mut() {
+        for (entity, mut tile) in tile_query.iter_mut() {
             tile.0 = 8;
+            //TODO: Check if it's better to remove all the tiles and then add them back
+            commands.entity(entity).remove::<WalkableTile>();
         }
 
         let mut enemies = SpawnEnemiesEvent {
@@ -82,7 +84,7 @@ pub fn remake_map(
 
 fn build_map(
     mut player_transform: Mut<Transform>,
-    mut tile_query: Query<&mut TileTextureIndex>,
+    mut tile_query: Query<(Entity, &mut TileTextureIndex)>,
     tile_storage: &TileStorage,
     enemies: &mut SpawnEnemiesEvent,
     commands: &mut Commands,
@@ -116,7 +118,7 @@ fn build_map(
                 //TODO: Build room using neighbors
                 if let Some(tile_entity) = tile_storage.get(&tile_pos) {
                     commands.entity(tile_entity).insert(WalkableTile);
-                    if let Ok(mut tile_texture) = tile_query.get_mut(tile_entity) {
+                    if let Ok((_, mut tile_texture)) = tile_query.get_mut(tile_entity) {
                         tile_texture.0 = 3;
                     }
                 }
@@ -151,7 +153,7 @@ fn build_map(
                 y: y as u32,
             }) {
                 commands.entity(tile_entity).insert(WalkableTile);
-                if let Ok(mut tile_texture) = tile_query.get_mut(tile_entity) {
+                if let Ok((_, mut tile_texture)) = tile_query.get_mut(tile_entity) {
                     tile_texture.0 = 3;
                 }
             }
