@@ -55,32 +55,47 @@ impl PlayerBundle {
 
         let mut idle_animations = HashMap::new();
         idle_animations.insert(Direction::SOUTH, (0..7).collect());
-        idle_animations.insert(Direction::EAST, (8..15).collect());
-        idle_animations.insert(Direction::NORTH, (16..23).collect());
-        idle_animations.insert(Direction::WEST, (24..31).collect());
+        idle_animations.insert(Direction::EAST, (10..17).collect());
+        idle_animations.insert(Direction::NORTH, (20..27).collect());
+        idle_animations.insert(Direction::WEST, (30..37).collect());
 
         let mut walk_animations = HashMap::new();
-        walk_animations.insert(Direction::SOUTH, (32..39).collect());
-        walk_animations.insert(Direction::EAST, (40..47).collect());
-        walk_animations.insert(Direction::NORTH, (48..55).collect());
-        walk_animations.insert(Direction::WEST, (56..63).collect());
-
-        let mut attack_animations = HashMap::new();
-        attack_animations.insert(Direction::SOUTH, (96..101).collect());
-        attack_animations.insert(Direction::EAST, (104..109).collect());
-        attack_animations.insert(Direction::NORTH, (112..117).collect());
-        attack_animations.insert(Direction::WEST, (120..125).collect());
+        walk_animations.insert(Direction::SOUTH, (40..47).collect());
+        walk_animations.insert(Direction::EAST, (50..57).collect());
+        walk_animations.insert(Direction::NORTH, (60..67).collect());
+        walk_animations.insert(Direction::WEST, (70..77).collect());
 
         let mut dash_animations = HashMap::new();
-        dash_animations.insert(Direction::SOUTH, (64..71).collect());
-        dash_animations.insert(Direction::EAST, (72..79).collect());
-        dash_animations.insert(Direction::NORTH, (80..87).collect());
-        dash_animations.insert(Direction::WEST, (88..95).collect());
+        dash_animations.insert(Direction::SOUTH, (80..87).collect());
+        dash_animations.insert(Direction::EAST, (90..97).collect());
+        dash_animations.insert(Direction::NORTH, (100..107).collect());
+        dash_animations.insert(Direction::WEST, (110..117).collect());
 
-        player_animations.insert(State::IDLE, idle_animations);
-        player_animations.insert(State::WALKING, walk_animations);
-        player_animations.insert(State::ATTACKING, attack_animations);
-        player_animations.insert(State::DASHING, dash_animations);
+        let mut attack_animations = HashMap::new();
+        attack_animations.insert(Direction::SOUTH, (120..125).collect());
+        attack_animations.insert(Direction::EAST, (130..135).collect());
+        attack_animations.insert(Direction::NORTH, (140..145).collect());
+        attack_animations.insert(Direction::WEST, (150..155).collect());
+
+        let mut attack_animations_1 = HashMap::new();
+        attack_animations_1.insert(Direction::SOUTH, (160..165).collect());
+        attack_animations_1.insert(Direction::EAST, (170..175).collect());
+        attack_animations_1.insert(Direction::NORTH, (180..185).collect());
+        attack_animations_1.insert(Direction::WEST, (190..195).collect());
+
+        let mut attack_animations_2 = HashMap::new();
+        attack_animations_2.insert(Direction::SOUTH, (200..209).collect());
+        attack_animations_2.insert(Direction::EAST, (210..219).collect());
+        attack_animations_2.insert(Direction::NORTH, (220..229).collect());
+        attack_animations_2.insert(Direction::WEST, (230..239).collect());
+
+
+        player_animations.insert(State::Idle, idle_animations);
+        player_animations.insert(State::Walking, walk_animations);
+        player_animations.insert(State::Attacking(0), attack_animations);
+        player_animations.insert(State::Attacking(1), attack_animations_1);
+        player_animations.insert(State::Attacking(2), attack_animations_2);
+        player_animations.insert(State::Dashing, dash_animations);
 
         PlayerBundle {
             player: Player,
@@ -104,7 +119,7 @@ impl PlayerBundle {
                 BodyLayers::XP_LAYER | BodyLayers::ENEMY_ATTACK,
             ),
             direction: Direction::SOUTH,
-            state: State::IDLE,
+            state: State::Idle,
             stats: StatsBundle {
                 health: Health::new(meta.health),
                 damage: Damage::new(meta.damage),

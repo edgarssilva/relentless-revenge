@@ -10,7 +10,7 @@ cooldown: 400
 texture:
   path: "GUMDROP.E64.R.PNG"
   tile_size: [ 64, 64 ]
-  columns: 8
+  columns: 10
   rows: 48
   duration: 69
 

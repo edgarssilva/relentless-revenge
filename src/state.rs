@@ -2,11 +2,11 @@ use bevy::prelude::Component;
 
 #[derive(Component, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum State {
-    IDLE,
-    WALKING,
-    ATTACKING,
-    DASHING,
-    _DYING,
+    Idle,
+    Walking,
+    Attacking(u32), //Index of the attack in a combo
+    Dashing,
+    _Dying,
 }
 
 impl State {

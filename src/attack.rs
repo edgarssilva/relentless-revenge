@@ -193,7 +193,7 @@ pub fn attack_system(
 
         attack_phase.recover.tick(time.delta());
         if attack_phase.recover.finished() {
-            state.set(State::IDLE);
+            state.set(State::Idle);
             commands.entity(entity).remove::<AttackPhase>();
         }
     }

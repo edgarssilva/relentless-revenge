@@ -2,7 +2,7 @@ use bevy::math::Vec3Swizzles;
 use bevy::prelude::{Component, EventWriter, Local, Query, Res, Time, Transform, With};
 use bevy_ecs_tilemap::{
     prelude::{TilemapGridSize, TilemapSize, TilemapType},
-    tiles::{TilePos, TileStorage},
+    tiles::{TilePos, TileStorage}
 };
 
 use crate::level::GenerateLevelEvent;
@@ -25,7 +25,7 @@ pub fn restrict_movement(
                 {
                     //Don't move if the player doesn't want to move
                     if let Some(state) = state {
-                        if !state.equals(State::WALKING) {
+                        if !state.equals(State::Walking) {
                             continue;
                         }
                     }

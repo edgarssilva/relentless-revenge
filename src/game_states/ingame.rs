@@ -23,6 +23,7 @@ use crate::{
     stats::{death_system, drop_xp_system},
     GameState,
 };
+use crate::controller::combo_system;
 
 pub struct InGamePlugin;
 
@@ -46,6 +47,7 @@ impl Plugin for InGamePlugin {
                     .with_system(dash_ability)
                     .with_system(attack_ability)
                     .with_system(attack_system)
+                    .with_system(combo_system)
                     .with_system(drop_xp_system)
                     .with_system(tick_cooldown)
                     //run_on_camera_move  .with_system(parallax_system),

@@ -61,7 +61,7 @@ impl AnimationState {
             animations,
             duration,
             repeat,
-            previous_state: State::IDLE,
+            previous_state: State::Idle,
             previous_direction: Direction::NORTH,
         }
     }
