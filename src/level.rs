@@ -6,6 +6,7 @@ use bevy::{
     },
 };
 use bevy::asset::Assets;
+use bevy::hierarchy::DespawnRecursiveExt;
 use iyes_loopless::prelude::ConditionSet;
 
 use crate::{enemy::EnemyBundle, GameState};
@@ -98,9 +99,12 @@ fn enemy_killed(
     mut event: EventReader<EnemyKilledEvent>,
     mut level: ResMut<LevelResource>,
     mut portal_writer: EventWriter<OpenLevelPortalEvent>,
+    mut commands: Commands,
 ) {
     for killed in event.iter() {
         level.enemies.retain(|e| *e != killed.0);
+
+        commands.entity(killed.0).despawn_recursive();
 
         if level.enemies.is_empty() {
             portal_writer.send(OpenLevelPortalEvent);

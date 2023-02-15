@@ -114,10 +114,10 @@ pub fn death_system(
 ) {
     for (entity, health, enemy) in query.iter() {
         if health.current == 0 {
-            commands.entity(entity).despawn_recursive();
-
             if enemy.is_some() {
                 enemy_kill_writer.send(EnemyKilledEvent(entity));
+            } else {
+                commands.entity(entity).despawn_recursive();
             }
         }
     }
