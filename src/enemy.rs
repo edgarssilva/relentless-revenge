@@ -4,27 +4,27 @@ use bevy::{math::Vec3Swizzles, prelude::*};
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
 };
+use big_brain::{
+    BigBrainPlugin,
+    BigBrainStage,
+    prelude::{ActionState, FirstToScore},
+    scorers::Score, thinker::{Actor, Thinker, ThinkerBuilder},
+};
 use big_brain::actions::Steps;
 use big_brain::prelude::{ActionBuilder, ScorerBuilder};
-use big_brain::{
-    prelude::{ActionState, FirstToScore},
-    scorers::Score,
-    thinker::{Actor, Thinker, ThinkerBuilder},
-    BigBrainPlugin, BigBrainStage,
-};
 use iyes_loopless::prelude::ConditionSet;
 
-use crate::metadata::EnemyMeta;
 use crate::{
     animation::Animation,
     attack::{Damageable, ProjectileBundle},
     collision::BodyLayers,
     game_states::loading::TextureAssets,
+    GameState,
     movement::movement::{Follow, Velocity},
     player::Player,
     stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
-    GameState,
 };
+use crate::metadata::EnemyMeta;
 
 pub struct EnemyBehaviourPlugin;
 
@@ -205,6 +205,17 @@ fn attack_player_action(
     for (Actor(actor), mut state) in query.iter_mut() {
         match *state {
             ActionState::Requested => {
+                if let Ok(mut cooldown) = cooldowns.get_mut(*actor) {
+                    cooldown.update(delta_time.delta());
+
+                    if cooldown.is_ready() {
+                        *state = ActionState::Executing;
+                    }
+                } else {
+                    *state = ActionState::Cancelled;
+                }
+            }
+            ActionState::Executing => {
                 if let Ok(seeker_transform) = seekers.get(*actor) {
                     if let Ok(player_transform) = player.get_single() {
                         let seeker_position = seeker_transform.translation.xy();
@@ -227,36 +238,25 @@ fn attack_player_action(
                                 //TODO: Add animation to projectile
                                 frames: (0..(6 * 5)).collect(),
                                 current_frame: 0,
-                                timer: Timer::new(
-                                    Duration::from_millis(300),
-                                    TimerMode::Once,
-                                ),
+                                timer: Timer::new(Duration::from_millis(300), TimerMode::Once),
                             },
                         ));
 
                         if let Ok(mut cooldown) = cooldowns.get_mut(*actor) {
                             cooldown.reset();
                         }
-
-                        *state = ActionState::Executing;
+                        *state = ActionState::Success;
                         continue;
                     }
                 }
                 *state = ActionState::Cancelled;
             }
-            ActionState::Executing => {
-                if let Ok(mut cooldown) = cooldowns.get_mut(*actor) {
-                    cooldown.update(delta_time.delta());
 
-                    if cooldown.is_ready() {
-                        *state = ActionState::Success;
-                    }
-                } else {
-                    *state = ActionState::Cancelled;
-                }
+            ActionState::Success => {
+                /* if let Ok(mut cooldown) = cooldowns.get_mut(*actor) {
+                     cooldown.reset();
+                 }*/
             }
-
-            ActionState::Success => {}
 
             ActionState::Cancelled => {
                 *state = ActionState::Failure;
