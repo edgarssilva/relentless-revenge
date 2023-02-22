@@ -13,6 +13,7 @@ mod state;
 mod stats;
 mod ui;
 mod metadata;
+mod boss;
 
 use bevy::prelude::*;
 use helper::KeyMaps;
