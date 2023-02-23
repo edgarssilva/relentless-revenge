@@ -144,7 +144,7 @@ fn attack_player(
                 cooldown.reset();
                 commands.entity(enemy).insert(Done::Success);
             }
-            commands.entity(enemy).insert(Done::Failure);
+            // commands.entity(enemy).insert(Done::Failure);
         }
     }
 }
