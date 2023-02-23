@@ -78,6 +78,24 @@ pub struct PlayerMeta {
     //TODO: Add animation data
 }
 
+#[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
+#[uuid = "18c28813-20dc-4494-a63a-3071a5be69f3"]
+pub struct LevelMeta {
+    pub level_count: u32,
+    pub rooms: (u32, u32),
+    pub room_size: (u32, u32),
+    pub enemy_count: (u32, u32),
+
+    pub enemies: Vec<SpawnMeta>,
+    // pub boss: BossMeta
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+pub struct SpawnMeta {
+    pub enemy: String,
+    pub spawn_weight: u32,
+}
+
 #[derive(AssetCollection, Resource)]
 pub struct GameMeta {
     #[asset(path = "entities/enemies/yaml.enemy")]
@@ -85,9 +103,13 @@ pub struct GameMeta {
     #[asset(path = "entities/player/yaml.player")]
     pub player: Handle<PlayerMeta>,
     #[asset(path = "BitPotionExt.ttf")]
-    pub text_font: Handle<Font>
+    pub text_font: Handle<Font>,
+    #[asset(path = "levels/yaml.level")]
+    pub level: Handle<LevelMeta>,
 }
 
 pub fn register_assets(app: &mut App) {
-    app.add_asset::<EnemyMeta>().add_asset::<PlayerMeta>();
+    app.add_asset::<EnemyMeta>()
+        .add_asset::<PlayerMeta>()
+        .add_asset::<LevelMeta>();
 }

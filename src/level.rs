@@ -1,3 +1,5 @@
+use bevy::asset::Assets;
+use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::{
     input::Input,
     math::Vec2,
@@ -5,14 +7,12 @@ use bevy::{
         App, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res, ResMut, Resource,
     },
 };
-use bevy::asset::Assets;
-use bevy::hierarchy::DespawnRecursiveExt;
 use iyes_loopless::prelude::ConditionSet;
 
-use crate::{enemy::EnemyBundle, GameState};
 use crate::map::generation::open_level_portal;
 use crate::map::walkable::travel_through_portal;
 use crate::metadata::{EnemyMeta, GameMeta};
+use crate::{enemy::EnemyBundle, GameState};
 
 #[derive(Default, Resource)]
 pub struct LevelResource {
@@ -21,7 +21,6 @@ pub struct LevelResource {
 }
 
 pub struct GenerateLevelEvent;
-pub struct GenerateMapEvent;
 
 pub struct EnemyKilledEvent(pub Entity);
 
@@ -37,7 +36,6 @@ impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(LevelResource::default())
             .add_event::<GenerateLevelEvent>()
-            .add_event::<GenerateMapEvent>()
             .add_event::<SpawnEnemiesEvent>()
             .add_event::<EnemyKilledEvent>()
             .add_event::<OpenLevelPortalEvent>()
@@ -61,16 +59,9 @@ fn keymap_generate(keys: Res<Input<KeyCode>>, mut map_writer: EventWriter<Genera
     }
 }
 
-fn generate_level(
-    event: EventReader<GenerateLevelEvent>,
-    mut level: ResMut<LevelResource>,
-    mut map_writer: EventWriter<GenerateMapEvent>,
-) {
-    if !event.is_empty() {
+fn generate_level(mut event: EventReader<GenerateLevelEvent>, mut level: ResMut<LevelResource>) {
+    for _ in event.iter() {
         level.level += 1;
-        map_writer.send(GenerateMapEvent);
-
-        event.clear();
     }
 }
 

@@ -7,7 +7,7 @@ use rand;
 use rand::prelude::*;
 
 use crate::game_states::loading::TextureAssets;
-use crate::level::{GenerateMapEvent, OpenLevelPortalEvent, SpawnEnemiesEvent};
+use crate::level::{GenerateLevelEvent, OpenLevelPortalEvent, SpawnEnemiesEvent};
 use crate::map::room::Room;
 use crate::player::Player;
 
@@ -46,7 +46,7 @@ pub fn setup_map(mut commands: Commands, texture_assets: Res<TextureAssets>) {
 }
 
 pub fn remake_map(
-    event: EventReader<GenerateMapEvent>,
+    event: EventReader<GenerateLevelEvent>,
     mut player_query: Query<&mut Transform, With<Player>>,
     mut tile_query: Query<(Entity, &mut TileTextureIndex)>,
     tile_storage_query: Query<&TileStorage>,
