@@ -1,5 +1,3 @@
-use bevy::asset::Assets;
-use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::{
     input::Input,
     math::Vec2,
@@ -7,12 +5,14 @@ use bevy::{
         App, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res, ResMut, Resource,
     },
 };
+use bevy::asset::Assets;
+use bevy::hierarchy::DespawnRecursiveExt;
 use iyes_loopless::prelude::ConditionSet;
 
+use crate::{enemy::EnemyBundle, GameState};
 use crate::map::generation::open_level_portal;
 use crate::map::walkable::travel_through_portal;
-use crate::metadata::{EnemyMeta, GameMeta};
-use crate::{enemy::EnemyBundle, GameState};
+use crate::metadata::{EnemyMeta, GameMeta, LevelMeta};
 
 #[derive(Default, Resource)]
 pub struct LevelResource {
@@ -20,7 +20,7 @@ pub struct LevelResource {
     pub enemies: Vec<Entity>,
 }
 
-pub struct GenerateLevelEvent;
+pub struct GenerateLevelEvent(pub LevelMeta);
 
 pub struct EnemyKilledEvent(pub Entity);
 
@@ -28,7 +28,8 @@ pub struct SpawnEnemiesEvent {
     pub positions: Vec<Vec2>,
 }
 
-pub struct OpenLevelPortalEvent;
+pub struct LevelFinishedEvent;
+pub struct TriggerNextLevelEvent;
 
 pub struct LevelPlugin;
 
@@ -38,7 +39,8 @@ impl Plugin for LevelPlugin {
             .add_event::<GenerateLevelEvent>()
             .add_event::<SpawnEnemiesEvent>()
             .add_event::<EnemyKilledEvent>()
-            .add_event::<OpenLevelPortalEvent>()
+            .add_event::<LevelFinishedEvent>()
+            .add_event::<TriggerNextLevelEvent>()
             .add_system_set(
                 ConditionSet::new()
                     .run_in_state(GameState::InGame)
@@ -53,15 +55,38 @@ impl Plugin for LevelPlugin {
     }
 }
 
-fn keymap_generate(keys: Res<Input<KeyCode>>, mut map_writer: EventWriter<GenerateLevelEvent>) {
+fn keymap_generate(keys: Res<Input<KeyCode>>, mut writer: EventWriter<TriggerNextLevelEvent>) {
     if keys.just_pressed(KeyCode::LControl) {
-        map_writer.send(GenerateLevelEvent);
+        writer.send(TriggerNextLevelEvent);
     }
 }
 
-fn generate_level(mut event: EventReader<GenerateLevelEvent>, mut level: ResMut<LevelResource>) {
+fn generate_level(
+    mut event: EventReader<TriggerNextLevelEvent>,
+    mut writer: EventWriter<GenerateLevelEvent>,
+    mut level: ResMut<LevelResource>,
+    game_meta: Res<GameMeta>,
+    levels: Res<Assets<LevelMeta>>,
+) {
     for _ in event.iter() {
         level.level += 1;
+
+        //TODO: Optimize this
+        let level_meta = game_meta
+            .levels
+            .iter()
+            .find_map(|meta| {
+                let meta = levels.get(meta).unwrap();
+                if level.level >= meta.levels.0 && level.level <= meta.levels.1 {
+                    Some(meta)
+                } else {
+                    None
+                }
+            })
+            .expect("No level found");
+
+
+        writer.send(GenerateLevelEvent(level_meta.clone()));
     }
 }
 
@@ -89,7 +114,7 @@ fn spawn_enemies(
 fn enemy_killed(
     mut event: EventReader<EnemyKilledEvent>,
     mut level: ResMut<LevelResource>,
-    mut portal_writer: EventWriter<OpenLevelPortalEvent>,
+    mut portal_writer: EventWriter<LevelFinishedEvent>,
     mut commands: Commands,
 ) {
     for killed in event.iter() {
@@ -98,7 +123,7 @@ fn enemy_killed(
         commands.entity(killed.0).despawn_recursive();
 
         if level.enemies.is_empty() {
-            portal_writer.send(OpenLevelPortalEvent);
+            portal_writer.send(LevelFinishedEvent);
         }
     }
 }

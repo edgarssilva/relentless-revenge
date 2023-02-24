@@ -3,12 +3,13 @@ use bevy::prelude::{
     Commands, Component, Entity, EventReader, EventWriter, IVec2, Mut, Query, Res, Transform, With,
 };
 use bevy_ecs_tilemap::prelude::*;
-use rand;
-use rand::prelude::*;
+use turborand::prelude::Rng;
+use turborand::TurboRand;
 
 use crate::game_states::loading::TextureAssets;
-use crate::level::{GenerateLevelEvent, OpenLevelPortalEvent, SpawnEnemiesEvent};
+use crate::level::{GenerateLevelEvent, LevelFinishedEvent, SpawnEnemiesEvent};
 use crate::map::room::Room;
+use crate::metadata::LevelMeta;
 use crate::player::Player;
 
 use super::bridge::Bridge;
@@ -46,14 +47,15 @@ pub fn setup_map(mut commands: Commands, texture_assets: Res<TextureAssets>) {
 }
 
 pub fn remake_map(
-    event: EventReader<GenerateLevelEvent>,
+    mut event: EventReader<GenerateLevelEvent>,
     mut player_query: Query<&mut Transform, With<Player>>,
     mut tile_query: Query<(Entity, &mut TileTextureIndex)>,
     tile_storage_query: Query<&TileStorage>,
     mut spawn_enemies_writer: EventWriter<SpawnEnemiesEvent>,
     mut commands: Commands,
 ) {
-    if !event.is_empty() {
+    for event in event.iter() {
+        let level_meta = event.0.clone();
         let transform = player_query.single_mut();
 
         //Change all tiles to clear texture
@@ -69,8 +71,9 @@ pub fn remake_map(
 
         if let Ok(tile_storage) = tile_storage_query.get_single() {
             build_map(
+                &level_meta,
                 transform,
-                tile_query,
+                &mut tile_query,
                 tile_storage,
                 &mut enemies,
                 &mut commands,
@@ -78,20 +81,20 @@ pub fn remake_map(
         }
 
         spawn_enemies_writer.send(enemies);
-        event.clear();
     }
 }
 
 fn build_map(
+    level_meta: &LevelMeta,
     mut player_transform: Mut<Transform>,
-    mut tile_query: Query<(Entity, &mut TileTextureIndex)>,
+    tile_query: &mut Query<(Entity, &mut TileTextureIndex)>,
     tile_storage: &TileStorage,
     enemies: &mut SpawnEnemiesEvent,
     commands: &mut Commands,
 ) {
-    let mut rng = thread_rng();
+    let mut rand = Rng::new();
 
-    let (rooms, bridges) = generate_level();
+    let (rooms, bridges) = generate_level(level_meta, &mut rand);
 
     let max_enemies_per_room = 3;
 
@@ -124,7 +127,7 @@ fn build_map(
                 }
 
                 //TODO: Move enemy spawns to a separate system
-                if rng.gen_bool(1. / 75.) && num_enemies < max_enemies_per_room {
+                if rand.chance(1. / 75.) && num_enemies < max_enemies_per_room {
                     enemies.positions.push(world_pos);
                     num_enemies += 1;
                 }
@@ -162,7 +165,7 @@ fn build_map(
 }
 
 pub fn open_level_portal(
-    events: EventReader<OpenLevelPortalEvent>,
+    events: EventReader<LevelFinishedEvent>,
     mut tile_query: Query<&mut TileTextureIndex, With<LevelPortalTile>>,
 ) {
     if !events.is_empty() {
@@ -174,29 +177,27 @@ pub fn open_level_portal(
     }
 }
 
-fn generate_level() -> (Vec<Room>, Vec<Bridge>) {
-    let mut rng = thread_rng();
-
+fn generate_level(level_meta: &LevelMeta, rand: &mut Rng) -> (Vec<Room>, Vec<Bridge>) {
     let mut rooms = Vec::<Room>::new();
     let mut bridges = Vec::<Bridge>::new();
 
-    let num_rooms = rng.gen_range(6..12);
-    let room_min_radius = 4;
-    let room_max_radius = 6;
+    let num_rooms = rand.i32(level_meta.rooms.0..=level_meta.rooms.1);
+    let room_min_radius = level_meta.room_size.0;
+    let room_max_radius = level_meta.room_size.1;
 
     let mut old_room = Room::new(
         IVec2::new(80, 80),
-        rng.gen_range(room_min_radius..room_max_radius),
+        rand.i32(room_min_radius..=room_max_radius),
     );
 
-    let main_direction: f32 = rng.gen_range(0.0..360.);
-    let angle_range = 180.;
+    let angle_range = 180;
+    let main_direction = rand.i32(0..360);
 
-    while rooms.len() < num_rooms {
-        let radius = rng.gen_range(room_min_radius..room_max_radius);
-        let direction = main_direction + rng.gen_range(-angle_range..angle_range);
-        let direction = direction.to_radians();
-        let bridge_length = rng.gen_range(1..4);
+    while rooms.len() < num_rooms as usize {
+        let radius = rand.i32(room_min_radius..=room_max_radius);
+        let direction = main_direction + rand.i32(-angle_range..angle_range);
+        let direction = (direction as f32).to_radians();
+        let bridge_length = rand.i32(1..=3);
         let distance = old_room.radius + bridge_length + (radius / 2);
 
         let new_room = Room::new(
@@ -208,7 +209,7 @@ fn generate_level() -> (Vec<Room>, Vec<Bridge>) {
         );
 
         if !rooms.is_empty() {
-            bridges.push(generate_bridge(old_room.pos, new_room.pos));
+            bridges.push(generate_bridge(old_room.pos, new_room.pos, rand));
         }
 
         rooms.push(new_room.clone());
@@ -218,16 +219,16 @@ fn generate_level() -> (Vec<Room>, Vec<Bridge>) {
     (rooms, bridges)
 }
 
-fn generate_bridge(from: IVec2, to: IVec2) -> Bridge {
-    let mut rng = thread_rng();
+fn generate_bridge(from: IVec2, to: IVec2, rand: &mut Rng) -> Bridge {
     let mut current = from.clone().as_vec2();
     let to = to.as_vec2();
 
     let mut positions = Vec::<IVec2>::new();
+    let directions = [-90., 0., 90.];
 
     while current != to {
         let mut dir = (to.y - current.y).atan2(to.x - current.x).to_degrees();
-        dir += [-90., 0., 90.].choose(&mut rng).unwrap(); //Add randomness
+        dir += *rand.sample(&directions).expect("No direction");
         dir = (dir / 90.).round() * 90.; //Increments of 90
         dir = dir.to_radians();
 

@@ -5,9 +5,9 @@ use bevy_ecs_tilemap::{
     tiles::{TilePos, TileStorage}
 };
 
-use crate::level::GenerateLevelEvent;
-use crate::map::generation::LevelPortalTile;
 use crate::{controller::Controlled, state::State};
+use crate::level::TriggerNextLevelEvent;
+use crate::map::generation::LevelPortalTile;
 
 #[derive(Component)]
 pub struct WalkableTile;
@@ -47,7 +47,7 @@ pub fn travel_through_portal(
     portal_query: Query<&LevelPortalTile>,
     mut timer: Local<f32>,
     delta: Res<Time>,
-    mut level_writer: EventWriter<GenerateLevelEvent>,
+    mut level_writer: EventWriter<TriggerNextLevelEvent>,
 ) {
     if let Some((tile_storage, tilemap_type, map_size, grid_size)) = query.iter().next() {
         for transform in controlled_query.iter() {
@@ -63,7 +63,7 @@ pub fn travel_through_portal(
 
                         if *timer > 3. {
                             *timer = 0.0;
-                            level_writer.send(GenerateLevelEvent);
+                            level_writer.send(TriggerNextLevelEvent);
                         }
                     }
                 }

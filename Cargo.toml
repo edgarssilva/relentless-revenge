@@ -20,8 +20,7 @@ iyes_loopless = { version = "0.9.1", features = ["states"] }
 bevy_asset_loader = { version = "0.14.1", features = ["2d", "stageless"] }
 bevy_common_assets = { version = "0.4.0", features = ["yaml"] }
 
-rand = "0.8.5"
-getrandom = "0.2.7"
+turborand = "0.10.0"
 serde = "1.0"
 serde_yaml = "0.9"
 

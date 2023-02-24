@@ -2,7 +2,8 @@ use bevy::prelude::{
     Commands, Component, Entity, Input, KeyCode, Query, Res, Resource, Time, Transform, With,
 };
 use bevy::render::camera::OrthographicProjection;
-use rand::Rng;
+use turborand::rng::Rng;
+use turborand::TurboRand;
 
 use crate::movement::movement::Follow;
 
@@ -22,10 +23,10 @@ pub fn shake_system(
 ) {
     for (mut trans, mut shake, entity) in query.iter_mut() {
         if shake.duration > 0. {
-            let mut rng = rand::thread_rng();
+            let rand = Rng::new();
 
-            trans.translation.x += rng.gen_range(-1.0..1.0) * shake.strength * time.delta_seconds();
-            trans.translation.y += rng.gen_range(-1.0..1.0) * shake.strength * time.delta_seconds();
+            trans.translation.x += (rand.i32(-100..=100) as f32 / 100.) * shake.strength * time.delta_seconds();
+            trans.translation.y += (rand.i32(-100..=100) as f32 / 100.) * shake.strength * time.delta_seconds();
 
             shake.duration -= time.delta_seconds();
         } else {

@@ -1,6 +1,6 @@
-level_count: 5
+levels: [1, 5]
 
-rooms: [1, 3]
+rooms: [2, 4]
 room_size: [3, 4]
 enemy_count: [1, 2]
 
