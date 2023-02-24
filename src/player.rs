@@ -3,6 +3,7 @@ use bevy::{
     sprite::SpriteSheetBundle,
     utils::HashMap,
 };
+use bevy::prelude::MouseButton;
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
 };
@@ -146,6 +147,7 @@ impl PlayerBundle {
         input_map.insert(KeyCode::D, MoveRight);
 
         input_map.insert(KeyCode::K, Attack);
+        input_map.insert(MouseButton::Left, Attack);
         input_map.insert(KeyCode::Space, Dash);
 
         input_map
