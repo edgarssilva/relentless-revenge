@@ -63,6 +63,7 @@ pub fn remake_map(
             tile.0 = 8;
             //TODO: Check if it's better to remove all the tiles and then add them back
             commands.entity(entity).remove::<WalkableTile>();
+            commands.entity(entity).remove::<LevelPortalTile>();
         }
 
         let mut enemies = SpawnEnemiesEvent {
