@@ -7,7 +7,9 @@ use turborand::prelude::Rng;
 use turborand::TurboRand;
 
 use crate::game_states::loading::TextureAssets;
-use crate::level::{GenerateLevelEvent, LevelFinishedEvent, SpawnEnemiesEvent};
+use crate::level::{
+    GenerateLevelEvent, LevelFinishedEvent, LevelResource, SpawnLevelEntitiesEvent,
+};
 use crate::map::room::Room;
 use crate::metadata::LevelMeta;
 use crate::player::Player;
@@ -51,37 +53,33 @@ pub fn remake_map(
     mut player_query: Query<&mut Transform, With<Player>>,
     mut tile_query: Query<(Entity, &mut TileTextureIndex)>,
     tile_storage_query: Query<&TileStorage>,
-    mut spawn_enemies_writer: EventWriter<SpawnEnemiesEvent>,
+    mut spawn_writer: EventWriter<SpawnLevelEntitiesEvent>,
     mut commands: Commands,
+    level: Res<LevelResource>,
 ) {
-    for event in event.iter() {
-        let level_meta = event.0.clone();
-        let transform = player_query.single_mut();
+    if let Some(level_meta) = &level.meta {
+        for _ in event.iter() {
+            let transform = player_query.single_mut();
 
-        //Change all tiles to clear texture
-        for (entity, mut tile) in tile_query.iter_mut() {
-            tile.0 = 8;
-            //TODO: Check if it's better to remove all the tiles and then add them back
-            commands.entity(entity).remove::<WalkableTile>();
-            commands.entity(entity).remove::<LevelPortalTile>();
+            //Change all tiles to clear texture
+            for (entity, mut tile) in tile_query.iter_mut() {
+                tile.0 = 8;
+                //TODO: Check if it's better to remove all the tiles and then add them back
+                commands.entity(entity).remove::<WalkableTile>();
+                commands.entity(entity).remove::<LevelPortalTile>();
+            }
+
+            if let Ok(tile_storage) = tile_storage_query.get_single() {
+                let spawnable_tiles = build_map(
+                    &level_meta,
+                    transform,
+                    &mut tile_query,
+                    tile_storage,
+                    &mut commands,
+                );
+                spawn_writer.send(SpawnLevelEntitiesEvent(spawnable_tiles));
+            }
         }
-
-        let mut enemies = SpawnEnemiesEvent {
-            positions: Vec::new(),
-        };
-
-        if let Ok(tile_storage) = tile_storage_query.get_single() {
-            build_map(
-                &level_meta,
-                transform,
-                &mut tile_query,
-                tile_storage,
-                &mut enemies,
-                &mut commands,
-            );
-        }
-
-        spawn_enemies_writer.send(enemies);
     }
 }
 
@@ -90,17 +88,17 @@ fn build_map(
     mut player_transform: Mut<Transform>,
     tile_query: &mut Query<(Entity, &mut TileTextureIndex)>,
     tile_storage: &TileStorage,
-    enemies: &mut SpawnEnemiesEvent,
     commands: &mut Commands,
-) {
+) -> Vec<Vec<Vec2>> {
     let mut rand = Rng::new();
 
     let (rooms, bridges) = generate_level(level_meta, &mut rand);
 
-    let max_enemies_per_room = 3;
+    let mut spawnable_room_tiles = Vec::new();
 
     for (i, room) in rooms.iter().enumerate() {
-        let mut num_enemies = 0;
+        let mut spawnable_tiles = Vec::new();
+
         for x in room.pos.x - room.radius..room.pos.x + room.radius {
             for y in room.pos.y - room.radius..room.pos.y + room.radius + 1 {
                 let tile_pos = TilePos {
@@ -108,16 +106,16 @@ fn build_map(
                     y: y as u32,
                 };
 
+                //Cut corners
+                if IVec2::new(x, y).as_vec2().distance(room.pos.as_vec2()) > room.radius as f32 {
+                    continue;
+                }
+
                 //TODO: Get the grid-size and map type from the current map
                 let world_pos = tile_pos.center_in_world(
                     &TilemapGridSize { x: 32., y: 16. },
                     &TilemapType::Isometric(IsoCoordSystem::Diamond),
                 );
-
-                //Cut corners
-                if IVec2::new(x, y).as_vec2().distance(room.pos.as_vec2()) > room.radius as f32 {
-                    continue;
-                }
 
                 //TODO: Build room using neighbors
                 if let Some(tile_entity) = tile_storage.get(&tile_pos) {
@@ -127,15 +125,11 @@ fn build_map(
                     }
                 }
 
-                //TODO: Move enemy spawns to a separate system
-                if rand.chance(1. / 75.) && num_enemies < max_enemies_per_room {
-                    enemies.positions.push(world_pos);
-                    num_enemies += 1;
-                }
-
                 if i == 0 && room.pos.to_array() == [x, y] {
                     player_transform.translation.x = world_pos.x;
                     player_transform.translation.y = world_pos.y;
+                } else {
+                    spawnable_tiles.push(world_pos);
                 }
 
                 if i == rooms.len() - 1 && room.pos.to_array() == [x, y] {
@@ -145,6 +139,7 @@ fn build_map(
                 }
             }
         }
+        spawnable_room_tiles.push(spawnable_tiles);
     }
 
     for bridge in bridges {
@@ -163,6 +158,7 @@ fn build_map(
             }
         }
     }
+    spawnable_room_tiles
 }
 
 pub fn open_level_portal(
@@ -182,20 +178,20 @@ fn generate_level(level_meta: &LevelMeta, rand: &mut Rng) -> (Vec<Room>, Vec<Bri
     let mut rooms = Vec::<Room>::new();
     let mut bridges = Vec::<Bridge>::new();
 
-    let num_rooms = rand.i32(level_meta.rooms.0..=level_meta.rooms.1);
+    let num_rooms = rand.u32(level_meta.rooms.0..=level_meta.rooms.1);
     let room_min_radius = level_meta.room_size.0;
     let room_max_radius = level_meta.room_size.1;
 
     let mut old_room = Room::new(
         IVec2::new(80, 80),
-        rand.i32(room_min_radius..=room_max_radius),
+        rand.u32(room_min_radius..=room_max_radius) as i32,
     );
 
     let angle_range = 180;
     let main_direction = rand.i32(0..360);
 
     while rooms.len() < num_rooms as usize {
-        let radius = rand.i32(room_min_radius..=room_max_radius);
+        let radius = rand.u32(room_min_radius..=room_max_radius) as i32;
         let direction = main_direction + rand.i32(-angle_range..angle_range);
         let direction = (direction as f32).to_radians();
         let bridge_length = rand.i32(1..=3);

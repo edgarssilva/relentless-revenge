@@ -81,10 +81,10 @@ pub struct PlayerMeta {
 #[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "18c28813-20dc-4494-a63a-3071a5be69f3"]
 pub struct LevelMeta {
-    pub levels: (i32, i32),
-    pub rooms: (i32, i32),
-    pub room_size: (i32, i32),
-    pub enemy_count: (i32, i32),
+    pub levels: (u32, u32),
+    pub rooms: (u32, u32),
+    pub room_size: (u32, u32),
+    pub enemies_per_room: (u32, u32),
 
     pub enemies: Vec<SpawnMeta>,
     // pub boss: BossMeta
@@ -92,14 +92,16 @@ pub struct LevelMeta {
 
 #[derive(serde::Deserialize, Debug, Clone)]
 pub struct SpawnMeta {
-    pub enemy: String,
-    pub spawn_weight: u32,
+    pub path: String,
+    #[serde(skip)]
+    pub enemy: Handle<EnemyMeta>,
+    pub weight: u32,
 }
 
 #[derive(AssetCollection, Resource)]
 pub struct GameMeta {
-    #[asset(path = "entities/enemies/yaml.enemy")]
-    pub enemy: Handle<EnemyMeta>,
+    #[asset(path = "entities/enemies", collection(typed))]
+    pub enemies: Vec<Handle<EnemyMeta>>,
     #[asset(path = "entities/player/yaml.player")]
     pub player: Handle<PlayerMeta>,
     #[asset(path = "BitPotionExt.ttf")]

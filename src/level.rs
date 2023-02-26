@@ -1,3 +1,6 @@
+use bevy::asset::Assets;
+use bevy::hierarchy::DespawnRecursiveExt;
+use bevy::reflect::Array;
 use bevy::{
     input::Input,
     math::Vec2,
@@ -5,31 +8,30 @@ use bevy::{
         App, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res, ResMut, Resource,
     },
 };
-use bevy::asset::Assets;
-use bevy::hierarchy::DespawnRecursiveExt;
 use iyes_loopless::prelude::ConditionSet;
+use turborand::rng::Rng;
+use turborand::TurboRand;
 
-use crate::{enemy::EnemyBundle, GameState};
 use crate::map::generation::open_level_portal;
 use crate::map::walkable::travel_through_portal;
 use crate::metadata::{EnemyMeta, GameMeta, LevelMeta};
+use crate::{enemy::EnemyBundle, GameState};
 
 #[derive(Default, Resource)]
 pub struct LevelResource {
-    pub level: i32,
+    pub level: u32,
+    pub meta: Option<LevelMeta>,
     pub enemies: Vec<Entity>,
 }
 
-pub struct GenerateLevelEvent(pub LevelMeta);
+//Level Generation Events
+pub struct GenerateLevelEvent;
+pub struct SpawnLevelEntitiesEvent(pub Vec<Vec<Vec2>>); // Available positions
 
-pub struct EnemyKilledEvent(pub Entity);
-
-pub struct SpawnEnemiesEvent {
-    pub positions: Vec<Vec2>,
-}
-
-pub struct LevelFinishedEvent;
-pub struct TriggerNextLevelEvent;
+//Level Clearing Events
+pub struct EnemyKilledEvent(pub Entity); // Entity killed
+pub struct LevelFinishedEvent; // All enemies killed
+pub struct TriggerNextLevelEvent; // Player triggered next level
 
 pub struct LevelPlugin;
 
@@ -37,7 +39,7 @@ impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(LevelResource::default())
             .add_event::<GenerateLevelEvent>()
-            .add_event::<SpawnEnemiesEvent>()
+            .add_event::<SpawnLevelEntitiesEvent>()
             .add_event::<EnemyKilledEvent>()
             .add_event::<LevelFinishedEvent>()
             .add_event::<TriggerNextLevelEvent>()
@@ -64,20 +66,20 @@ fn keymap_generate(keys: Res<Input<KeyCode>>, mut writer: EventWriter<TriggerNex
 fn generate_level(
     mut event: EventReader<TriggerNextLevelEvent>,
     mut writer: EventWriter<GenerateLevelEvent>,
-    mut level: ResMut<LevelResource>,
+    mut level_resource: ResMut<LevelResource>,
     game_meta: Res<GameMeta>,
     levels: Res<Assets<LevelMeta>>,
 ) {
     for _ in event.iter() {
-        level.level += 1;
+        level_resource.level += 1;
 
         //TODO: Optimize this
         let level_meta = game_meta
             .levels
             .iter()
             .find_map(|meta| {
-                let meta = levels.get(meta).unwrap();
-                if level.level >= meta.levels.0 && level.level <= meta.levels.1 {
+                let meta = levels.get(meta.downcast_ref().unwrap()).unwrap();
+                if level_resource.level >= meta.levels.0 && level_resource.level <= meta.levels.1 {
                     Some(meta)
                 } else {
                     None
@@ -85,28 +87,50 @@ fn generate_level(
             })
             .expect("No level found");
 
-
-        writer.send(GenerateLevelEvent(level_meta.clone()));
+        level_resource.meta = Some(level_meta.clone());
+        writer.send(GenerateLevelEvent);
     }
 }
 
 fn spawn_enemies(
-    mut event: EventReader<SpawnEnemiesEvent>,
+    mut event: EventReader<SpawnLevelEntitiesEvent>,
     mut commands: Commands,
-    game_meta: Res<GameMeta>,
     enemies: Res<Assets<EnemyMeta>>,
     mut level: ResMut<LevelResource>,
 ) {
     for e in event.iter() {
-        for pos in e.positions.iter() {
-            level.enemies.push(
-                commands
-                    .spawn(EnemyBundle::new(
-                        enemies.get(&game_meta.enemy).unwrap(),
-                        pos.extend(1.0),
-                    ))
-                    .id(),
-            );
+        //TODO: Find a way to not clone this
+        if let Some(meta) = &level.meta.clone() {
+            let rand = Rng::new();
+            let mut spawnable_room_positions = e.0.clone();
+
+            let spawnable_enemies = meta.enemies.clone();
+            let weight_count = spawnable_enemies.iter().map(|e| e.weight).sum::<u32>();
+
+            for spawnable_positions in spawnable_room_positions.iter_mut() {
+                rand.shuffle(spawnable_positions); //Shuffle positions
+                let enemies_per_room = rand.u32(meta.enemies_per_room.0..=meta.enemies_per_room.1);
+
+                for _ in 0..enemies_per_room {
+                    let mut weight = rand.u32(0..=weight_count) as i32; //Get random weight
+                    let pos = spawnable_positions.pop().unwrap(); //Get first position
+
+                    for enemy in spawnable_enemies.iter() {
+                        weight -= enemy.weight as i32;
+                        if weight > 0 {
+                            continue;
+                        }
+
+                        if let Some(enemy_meta) = enemies.get(&enemy.enemy) {
+                            level.enemies.push(
+                                commands
+                                    .spawn(EnemyBundle::new(enemy_meta, pos.extend(1.0)))
+                                    .id(),
+                            );
+                        }
+                    }
+                }
+            }
         }
     }
 }

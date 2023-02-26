@@ -108,11 +108,21 @@ impl AssetLoader for LevelMetaAssetLoader {
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), Error>> {
         Box::pin(async move {
-            let meta: LevelMeta = serde_yaml::from_slice(bytes)?;
+            let mut meta: LevelMeta = serde_yaml::from_slice(bytes)?;
 
-            load_context.set_default_asset(
-                LoadedAsset::new(meta), // .with_dependencies(dependencies)
-            );
+            let self_path = load_context.path();
+
+            let mut dependencies = vec![];
+
+            for enemy_spawn in &mut meta.enemies {
+                let (enemy_path, enemy_handle) =
+                    get_relative_asset(load_context, self_path, &enemy_spawn.path);
+
+                dependencies.push(enemy_path);
+                enemy_spawn.enemy = enemy_handle;
+            }
+
+            load_context.set_default_asset(LoadedAsset::new(meta).with_dependencies(dependencies));
             Ok(())
         })
     }

@@ -2,8 +2,8 @@ levels: [6, 20]
 
 rooms: [3, 6]
 room_size: [4, 6]
-enemy_count: [4, 8]
+enemies_per_room: [2, 4]
 
 enemies:
-  - enemy: "Cool Enemy"
-    spawn_weight: 2
+  - path: "../entities/enemies/yaml.enemy"
+    weight: 2
