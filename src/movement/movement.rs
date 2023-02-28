@@ -1,5 +1,8 @@
+use crate::map::walkable::WalkableTile;
 use bevy::math::{Vec2, Vec3Swizzles};
 use bevy::prelude::{App, Commands, Component, Entity, Plugin, Query, Res, Time, Transform};
+use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapSize, TilemapType};
+use bevy_ecs_tilemap::prelude::{TilePos, TileStorage};
 
 use super::easing::ease_to_position;
 
@@ -76,10 +79,32 @@ pub fn follow_entity_system(
 }
 
 #[derive(Component)]
-pub struct Velocity(pub Vec2);
+pub struct Velocity(pub Vec2, pub bool);
 
-pub fn movement_system(mut query_velocity: Query<(&Velocity, &mut Transform)>, time: Res<Time>) {
+pub fn movement_system(
+    mut query_velocity: Query<(&Velocity, &mut Transform)>,
+    tile_query: Query<(&TileStorage, &TilemapType, &TilemapSize, &TilemapGridSize)>,
+    walkable_tiles_query: Query<&WalkableTile>,
+    time: Res<Time>,
+) {
     for (velocity, mut transform) in query_velocity.iter_mut() {
-        transform.translation += velocity.0.extend(0.) * time.delta_seconds();
+        let new_pos = transform.translation + velocity.0.extend(0.) * time.delta_seconds();
+
+        if !velocity.1 { //If not restricted to walkable tiles
+            transform.translation = new_pos;
+            continue;
+        }
+
+        if let Some((tile_storage, tilemap_type, map_size, grid_size)) = tile_query.iter().next() {
+            if let Some(tile_pos) =
+                TilePos::from_world_pos(&new_pos.xy(), map_size, grid_size, tilemap_type)
+            {
+                if let Some(tile_entity) = tile_storage.get(&tile_pos) {
+                    if walkable_tiles_query.get(tile_entity).is_ok() {
+                        transform.translation = new_pos;
+                    }
+                }
+            }
+        }
     }
 }

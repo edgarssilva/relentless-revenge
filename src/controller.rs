@@ -1,3 +1,11 @@
+use bevy::{
+    math::Vec2,
+    prelude::{Commands, Component, Entity, Query, Res, Transform, With, Without},
+    time::{Time, Timer},
+};
+use bevy::{math::Vec3Swizzles, prelude::RemovedComponents};
+use leafwing_input_manager::prelude::ActionState;
+
 use crate::{
     attack::AttackPhase,
     movement::{
@@ -8,13 +16,6 @@ use crate::{
     state::State,
     stats::{Cooldown, MovementSpeed},
 };
-use bevy::{
-    math::Vec2,
-    prelude::{Commands, Component, Entity, Query, Res, Transform, With, Without},
-    time::{Time, Timer},
-};
-use bevy::{math::Vec3Swizzles, prelude::RemovedComponents};
-use leafwing_input_manager::prelude::ActionState;
 
 #[derive(Component)]
 pub struct Controlled {
@@ -115,9 +116,9 @@ pub fn dash_ability(
 
             //TODO: Add dash stats
             let new_pos = transform.translation.xy() + (dir.normalize() * 50.);
-            commands
-                .entity(entity)
-                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.5));
+            if let Some(mut ec) = commands.get_entity(entity) {
+                ec.insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.5));
+            }
         }
     }
 }
@@ -176,14 +177,14 @@ pub fn attack_ability(
             //TODO: Add attack dash stats
             let new_pos = transform.translation.xy() + (direction.vec().normalize() * 5.);
 
-            commands
-                .entity(entity)
-                .insert(AttackPhase {
+            if let Some(mut ec) = commands.get_entity(entity) {
+                ec.insert(AttackPhase {
                     charge: Timer::from_seconds(0.05, bevy::time::TimerMode::Once),
                     attack: Timer::from_seconds(0.25, bevy::time::TimerMode::Once),
                     recover: Timer::from_seconds(0.1, bevy::time::TimerMode::Once),
                 })
-                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutExpo, 0.55));
+                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.55));
+            }
         }
     }
 }

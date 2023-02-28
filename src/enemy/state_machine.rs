@@ -2,11 +2,15 @@ use std::time::Duration;
 
 use bevy::math::{Vec2, Vec3Swizzles};
 use bevy::prelude::{
-    App, Commands, Component, Entity, FromReflect, Query, Reflect, Res, Time, Timer, TimerMode,
-    Transform, With,
+    App, Commands, Component, Entity, FromReflect, Local, Query, Reflect, Res, Time, Timer,
+    TimerMode, Transform, With,
 };
+use bevy::utils::HashMap;
 use iyes_loopless::condition::ConditionSet;
+use seldom_state::prelude::Done::Success;
 use seldom_state::prelude::*;
+use turborand::rng::Rng;
+use turborand::TurboRand;
 
 use crate::animation::Animation;
 use crate::attack::ProjectileBundle;
@@ -23,6 +27,8 @@ pub(crate) fn register(app: &mut App) {
         .add_system_set(
             ConditionSet::new()
                 .run_in_state(GameState::InGame)
+                .with_system(idle)
+                .with_system(wander)
                 .with_system(follow_player)
                 .with_system(attack_player)
                 .into(),
@@ -30,17 +36,24 @@ pub(crate) fn register(app: &mut App) {
 }
 
 pub(crate) fn get_state_machine() -> StateMachine {
-    StateMachine::new(Wounder)
-        .trans::<Wounder>(NearPlayer { range: 120.0 }, FollowPlayer)
-        .trans::<FollowPlayer>(DoneTrigger::Success, Attack)
-        .trans::<FollowPlayer>(NotTrigger(NearPlayer { range: 120.0 }), Wounder)
-        .trans::<Attack>(DoneTrigger::Success, Wounder)
+    StateMachine::new(Idle)
+        .trans::<Idle>(DoneTrigger::Success, Wander)
+        .trans::<Wander>(DoneTrigger::Success, Idle)
+    .trans::<Wander>(NearPlayer { range: 120.0 }, FollowPlayer)
+    .trans::<FollowPlayer>(DoneTrigger::Success, Attack)
+    .trans::<FollowPlayer>(NotTrigger(NearPlayer { range: 120.0 }), Wander)
+    .trans::<Attack>(DoneTrigger::Success, Wander)
+    .remove_on_exit::<Wander, Velocity>()
 }
 
 //States
 #[derive(Component, Clone, Reflect)]
 #[component(storage = "SparseSet")]
-struct Wounder;
+struct Idle;
+
+#[derive(Component, Clone, Reflect)]
+#[component(storage = "SparseSet")]
+struct Wander;
 
 #[derive(Component, Clone, Reflect)]
 #[component(storage = "SparseSet")]
@@ -56,7 +69,7 @@ struct NearPlayer {
     range: f32,
 }
 
-impl Trigger for NearPlayer {
+impl BoolTrigger for NearPlayer {
     type Param<'w, 's> = (
         Query<'w, 's, &'static Transform, With<Enemy>>,
         Query<'w, 's, &'static Transform, With<Player>>,
@@ -78,8 +91,63 @@ impl Trigger for NearPlayer {
     }
 }
 
-fn _wounder() {
-    todo!();
+#[derive(Component)]
+struct IdleDuration(Timer);
+
+fn idle(
+    mut commands: Commands,
+    mut enemies: Query<(Entity, Option<&mut IdleDuration>), With<Idle>>,
+    time: Res<Time>,
+) {
+    let rand = Rng::new();
+    for (entity, timer) in enemies.iter_mut() {
+        if let Some(mut timer) = timer {
+            timer.0.tick(time.delta());
+
+            if timer.0.finished() {
+                commands
+                    .entity(entity)
+                    .remove::<IdleDuration>()
+                    .insert(Success);
+            }
+        } else {
+            commands.entity(entity).insert(IdleDuration(Timer::new(
+                Duration::from_millis(rand.u64(0..=1000)),
+                TimerMode::Once,
+            )));
+        }
+    }
+}
+
+fn wander(
+    enemies: Query<(Entity, Option<&Velocity>), With<Wander>>,
+    mut commands: Commands,
+    mut timers: Local<HashMap<Entity, f32>>,
+    time: Res<Time>,
+) {
+    let rand = Rng::new();
+    for (entity, velocity) in enemies.iter() {
+        if velocity.is_some() {
+            if timers.contains_key(&entity) {
+                let timer = timers.get_mut(&entity).unwrap();
+                *timer += time.delta_seconds();
+
+                if *timer >= rand.i32(1..=3) as f32 {
+                    timers.remove(&entity);
+                    commands.entity(entity).remove::<Velocity>().insert(Success);
+                }
+            }
+            continue;
+        }
+
+        let x = rand.i32(-1..1) as f32;
+        let y = rand.i32(-5..5) as f32 / 10.;
+        let speed = 15.;
+        let direction = Vec2::new(x, y);//.normalize_or_zero();
+
+        commands.entity(entity).insert(Velocity(direction * speed, true));
+        timers.insert(entity, 0.);
+    }
 }
 
 fn follow_player(
@@ -100,7 +168,7 @@ fn follow_player(
             } else {
                 commands
                     .entity(enemy)
-                    .insert(Follow::new(player, 0.10, true, 90.));
+                    .insert(Follow::new(player, 0.10, true, 80.));
             }
         }
     }
@@ -131,7 +199,7 @@ fn attack_player(
                         3.,
                         Damage::new(10),
                         false,
-                        Velocity(direction * 70.),
+                        Velocity(direction * 70., false),
                     ),
                     Animation {
                         //TODO: Add animation to projectile
@@ -142,7 +210,7 @@ fn attack_player(
                 ));
 
                 cooldown.reset();
-                commands.entity(enemy).insert(Done::Success);
+                commands.entity(enemy).insert(Success);
             }
             // commands.entity(enemy).insert(Done::Failure);
         }

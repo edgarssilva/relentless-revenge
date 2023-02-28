@@ -12,7 +12,7 @@ bevy_rapier2d = "0.20.0"
 bevy_ecs_tilemap = "0.9"
 
 #big-brain = "0.16.0"
-seldom_state = "0.3.0"
+seldom_state = "0.4.0"
 
 leafwing-input-manager = "0.8.0"
 iyes_loopless = { version = "0.9.1", features = ["states"] }

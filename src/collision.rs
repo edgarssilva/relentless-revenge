@@ -1,5 +1,6 @@
-use std::time::Duration;
+
 use bevy::prelude::{Color, Res, Text, Text2dBundle, TextAlignment, TextStyle, Timer, Vec2};
+use bevy::time::TimerMode;
 use bevy::{
     math::Vec3Swizzles,
     prelude::{
@@ -7,10 +8,11 @@ use bevy::{
         With, Without,
     },
 };
-use bevy::time::TimerMode;
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 use iyes_loopless::prelude::ConditionSet;
+use std::time::Duration;
 
+use crate::attack::Lifetime;
 use crate::metadata::GameMeta;
 use crate::{
     attack::{Breakable, Damageable, Knockback},
@@ -20,7 +22,6 @@ use crate::{
     stats::{Damage, Drop, Health},
     GameState, XP,
 };
-use crate::attack::Lifetime;
 
 pub struct CollisionPlugin;
 
@@ -126,11 +127,9 @@ pub fn damageable_collision(
             if let Some(knockback) = knockback {
                 let new_pos =
                     transform.translation.xy() + knockback.force * knockback.direction.vec();
-                commands.entity(damaged_entity).insert(EaseTo::new(
-                    new_pos,
-                    EaseFunction::EaseOutExpo,
-                    1.,
-                ));
+                if let Some(mut ec) = commands.get_entity(damaged_entity) {
+                    ec.insert(EaseTo::new(new_pos, EaseFunction::EaseOutExpo, 1.));
+                }
             }
 
             //Switch this into a shake event
@@ -162,8 +161,8 @@ pub fn damageable_collision(
                     EaseFunction::EaseOutExpo,
                     1.,
                 ),
-                Lifetime(Timer::new(Duration::from_secs_f32(1.), TimerMode::Once)
-            )));
+                Lifetime(Timer::new(Duration::from_secs_f32(1.), TimerMode::Once)),
+            ));
         }
     });
 }
