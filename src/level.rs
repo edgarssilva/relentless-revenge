@@ -128,6 +128,8 @@ fn spawn_enemies(
                                     .id(),
                             );
                         }
+
+                        break;
                     }
                 }
             }

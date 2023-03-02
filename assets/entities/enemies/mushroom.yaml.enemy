@@ -1,0 +1,19 @@
+name: "Mushroom"
+
+xp: 75
+damage: 5
+health: 200
+speed: 15
+cooldown: 7500
+
+texture:
+  path: "./Mushroom.png"
+  tile_size: [150, 150]
+  rows: 1
+  columns: 8
+  frames: [0, 1, 2, 3, 4, 5, 6, 7]
+  duration: 100
+
+scale: [1, 1k]
+hitbox: [24, 24]
+

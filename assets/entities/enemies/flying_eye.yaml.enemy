@@ -1,0 +1,19 @@
+name: "Flying Eye"
+
+xp: 55
+damage: 15
+health: 60
+speed: 30
+cooldown: 6500
+
+texture:
+  path: "./FlyingEye.png"
+  tile_size: [150, 150]
+  rows: 1
+  columns: 8
+  frames: [0, 1, 2, 3, 4, 5, 6, 7]
+  duration: 100
+
+scale: [1.2, 1.2]
+hitbox: [24, 24]
+

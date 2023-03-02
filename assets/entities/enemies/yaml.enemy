@@ -1,10 +1,10 @@
 name: "Cool Enemy"
 
 xp: 50
-damage: 5
+damage: 10
 health: 100
 speed: 20
-cooldown: 7500
+cooldown: 7000
 
 texture:
   path: "../../monster_flesh_eye_sheet.png"
@@ -14,5 +14,6 @@ texture:
   frames: [0, 1, 2, 3, 4, 5, 6, 7]
   duration: 250
 
+scale: [0.25, 0.25]
 hitbox: [96, 96]
 

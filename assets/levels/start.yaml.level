@@ -6,4 +6,6 @@ enemies_per_room: [1, 2]
 
 enemies:
   - path: "../entities/enemies/yaml.enemy"
-    weight: 2
+    weight: 4
+  - path: "../entities/enemies/flying_eye.yaml.enemy"
+    weight: 1

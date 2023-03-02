@@ -6,13 +6,13 @@ use bevy_rapier2d::prelude::{
 };
 use seldom_state::prelude::StateMachine;
 
+use crate::metadata::EnemyMeta;
 use crate::{
     animation::Animation,
     attack::Damageable,
     collision::BodyLayers,
     stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
 };
-use crate::metadata::EnemyMeta;
 
 mod state_machine;
 
@@ -53,7 +53,7 @@ impl EnemyBundle {
                 texture_atlas: meta.texture.atlas_handle.clone(),
                 transform: Transform {
                     translation,
-                    scale: Vec3::new(0.25, 0.25, 1.0),
+                    scale: meta.scale.extend(1.),
                     ..default()
                 },
                 ..default()

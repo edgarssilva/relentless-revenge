@@ -62,6 +62,7 @@ pub struct EnemyMeta {
     pub xp: u32,
     pub texture: TextureMeta,
     pub hitbox: Vec2,
+    pub scale: Vec2,
 }
 
 #[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
