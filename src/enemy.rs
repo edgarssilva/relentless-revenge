@@ -25,7 +25,7 @@ impl Plugin for EnemyBehaviourPlugin {
 }
 
 #[derive(Component)]
-pub struct Enemy;
+pub struct Enemy(pub EnemyMeta);
 
 #[derive(Bundle)]
 pub struct EnemyBundle {
@@ -48,7 +48,7 @@ pub struct EnemyBundle {
 impl EnemyBundle {
     pub fn new(meta: &EnemyMeta, translation: Vec3) -> Self {
         Self {
-            enemy: Enemy,
+            enemy: Enemy(meta.clone()),
             spritesheet: SpriteSheetBundle {
                 texture_atlas: meta.texture.atlas_handle.clone(),
                 transform: Transform {

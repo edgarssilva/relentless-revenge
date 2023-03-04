@@ -44,7 +44,7 @@ impl TextureMeta {
             ))
             .with_dependency(texture_path),
         );
-
+        
         if self.frames.is_empty() {
             self.frames = (0..self.columns * self.rows).collect();
         }
@@ -63,6 +63,7 @@ pub struct EnemyMeta {
     pub texture: TextureMeta,
     pub hitbox: Vec2,
     pub scale: Vec2,
+    pub attack: AttackMeta,
 }
 
 #[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
@@ -97,6 +98,20 @@ pub struct SpawnMeta {
     #[serde(skip)]
     pub enemy: Handle<EnemyMeta>,
     pub weight: u32,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(tag = "type")]
+pub enum AttackMeta {
+    Melee {
+        size: Vec2,
+    },
+    Ranged {
+        size: Vec2,
+        duration: f32,
+        velocity: f32,
+        texture: TextureMeta,
+    },
 }
 
 #[derive(AssetCollection, Resource)]

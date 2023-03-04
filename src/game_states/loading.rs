@@ -26,9 +26,9 @@ impl Plugin for LoadingPlugin {
 
 #[derive(AssetCollection, Resource)]
 pub struct TextureAssets {
-    #[asset(texture_atlas(tile_size_x = 100., tile_size_y = 100., columns = 6, rows = 5))]
+  /*  #[asset(texture_atlas(tile_size_x = 100., tile_size_y = 100., columns = 6, rows = 5))]
     #[asset(path = "arrow.png")]
-    pub arrow_atlas: Handle<TextureAtlas>,
+    pub arrow_atlas: Handle<TextureAtlas>,*/
 
     #[asset(path = "xp.png")]
     pub xp_texture: Handle<Image>,

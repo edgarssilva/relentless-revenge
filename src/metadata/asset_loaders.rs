@@ -5,7 +5,7 @@ use bevy::asset::{
 };
 use bevy::prelude::App;
 
-use crate::metadata::{EnemyMeta, LevelMeta, PlayerMeta};
+use crate::metadata::{AttackMeta, EnemyMeta, LevelMeta, PlayerMeta};
 
 /// Calculate an asset's full path relative to another asset
 fn relative_asset_path(asset_path: &Path, relative_path: &str) -> PathBuf {
@@ -54,6 +54,13 @@ impl AssetLoader for EnemyMetaAssetLoader {
                 load_context,
                 get_relative_asset(load_context, &self_path, &meta.texture.path),
             );
+
+            if let AttackMeta::Ranged { ref mut texture, .. } = meta.attack {
+                texture.load(
+                    load_context,
+                    get_relative_asset(load_context, &self_path, &texture.path),
+                );
+            }
 
             load_context.set_default_asset(
                 LoadedAsset::new(meta), // .with_dependencies(dependencies)

@@ -7,7 +7,6 @@ use bevy::prelude::{
 };
 use bevy::utils::HashMap;
 use iyes_loopless::condition::ConditionSet;
-use seldom_state::prelude::Done::Success;
 use seldom_state::prelude::*;
 use turborand::rng::Rng;
 use turborand::TurboRand;
@@ -15,7 +14,7 @@ use turborand::TurboRand;
 use crate::animation::Animation;
 use crate::attack::ProjectileBundle;
 use crate::enemy::Enemy;
-use crate::game_states::loading::TextureAssets;
+use crate::metadata::AttackMeta;
 use crate::movement::movement::{Follow, Velocity};
 use crate::player::Player;
 use crate::stats::{Cooldown, Damage};
@@ -39,11 +38,11 @@ pub(crate) fn get_state_machine() -> StateMachine {
     StateMachine::new(Idle)
         .trans::<Idle>(DoneTrigger::Success, Wander)
         .trans::<Wander>(DoneTrigger::Success, Idle)
-    .trans::<Wander>(NearPlayer { range: 120.0 }, FollowPlayer)
-    .trans::<FollowPlayer>(DoneTrigger::Success, Attack)
-    .trans::<FollowPlayer>(NotTrigger(NearPlayer { range: 120.0 }), Wander)
-    .trans::<Attack>(DoneTrigger::Success, Wander)
-    .remove_on_exit::<Wander, Velocity>()
+        .trans::<Wander>(NearPlayer { range: 120.0 }, FollowPlayer)
+        .trans::<FollowPlayer>(DoneTrigger::Success, Attack)
+        .trans::<FollowPlayer>(NotTrigger(NearPlayer { range: 120.0 }), Wander)
+        .trans::<Attack>(DoneTrigger::Success, Wander)
+        .remove_on_exit::<Wander, Velocity>()
 }
 
 //States
@@ -108,7 +107,7 @@ fn idle(
                 commands
                     .entity(entity)
                     .remove::<IdleDuration>()
-                    .insert(Success);
+                    .insert(Done::Success);
             }
         } else {
             commands.entity(entity).insert(IdleDuration(Timer::new(
@@ -134,7 +133,7 @@ fn wander(
 
                 if *timer >= rand.i32(1..=3) as f32 {
                     timers.remove(&entity);
-                    commands.entity(entity).remove::<Velocity>().insert(Success);
+                    commands.entity(entity).remove::<Velocity>().insert(Done::Success);
                 }
             }
             continue;
@@ -143,9 +142,11 @@ fn wander(
         let x = rand.i32(-1..1) as f32;
         let y = rand.i32(-5..5) as f32 / 10.;
         let speed = 15.;
-        let direction = Vec2::new(x, y);//.normalize_or_zero();
+        let direction = Vec2::new(x, y); //.normalize_or_zero();
 
-        commands.entity(entity).insert(Velocity(direction * speed, true));
+        commands
+            .entity(entity)
+            .insert(Velocity(direction * speed, true));
         timers.insert(entity, 0.);
     }
 }
@@ -176,12 +177,11 @@ fn follow_player(
 
 fn attack_player(
     mut commands: Commands,
-    mut enemies: Query<(Entity, &Transform, &mut Cooldown), (With<Enemy>, With<Attack>)>,
+    mut enemies: Query<(Entity, &Enemy, &Transform, &Damage, &mut Cooldown), With<Attack>>,
     player_query: Query<&Transform, With<Player>>,
-    texture_assets: Res<TextureAssets>,
     delta_time: Res<Time>,
 ) {
-    for (enemy, transform, mut cooldown) in enemies.iter_mut() {
+    for (entity, enemy, transform, damage, mut cooldown) in enemies.iter_mut() {
         cooldown.update(delta_time.delta());
 
         if cooldown.is_ready() {
@@ -189,28 +189,37 @@ fn attack_player(
                 let direction = (player.translation - transform.translation)
                     .xy()
                     .normalize();
-
-                commands.spawn((
-                    ProjectileBundle::new(
-                        texture_assets.arrow_atlas.clone(),
-                        transform.translation,
-                        f32::atan2(direction.y, direction.x),
-                        Vec2::new(100., 20.) / 2.,
-                        3.,
-                        Damage::new(10),
-                        false,
-                        Velocity(direction * 70., false),
-                    ),
-                    Animation {
-                        //TODO: Add animation to projectile
-                        frames: (0..(6 * 5)).collect(),
-                        current_frame: 0,
-                        timer: Timer::new(Duration::from_millis(300), TimerMode::Once),
-                    },
-                ));
-
+                if let AttackMeta::Ranged {
+                    texture,
+                    velocity,
+                    size,
+                    duration,
+                } = &enemy.0.attack
+                {
+                    commands.spawn((
+                        ProjectileBundle::new(
+                            texture.atlas_handle.clone(),
+                            transform.translation,
+                            f32::atan2(direction.y, direction.x),
+                            *size / 2.,
+                            *duration,
+                            *damage,
+                            false,
+                            Velocity(direction * *velocity, false),
+                        ),
+                        Animation {
+                            //TODO: Add animation to projectile
+                            frames: texture.frames.clone(),
+                            current_frame: 0,
+                            timer: Timer::new(
+                                Duration::from_millis(texture.duration),
+                                TimerMode::Once,
+                            ),
+                        },
+                    ));
+                }
                 cooldown.reset();
-                commands.entity(enemy).insert(Success);
+                commands.entity(entity).insert(Done::Success);
             }
             // commands.entity(enemy).insert(Done::Failure);
         }
