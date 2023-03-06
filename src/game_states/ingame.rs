@@ -4,6 +4,8 @@ use bevy_ecs_tilemap::TilemapPlugin;
 use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet};
 use leafwing_input_manager::prelude::InputManagerPlugin;
 
+use crate::attack::{attack_spawner, SpawnEnemyAttack};
+use crate::controller::combo_system;
 use crate::metadata::{GameMeta, PlayerMeta};
 use crate::ui::draw_hud;
 use crate::{
@@ -23,7 +25,6 @@ use crate::{
     stats::{death_system, drop_xp_system},
     GameState,
 };
-use crate::controller::combo_system;
 
 pub struct InGamePlugin;
 
@@ -36,6 +37,7 @@ impl Plugin for InGamePlugin {
             .add_plugin(EnemyBehaviourPlugin)
             .add_plugin(LevelPlugin)
             .add_plugin(MovementPlugin)
+            .add_event::<SpawnEnemyAttack>() //TOOD: Add attack plugin
             .add_enter_system(GameState::InGame, setup_game)
             .add_enter_system(GameState::InGame, setup_map)
             .add_system_set(
@@ -47,6 +49,7 @@ impl Plugin for InGamePlugin {
                     .with_system(dash_ability)
                     .with_system(attack_ability)
                     .with_system(attack_system)
+                    .with_system(attack_spawner)
                     .with_system(combo_system)
                     .with_system(drop_xp_system)
                     .with_system(tick_cooldown)

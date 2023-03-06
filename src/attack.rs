@@ -1,3 +1,4 @@
+use bevy::prelude::EventReader;
 use bevy::{
     prelude::{
         default, BuildChildren, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle,
@@ -11,6 +12,7 @@ use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, Sensor,
 };
 
+use crate::metadata::AttackMeta;
 use crate::{
     collision::BodyLayers,
     movement::direction::Direction,
@@ -155,6 +157,38 @@ impl ProjectileBundle {
     }
 }
 
+pub struct SpawnEnemyAttack {
+    pub meta: AttackMeta,
+    pub position: Vec3,
+    pub direction: Vec2,
+    pub damage: Damage,
+}
+
+pub fn attack_spawner(mut event: EventReader<SpawnEnemyAttack>, mut commands: Commands) {
+    for spawn_attack in event.iter() {
+        match &spawn_attack.meta {
+            AttackMeta::Melee { .. } => {}
+            AttackMeta::Ranged {
+                texture,
+                velocity,
+                size,
+                duration,
+            } => {
+                commands.spawn(ProjectileBundle::new(
+                    texture.atlas_handle.clone(),
+                    spawn_attack.position,
+                    f32::atan2(spawn_attack.direction.y, spawn_attack.direction.x),
+                    *size / 2.,
+                    *duration,
+                    spawn_attack.damage,
+                    false,
+                    Velocity(spawn_attack.direction * *velocity, false),
+                ));
+            }
+        }
+    }
+}
+
 pub fn attack_system(
     mut query: Query<(&mut State, &mut AttackPhase, &Direction, &Damage, Entity), With<Player>>,
     time: Res<Time>,
@@ -208,7 +242,7 @@ pub fn lifetimes(
         lifetime.0.tick(time.delta());
 
         if lifetime.0.finished() {
-           commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn_recursive();
         }
     }
 }

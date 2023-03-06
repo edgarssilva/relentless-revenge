@@ -105,6 +105,7 @@ pub struct SpawnMeta {
 pub enum AttackMeta {
     Melee {
         size: Vec2,
+
     },
     Ranged {
         size: Vec2,

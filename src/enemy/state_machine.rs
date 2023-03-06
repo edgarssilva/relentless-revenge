@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use bevy::math::{Vec2, Vec3Swizzles};
 use bevy::prelude::{
-    App, Commands, Component, Entity, FromReflect, Local, Query, Reflect, Res, Time, Timer,
-    TimerMode, Transform, With,
+    App, Commands, Component, Entity, EventWriter, FromReflect, Local, Query, Reflect, Res, Time,
+    Timer, TimerMode, Transform, With,
 };
 use bevy::utils::HashMap;
 use iyes_loopless::condition::ConditionSet;
@@ -11,10 +11,8 @@ use seldom_state::prelude::*;
 use turborand::rng::Rng;
 use turborand::TurboRand;
 
-use crate::animation::Animation;
-use crate::attack::ProjectileBundle;
+use crate::attack::SpawnEnemyAttack;
 use crate::enemy::Enemy;
-use crate::metadata::AttackMeta;
 use crate::movement::movement::{Follow, Velocity};
 use crate::player::Player;
 use crate::stats::{Cooldown, Damage};
@@ -133,7 +131,10 @@ fn wander(
 
                 if *timer >= rand.i32(1..=3) as f32 {
                     timers.remove(&entity);
-                    commands.entity(entity).remove::<Velocity>().insert(Done::Success);
+                    commands
+                        .entity(entity)
+                        .remove::<Velocity>()
+                        .insert(Done::Success);
                 }
             }
             continue;
@@ -176,48 +177,24 @@ fn follow_player(
 }
 
 fn attack_player(
-    mut commands: Commands,
-    mut enemies: Query<(Entity, &Enemy, &Transform, &Damage, &mut Cooldown), With<Attack>>,
     player_query: Query<&Transform, With<Player>>,
-    delta_time: Res<Time>,
+    mut event: EventWriter<SpawnEnemyAttack>,
+    mut enemies: Query<(Entity, &Enemy, &Transform, &Damage, &mut Cooldown), With<Attack>>,
+    mut commands: Commands,
 ) {
     for (entity, enemy, transform, damage, mut cooldown) in enemies.iter_mut() {
-        cooldown.update(delta_time.delta());
-
         if cooldown.is_ready() {
             if let Ok(player) = player_query.get_single() {
                 let direction = (player.translation - transform.translation)
                     .xy()
                     .normalize();
-                if let AttackMeta::Ranged {
-                    texture,
-                    velocity,
-                    size,
-                    duration,
-                } = &enemy.0.attack
-                {
-                    commands.spawn((
-                        ProjectileBundle::new(
-                            texture.atlas_handle.clone(),
-                            transform.translation,
-                            f32::atan2(direction.y, direction.x),
-                            *size / 2.,
-                            *duration,
-                            *damage,
-                            false,
-                            Velocity(direction * *velocity, false),
-                        ),
-                        Animation {
-                            //TODO: Add animation to projectile
-                            frames: texture.frames.clone(),
-                            current_frame: 0,
-                            timer: Timer::new(
-                                Duration::from_millis(texture.duration),
-                                TimerMode::Once,
-                            ),
-                        },
-                    ));
-                }
+
+                event.send(SpawnEnemyAttack {
+                    meta: enemy.0.attack.clone(),
+                    damage: *damage,
+                    direction,
+                    position: transform.translation,
+                });
                 cooldown.reset();
                 commands.entity(entity).insert(Done::Success);
             }
