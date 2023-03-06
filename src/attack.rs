@@ -63,7 +63,7 @@ struct AttackBundle {
 }
 
 impl AttackBundle {
-    pub fn new(size: Vec2, lifetime: Lifetime, damage: Damage, is_player_attack: bool) -> Self {
+    pub fn new(size: Vec2, duration: f32, damage: Damage, is_player_attack: bool) -> Self {
         let collision_groups = if is_player_attack {
             CollisionGroups::new(BodyLayers::PLAYER_ATTACK, BodyLayers::ENEMY)
         } else {
@@ -78,7 +78,7 @@ impl AttackBundle {
             collision_types: ActiveCollisionTypes::default()
                 | ActiveCollisionTypes::KINEMATIC_STATIC,
             collision_groups,
-            lifetime,
+            lifetime: Lifetime(Timer::from_seconds(duration, bevy::time::TimerMode::Once)),
             damage,
         }
     }
@@ -97,13 +97,13 @@ impl MeleeAttackBundle {
     pub fn new(
         position: Vec3,
         size: Vec2,
-        lifetime: Lifetime,
+        duration: f32,
         damage: Damage,
         knockback: Knockback,
         is_player_attack: bool,
     ) -> Self {
         Self {
-            attack: AttackBundle::new(size, lifetime, damage, is_player_attack),
+            attack: AttackBundle::new(size, duration, damage, is_player_attack),
             transform_bundle: TransformBundle {
                 local: Transform::from_translation(position),
                 ..default()
@@ -135,12 +135,7 @@ impl ProjectileBundle {
         velocity: Velocity,
     ) -> Self {
         Self {
-            attack: AttackBundle::new(
-                size,
-                Lifetime(Timer::from_seconds(duration, bevy::time::TimerMode::Once)),
-                damage,
-                is_player_attack,
-            ),
+            attack: AttackBundle::new(size, duration, damage, is_player_attack),
             spritesheet_bundle: SpriteSheetBundle {
                 texture_atlas: texture,
                 transform: Transform {
@@ -162,12 +157,34 @@ pub struct SpawnEnemyAttack {
     pub position: Vec3,
     pub direction: Vec2,
     pub damage: Damage,
+    pub enemy_size: Vec2,
 }
 
 pub fn attack_spawner(mut event: EventReader<SpawnEnemyAttack>, mut commands: Commands) {
     for spawn_attack in event.iter() {
         match &spawn_attack.meta {
-            AttackMeta::Melee { .. } => {}
+            AttackMeta::Melee {
+                size,
+                duration,
+                knockback,
+            } => {
+                let direction = Direction::from_vec2(spawn_attack.direction * -1.)
+                    .expect("Bad knockback direction");
+
+                let offset = spawn_attack.direction * spawn_attack.enemy_size / 2.;
+
+                commands.spawn(MeleeAttackBundle::new(
+                    spawn_attack.position + offset.extend(0.),
+                    *size / 2.,
+                    *duration,
+                    spawn_attack.damage,
+                    Knockback {
+                        force: *knockback,
+                        direction,
+                    },
+                    false,
+                ));
+            }
             AttackMeta::Ranged {
                 texture,
                 velocity,
@@ -207,7 +224,7 @@ pub fn attack_system(
                     children.spawn(MeleeAttackBundle::new(
                         (direction.vec() * offset).extend(10.),
                         player_size,
-                        Lifetime(attack_phase.attack.clone()),
+                        attack_phase.attack.duration().as_secs_f32(),
                         *damage,
                         Knockback {
                             force: 7.,

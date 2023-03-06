@@ -8,6 +8,7 @@ pub enum Direction {
     EAST,
 }
 
+
 impl Direction {
     pub fn vec(&self) -> Vec2 {
         match self {
@@ -15,6 +16,20 @@ impl Direction {
             &Self::SOUTH => -Vec2::Y,
             &Self::WEST => -Vec2::X,
             &Self::EAST => Vec2::X,
+        }
+    }
+
+    pub fn from_vec2(vec: Vec2) -> Option<Self> {
+        if vec.x > 0.0 {
+            Some(Self::EAST)
+        } else if vec.x < 0.0 {
+            Some(Self::WEST)
+        } else if vec.y > 0.0 {
+            Some(Self::NORTH)
+        } else if vec.y < 0.0 {
+            Some(Self::SOUTH)
+        } else {
+            None
         }
     }
 

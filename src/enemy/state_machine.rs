@@ -194,6 +194,7 @@ fn attack_player(
                     damage: *damage,
                     direction,
                     position: transform.translation,
+                    enemy_size: enemy.0.hitbox,
                 });
                 cooldown.reset();
                 commands.entity(entity).insert(Done::Success);
