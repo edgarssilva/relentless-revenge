@@ -162,7 +162,7 @@ fn build_map(
 }
 
 pub fn open_level_portal(
-    events: EventReader<LevelFinishedEvent>,
+    mut events: EventReader<LevelFinishedEvent>,
     mut tile_query: Query<&mut TileTextureIndex, With<LevelPortalTile>>,
 ) {
     if !events.is_empty() {

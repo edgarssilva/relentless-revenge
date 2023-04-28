@@ -1,8 +1,8 @@
-use bevy::prelude::{App, Commands, Input, KeyCode, Plugin, Res};
-use iyes_loopless::{
-    prelude::{AppLooplessStateExt, ConditionSet},
-    state::NextState,
+use bevy::prelude::{
+    App, Input, IntoSystemAppConfig, IntoSystemConfig, KeyCode, NextState, OnEnter, Plugin, Res, ResMut,
 };
+
+use bevy::ecs::schedule::OnUpdate;
 
 use crate::GameState;
 
@@ -10,20 +10,15 @@ pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::MainMenu, setup_menu)
-            .add_system_set(
-                ConditionSet::new()
-                    .run_in_state(GameState::MainMenu)
-                    .with_system(skip_menu)
-                    .into(),
-            );
+        app.add_system(setup_menu.in_schedule(OnEnter(GameState::MainMenu)))
+            .add_system(skip_menu.in_set(OnUpdate(GameState::MainMenu)));
     }
 }
 
 fn setup_menu() {}
 
-fn skip_menu(keys: Res<Input<KeyCode>>, mut commands: Commands) {
+fn skip_menu(keys: Res<Input<KeyCode>>, mut state: ResMut<NextState<GameState>>) {
     if keys.any_just_pressed([KeyCode::Space, KeyCode::Backslash]) {
-        commands.insert_resource(NextState(GameState::InGame));
+        state.set(GameState::InGame);
     }
 }

@@ -1,5 +1,7 @@
-
-use bevy::prelude::{Color, Res, Text, Text2dBundle, TextAlignment, TextStyle, Timer, Vec2};
+use bevy::prelude::{
+    Color, IntoSystemConfigs, Res, Text, Text2dBundle, TextAlignment, TextStyle, Timer,
+    Vec2, in_state,
+};
 use bevy::time::TimerMode;
 use bevy::{
     math::Vec3Swizzles,
@@ -9,7 +11,6 @@ use bevy::{
     },
 };
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
-use iyes_loopless::prelude::ConditionSet;
 use std::time::Duration;
 
 use crate::attack::Lifetime;
@@ -29,13 +30,7 @@ impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
             .add_plugin(RapierDebugRenderPlugin::default())
-            .add_system_set(
-                ConditionSet::new()
-                    .run_in_state(GameState::InGame)
-                    .with_system(xp_system)
-                    .with_system(damageable_collision)
-                    .into(),
-            );
+            .add_systems((damageable_collision, xp_system).distributive_run_if(in_state(GameState::InGame))); 
     }
 }
 
@@ -63,7 +58,7 @@ pub fn xp_system(
         };
 
         //If entity removed from world, don't handle collision
-        if !started && *flags == CollisionEventFlags::REMOVED {
+            if !started && *flags == CollisionEventFlags::REMOVED {
             return;
         }
 
@@ -146,7 +141,7 @@ pub fn damageable_collision(
                 font_size: 12.0,
                 color: Color::WHITE,
             };
-            let text_alignment = TextAlignment::CENTER;
+            let text_alignment = TextAlignment::Center;
 
             //Spawn damage indicator text
             commands.spawn((

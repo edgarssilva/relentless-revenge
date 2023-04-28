@@ -1,6 +1,6 @@
 use bevy::asset::Assets;
 use bevy::hierarchy::DespawnRecursiveExt;
-use bevy::reflect::Array;
+use bevy::prelude::{IntoSystemConfigs, in_state};
 use bevy::{
     input::Input,
     math::Vec2,
@@ -8,7 +8,6 @@ use bevy::{
         App, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res, ResMut, Resource,
     },
 };
-use iyes_loopless::prelude::ConditionSet;
 use turborand::rng::Rng;
 use turborand::TurboRand;
 
@@ -43,17 +42,11 @@ impl Plugin for LevelPlugin {
             .add_event::<EnemyKilledEvent>()
             .add_event::<LevelFinishedEvent>()
             .add_event::<TriggerNextLevelEvent>()
-            .add_system_set(
-                ConditionSet::new()
-                    .run_in_state(GameState::InGame)
-                    .with_system(enemy_killed)
-                    .with_system(spawn_enemies)
-                    .with_system(generate_level)
-                    .with_system(keymap_generate)
-                    .with_system(open_level_portal)
-                    .with_system(travel_through_portal)
-                    .into(),
-            );
+            .add_systems(
+                (enemy_killed, spawn_enemies, generate_level, keymap_generate, open_level_portal, travel_through_portal)
+                .distributive_run_if(in_state(GameState::InGame))
+                );
+
     }
 }
 
@@ -69,7 +62,7 @@ fn generate_level(
     mut level_resource: ResMut<LevelResource>,
     game_meta: Res<GameMeta>,
     levels: Res<Assets<LevelMeta>>,
-) {
+    ) {
     for _ in event.iter() {
         level_resource.level += 1;
 
@@ -78,7 +71,7 @@ fn generate_level(
             .levels
             .iter()
             .find_map(|meta| {
-                let meta = levels.get(meta.downcast_ref().unwrap()).unwrap();
+                let meta = levels.get(meta).unwrap();
                 if level_resource.level >= meta.levels.0 && level_resource.level <= meta.levels.1 {
                     Some(meta)
                 } else {
@@ -124,7 +117,7 @@ fn spawn_enemies(
                         if let Some(enemy_meta) = enemies.get(&enemy.enemy) {
                             level.enemies.push(
                                 commands
-                                    .spawn(EnemyBundle::new(enemy_meta, pos.extend(1.0)))
+                                    .spawn(EnemyBundle::new(enemy_meta, pos.extend(100.0)))
                                     .id(),
                             );
                         }
@@ -146,7 +139,11 @@ fn enemy_killed(
     for killed in event.iter() {
         level.enemies.retain(|e| *e != killed.0);
 
-        commands.entity(killed.0).despawn_recursive();
+//        commands.entity(killed.0).despawn_recursive();
+        if let Some(ec) = commands.get_entity(killed.0) {
+            ec.despawn_recursive();
+        }
+
 
         if level.enemies.is_empty() {
             portal_writer.send(LevelFinishedEvent);

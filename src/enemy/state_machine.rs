@@ -2,11 +2,10 @@ use std::time::Duration;
 
 use bevy::math::{Vec2, Vec3Swizzles};
 use bevy::prelude::{
-    App, Commands, Component, Entity, EventWriter, FromReflect, Local, Query, Reflect, Res, Time,
-    Timer, TimerMode, Transform, With,
+    App, Commands, Component, Entity, EventWriter, FromReflect, IntoSystemConfigs, Local,
+    Query, Reflect, Res, Time, Timer, TimerMode, Transform, With, in_state,
 };
 use bevy::utils::HashMap;
-use iyes_loopless::condition::ConditionSet;
 use seldom_state::prelude::*;
 use turborand::rng::Rng;
 use turborand::TurboRand;
@@ -21,26 +20,19 @@ use crate::GameState;
 pub(crate) fn register(app: &mut App) {
     app.add_plugin(StateMachinePlugin) //TODO: Move somewhere else
         .add_plugin(TriggerPlugin::<NearPlayer>::default())
-        .add_system_set(
-            ConditionSet::new()
-                .run_in_state(GameState::InGame)
-                .with_system(idle)
-                .with_system(wander)
-                .with_system(follow_player)
-                .with_system(attack_player)
-                .into(),
-        );
+        .add_systems((idle, wander, follow_player, attack_player).distributive_run_if(in_state(GameState::InGame)));
 }
 
 pub(crate) fn get_state_machine() -> StateMachine {
-    StateMachine::new(Idle)
-        .trans::<Idle>(DoneTrigger::Success, Wander)
-        .trans::<Wander>(DoneTrigger::Success, Idle)
-        .trans::<Wander>(NearPlayer { range: 120.0 }, FollowPlayer)
-        .trans::<FollowPlayer>(DoneTrigger::Success, Attack)
-        .trans::<FollowPlayer>(NotTrigger(NearPlayer { range: 120.0 }), Wander)
-        .trans::<Attack>(DoneTrigger::Success, Wander)
-        .remove_on_exit::<Wander, Velocity>()
+        StateMachine::new(Idle)
+    /*      .trans::<Idle>(DoneTrigger::Success, Wander)
+          .trans::<Wander>(DoneTrigger::Success, Idle)
+          .trans::<Wander>(NearPlayer { range: 120.0 }, FollowPlayer)
+          .trans::<FollowPlayer>(DoneTrigger::Success, Attack)
+          .trans::<FollowPlayer>(NotTrigger(NearPlayer { range: 120.0 }), Wander)
+          .trans::<Attack>(DoneTrigger::Success, Wander)
+          .remove_on_exit::<Wander, Velocity>()
+          */
 }
 
 //States

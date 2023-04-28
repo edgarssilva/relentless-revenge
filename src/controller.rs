@@ -125,7 +125,7 @@ pub fn dash_ability(
 
 pub fn finish_dash(
     mut query: Query<&mut State, With<Player>>,
-    removals: RemovedComponents<EaseTo>,
+    mut removals: RemovedComponents<EaseTo>,
 ) {
     for entity in removals.iter() {
         if let Ok(mut state) = query.get_mut(entity) {

@@ -1,11 +1,14 @@
 use bevy::asset::Assets;
-use bevy::prelude::{App, Camera2dBundle, Commands, CoreStage, Plugin, Res};
+use bevy::prelude::{
+    App, Camera2dBundle, Commands, IntoSystemConfigs,IntoSystemSetConfig, OnUpdate, Plugin, Res,
+    SystemSet, IntoSystemAppConfig, OnEnter,
+};
 use bevy_ecs_tilemap::TilemapPlugin;
-use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet};
 use leafwing_input_manager::prelude::InputManagerPlugin;
 
 use crate::attack::{attack_spawner, SpawnEnemyAttack};
 use crate::controller::combo_system;
+use crate::game_states::ingame::InGameSet::{Normal, Post};
 use crate::metadata::{GameMeta, PlayerMeta};
 use crate::ui::draw_hud;
 use crate::{
@@ -28,6 +31,13 @@ use crate::{
 
 pub struct InGamePlugin;
 
+//TODO: Refactor this to something meaningful
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+enum InGameSet {
+    Normal,
+    Post,
+}
+
 impl Plugin for InGamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(TilemapPlugin)
@@ -37,38 +47,32 @@ impl Plugin for InGamePlugin {
             .add_plugin(EnemyBehaviourPlugin)
             .add_plugin(LevelPlugin)
             .add_plugin(MovementPlugin)
-            .add_event::<SpawnEnemyAttack>() //TOOD: Add attack plugin
-            .add_enter_system(GameState::InGame, setup_game)
-            .add_enter_system(GameState::InGame, setup_map)
-            .add_system_set(
-                ConditionSet::new()
-                    .run_in_state(GameState::InGame)
-                    .with_system(draw_hud)
-                    .with_system(helper_camera_controller)
-                    .with_system(move_player)
-                    .with_system(dash_ability)
-                    .with_system(attack_ability)
-                    .with_system(attack_system)
-                    .with_system(attack_spawner)
-                    .with_system(combo_system)
-                    .with_system(drop_xp_system)
-                    .with_system(tick_cooldown)
-                    //run_on_camera_move  .with_system(parallax_system),
-                    .with_system(shake_system)
-                    .with_system(remake_map)
-                    .with_system(lifetimes)
-                    .with_system(projectile_break)
-                    .into(),
+            .add_event::<SpawnEnemyAttack>() //TODO: Add attack plugin
+            .add_system(setup_game.in_schedule(OnEnter(GameState::InGame)))
+            .add_system(setup_map.in_schedule(OnEnter(GameState::InGame)))
+            .configure_set(Normal.before(Post).in_set(OnUpdate(GameState::InGame)))
+            .configure_set(Post.after(Normal).in_set(OnUpdate(GameState::InGame)))
+            //TODO: Check system ordering and optimize it
+            .add_systems(
+                (
+                    draw_hud,
+                    helper_camera_controller,
+                    move_player,
+                    dash_ability,
+                    attack_ability,
+                    attack_system,
+                    attack_spawner,
+                    combo_system,
+                    drop_xp_system,
+                    tick_cooldown,
+                    shake_system,
+                    remake_map,
+                    lifetimes,
+                    projectile_break,
+                )
+                    .in_set(Normal),
             )
-            .add_system_set_to_stage(
-                CoreStage::PostUpdate,
-                ConditionSet::new()
-                    .run_in_state(GameState::InGame)
-                    .with_system(restrict_movement)
-                    .with_system(finish_dash)
-                    .with_system(death_system)
-                    .into(),
-            );
+            .add_systems((restrict_movement, finish_dash, death_system).in_set(Post));
     }
 }
 

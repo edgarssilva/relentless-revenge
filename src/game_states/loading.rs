@@ -15,12 +15,9 @@ impl Plugin for LoadingPlugin {
         register_asset_loaders(app);
 
         app.add_plugin(EguiPlugin)
-            .add_loading_state(
-                LoadingState::new(GameState::Loading)
-                    .continue_to_state(GameState::InGame)
-                    .with_collection::<TextureAssets>()
-                    .with_collection::<GameMeta>(),
-            );
+            .add_loading_state(LoadingState::new(GameState::Loading).continue_to_state(GameState::InGame))
+            .add_collection_to_loading_state::<_, TextureAssets>(GameState::Loading)
+            .add_collection_to_loading_state::<_, GameMeta>(GameState::Loading);
     }
 }
 
