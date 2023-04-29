@@ -4,7 +4,7 @@ use bevy::time::TimerMode;
 use bevy::{
     prelude::{
         default, BuildChildren, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle,
-        Quat, Query, Res, Transform, Vec2, Vec3, 
+        Quat, Query, Res, Transform, Vec2, Vec3,
     },
     sprite::{SpriteSheetBundle, TextureAtlas},
     time::{Time, Timer},
@@ -13,7 +13,7 @@ use bevy::{
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, Sensor,
 };
-use seldom_state::prelude::{Done, StateMachine, DoneTrigger};
+use seldom_state::prelude::{Done, DoneTrigger, StateMachine};
 
 use crate::metadata::AttackMeta;
 use crate::{
@@ -54,10 +54,19 @@ pub struct AttackPhase(pub Timer);
 #[component(storage = "SparseSet")]
 pub struct RecoverPhase(pub Timer);
 
-pub fn attack_phase(charge: f32, attack: f32, recover: f32) -> StateMachine{
-    StateMachine::new(ChargePhase(Timer::from_seconds(charge, TimerMode::Once), attack))
-        .trans::<ChargePhase>(DoneTrigger::Success, AttackPhase(Timer::from_seconds(attack, TimerMode::Once)))
-        .trans::<AttackPhase>(DoneTrigger::Success, RecoverPhase(Timer::from_seconds(recover, TimerMode::Once)))
+pub fn attack_phase(charge: f32, attack: f32, recover: f32) -> StateMachine {
+    StateMachine::new(ChargePhase(
+        Timer::from_seconds(charge, TimerMode::Once),
+        attack,
+    ))
+    .trans::<ChargePhase>(
+        DoneTrigger::Success,
+        AttackPhase(Timer::from_seconds(attack, TimerMode::Once)),
+    )
+    .trans::<AttackPhase>(
+        DoneTrigger::Success,
+        RecoverPhase(Timer::from_seconds(recover, TimerMode::Once)),
+    )
 }
 
 /**
@@ -223,28 +232,28 @@ pub fn charge_phase_system(
     mut query: Query<(&mut ChargePhase, &Direction, &Damage, Entity)>,
     time: Res<Time>,
     mut commands: Commands,
-){
+) {
     for (mut charge_phase, direction, damage, entity) in query.iter_mut() {
         if charge_phase.0.finished() {
-             commands.entity(entity).with_children(|children| {
+            commands.entity(entity).with_children(|children| {
                 let player_size = Vec2::new(32., 24.) * 0.75;
                 let offset = player_size.x * 0.75;
 
-                    children.spawn(MeleeAttackBundle::new(
-                        (direction.vec() * offset).extend(10.),
-                        player_size,
-                        charge_phase.1,
-                        *damage,
-                        Knockback {
-                            force: 7.,
-                            direction: direction.clone(),
-                        },
-                        true,
-                    ));
-                });
-            
+                children.spawn(MeleeAttackBundle::new(
+                    (direction.vec() * offset).extend(10.),
+                    player_size,
+                    charge_phase.1,
+                    *damage,
+                    Knockback {
+                        force: 7.,
+                        direction: direction.clone(),
+                    },
+                    true,
+                ));
+            });
+
             commands.entity(entity).insert(Done::Success);
-        }else {
+        } else {
             charge_phase.0.tick(time.delta());
         }
     }
@@ -254,12 +263,12 @@ pub fn attack_phase_system(
     mut query: Query<(&mut AttackPhase, Entity)>,
     time: Res<Time>,
     mut commands: Commands,
-    ){
+) {
     for (mut attack_phase, entity) in query.iter_mut() {
         if attack_phase.0.finished() {
             commands.entity(entity).insert(Done::Success);
         } else {
-          attack_phase.0.tick(time.delta());
+            attack_phase.0.tick(time.delta());
         }
     }
 }
@@ -268,13 +277,17 @@ pub fn recover_phase_system(
     mut query: Query<(&mut RecoverPhase, &mut State, Entity)>,
     time: Res<Time>,
     mut commands: Commands,
-    ){
-    for (mut recover_phase, mut state,  entity) in query.iter_mut() {
+) {
+    for (mut recover_phase, mut state, entity) in query.iter_mut() {
         if recover_phase.0.finished() {
             state.set(State::Idle);
-            commands.entity(entity).insert(Done::Success).remove::<StateMachine>().remove::<RecoverPhase>();
+            commands
+                .entity(entity)
+                .insert(Done::Success)
+                .remove::<StateMachine>()
+                .remove::<RecoverPhase>();
         } else {
-          recover_phase.0.tick(time.delta());
+            recover_phase.0.tick(time.delta());
         }
     }
 }

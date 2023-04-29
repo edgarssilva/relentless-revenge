@@ -22,6 +22,8 @@ bevy_common_assets = { version = "0.6.0", features = ["yaml"] }
 turborand = "0.10.0"
 serde = "1.0"
 serde_yaml = "0.9"
+bevy-persistent = { version = "0.2.0", features = ["all"] }
+dirs = "5.0.0"
 
 # Otimizations to speed up compilation in debug mode
 # Enable a small amount of optimization in debug mode

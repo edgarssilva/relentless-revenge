@@ -1,15 +1,20 @@
-use bevy::asset::Assets;
-use bevy::prelude::{
-    App, Camera2dBundle, Commands, IntoSystemConfigs,IntoSystemSetConfig, OnUpdate, Plugin, Res,
-    SystemSet, IntoSystemAppConfig, OnEnter,
-};
-use bevy_ecs_tilemap::TilemapPlugin;
-use leafwing_input_manager::prelude::InputManagerPlugin;
+use std::time::Duration;
 
-use crate::attack::{attack_spawner, SpawnEnemyAttack, charge_phase_system, attack_phase_system, recover_phase_system};
+use bevy::asset::Assets;
+use bevy::prelude::*;
+use bevy_ecs_tilemap::TilemapPlugin;
+use bevy_persistent::prelude::*;
+use leafwing_input_manager::prelude::InputManagerPlugin;
+use serde::{Deserialize, Serialize};
+
+use crate::attack::{
+    attack_phase_system, attack_spawner, charge_phase_system, recover_phase_system,
+    SpawnEnemyAttack,
+};
 use crate::controller::combo_system;
 use crate::game_states::ingame::InGameSet::{Normal, Post};
 use crate::metadata::{GameMeta, PlayerMeta};
+use crate::player::Player;
 use crate::ui::draw_hud;
 use crate::{
     animation::AnimationPlugin,
@@ -38,6 +43,20 @@ enum InGameSet {
     Post,
 }
 
+#[derive(Resource, Serialize, Deserialize, Debug, Clone, Default)]
+pub struct Statistics {
+    pub kills: u32,
+    pub deaths: u32,
+    pub dashes: u32,
+    pub damage_dealt: u32,
+    pub damage_taken: u32,
+    pub max_xp: u32,
+    pub max_level: u32,
+    pub revenge_time: f32,
+    pub play_time: f32,
+    pub game_count: u32,
+}
+
 impl Plugin for InGamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(TilemapPlugin)
@@ -48,6 +67,7 @@ impl Plugin for InGamePlugin {
             .add_plugin(LevelPlugin)
             .add_plugin(MovementPlugin)
             .add_event::<SpawnEnemyAttack>() //TODO: Add attack plugin
+            .add_systems((auto_save, statistics).in_set(OnUpdate(GameState::InGame)))
             .add_system(setup_game.in_schedule(OnEnter(GameState::InGame)))
             .add_system(setup_map.in_schedule(OnEnter(GameState::InGame)))
             .configure_set(Normal.before(Post).in_set(OnUpdate(GameState::InGame)))
@@ -88,6 +108,17 @@ fn setup_game(
     game_meta: Res<GameMeta>,
     player_meta: Res<Assets<PlayerMeta>>,
 ) {
+    let dir = dirs::data_dir().unwrap().join("relentless_revenge");
+
+    commands.insert_resource(
+        Persistent::<Statistics>::builder()
+            .name("statistics")
+            .format(StorageFormat::Bincode)
+            .path(dir.join("statistic.bin"))
+            .default(Statistics::default())
+            .build(),
+    );
+
     let player = player_meta
         .get(&game_meta.player)
         .expect("Player Meta not found");
@@ -98,4 +129,26 @@ fn setup_game(
     camera_bundle.projection.scale = 0.25;
 
     commands.spawn((camera_bundle, Follow::new(player_entity, 3., true, 5.)));
+}
+
+fn auto_save(time: Res<Time>, statistics: ResMut<Persistent<Statistics>>, mut timer: Local<Timer>) {
+    timer.set_duration(Duration::from_secs_f32(25.));
+    timer.set_mode(TimerMode::Repeating);
+    timer.tick(time.delta());
+
+    if timer.just_finished() {
+        statistics.persist();
+    }
+}
+
+fn statistics(
+    mut statistics: ResMut<Persistent<Statistics>>,
+    query: Query<&Player>,
+    time: Res<Time>,
+) {
+    println!("{:?}", statistics.play_time);
+
+    for _ in query.iter() {
+        statistics.play_time += time.delta().as_secs_f32();
+    }
 }
