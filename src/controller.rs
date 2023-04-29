@@ -1,20 +1,19 @@
 use bevy::{
     math::Vec2,
-    prelude::{Commands, Component, Entity, Query, Res, Transform, With, Without},
+    prelude::{Commands, Component, Entity, Query, Res, Transform, With},
     time::{Time, Timer},
 };
 use bevy::{math::Vec3Swizzles, prelude::RemovedComponents};
 use leafwing_input_manager::prelude::ActionState;
 
 use crate::{
-    attack::AttackPhase,
     movement::{
         direction::Direction,
         easing::{EaseFunction, EaseTo},
     },
     player::{Player, PlayerActions},
     state::State,
-    stats::{Cooldown, MovementSpeed},
+    stats::{Cooldown, MovementSpeed}, attack::attack_phase,
 };
 
 #[derive(Component)]
@@ -39,14 +38,13 @@ pub fn move_player(
             &MovementSpeed,
             &ActionState<PlayerActions>, // Entity,
         ),
-        (With<Player>, Without<AttackPhase>), // Can't move while attacking
+        With<Player>,
     >,
     time: Res<Time>,
 ) {
     if let Ok((mut state, mut direction, mut controlled, transform, mv_speed, action_state)) =
         query.get_single_mut()
     {
-        // println!("state: {:?}", state);
         if !(state.equals(State::Idle) || state.equals(State::Walking)) {
             return;
         }
@@ -85,7 +83,7 @@ pub fn dash_ability(
             &mut Cooldown,
             Entity,
         ),
-        (With<Player>, Without<AttackPhase>), // Can't dash while attacking
+        With<Player>
     >,
     mut commands: Commands,
 ) {
@@ -178,12 +176,11 @@ pub fn attack_ability(
             let new_pos = transform.translation.xy() + (direction.vec().normalize() * 5.);
 
             if let Some(mut ec) = commands.get_entity(entity) {
-                ec.insert(AttackPhase {
-                    charge: Timer::from_seconds(0.05, bevy::time::TimerMode::Once),
-                    attack: Timer::from_seconds(0.25, bevy::time::TimerMode::Once),
-                    recover: Timer::from_seconds(0.1, bevy::time::TimerMode::Once),
-                })
-                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.55));
+                ec.insert(attack_phase(0.05, 0.25, 0.1))
+                    .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.55));
+            } else {
+                println!("Failed to get entity");
+                state.set(State::Idle);
             }
         }
     }

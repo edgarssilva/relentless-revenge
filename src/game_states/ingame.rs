@@ -6,14 +6,14 @@ use bevy::prelude::{
 use bevy_ecs_tilemap::TilemapPlugin;
 use leafwing_input_manager::prelude::InputManagerPlugin;
 
-use crate::attack::{attack_spawner, SpawnEnemyAttack};
+use crate::attack::{attack_spawner, SpawnEnemyAttack, charge_phase_system, attack_phase_system, recover_phase_system};
 use crate::controller::combo_system;
 use crate::game_states::ingame::InGameSet::{Normal, Post};
 use crate::metadata::{GameMeta, PlayerMeta};
 use crate::ui::draw_hud;
 use crate::{
     animation::AnimationPlugin,
-    attack::{attack_system, lifetimes, projectile_break, tick_cooldown},
+    attack::{lifetimes, projectile_break, tick_cooldown},
     collision::CollisionPlugin,
     controller::{attack_ability, dash_ability, finish_dash, move_player},
     enemy::EnemyBehaviourPlugin,
@@ -60,7 +60,6 @@ impl Plugin for InGamePlugin {
                     move_player,
                     dash_ability,
                     attack_ability,
-                    attack_system,
                     attack_spawner,
                     combo_system,
                     drop_xp_system,
@@ -69,6 +68,14 @@ impl Plugin for InGamePlugin {
                     remake_map,
                     lifetimes,
                     projectile_break,
+                )
+                    .in_set(Normal),
+            )
+            .add_systems(
+                (
+                    charge_phase_system,
+                    attack_phase_system,
+                    recover_phase_system,
                 )
                     .in_set(Normal),
             )

@@ -25,14 +25,13 @@ pub(crate) fn register(app: &mut App) {
 
 pub(crate) fn get_state_machine() -> StateMachine {
         StateMachine::new(Idle)
-    /*      .trans::<Idle>(DoneTrigger::Success, Wander)
+          .trans::<Idle>(DoneTrigger::Success, Wander)
           .trans::<Wander>(DoneTrigger::Success, Idle)
           .trans::<Wander>(NearPlayer { range: 120.0 }, FollowPlayer)
           .trans::<FollowPlayer>(DoneTrigger::Success, Attack)
           .trans::<FollowPlayer>(NotTrigger(NearPlayer { range: 120.0 }), Wander)
           .trans::<Attack>(DoneTrigger::Success, Wander)
           .remove_on_exit::<Wander, Velocity>()
-          */
 }
 
 //States

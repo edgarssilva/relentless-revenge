@@ -1,8 +1,10 @@
 use bevy::prelude::EventReader;
+use bevy::reflect::Reflect;
+use bevy::time::TimerMode;
 use bevy::{
     prelude::{
         default, BuildChildren, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle,
-        Quat, Query, Res, Transform, Vec2, Vec3, With,
+        Quat, Query, Res, Transform, Vec2, Vec3, 
     },
     sprite::{SpriteSheetBundle, TextureAtlas},
     time::{Time, Timer},
@@ -11,13 +13,13 @@ use bevy::{
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, Sensor,
 };
+use seldom_state::prelude::{Done, StateMachine, DoneTrigger};
 
 use crate::metadata::AttackMeta;
 use crate::{
     collision::BodyLayers,
     movement::direction::Direction,
     movement::movement::Velocity,
-    player::Player,
     state::State,
     stats::{Cooldown, Damage},
 };
@@ -40,11 +42,22 @@ pub struct Knockback {
     pub direction: Direction,
 }
 
-#[derive(Component)]
-pub struct AttackPhase {
-    pub charge: Timer,
-    pub attack: Timer,
-    pub recover: Timer,
+#[derive(Component, Clone, Reflect)]
+#[component(storage = "SparseSet")]
+pub struct ChargePhase(pub Timer, pub f32); // Timer, attackphase duration for spawning attack
+
+#[derive(Component, Clone, Reflect)]
+#[component(storage = "SparseSet")]
+pub struct AttackPhase(pub Timer);
+
+#[derive(Component, Clone, Reflect)]
+#[component(storage = "SparseSet")]
+pub struct RecoverPhase(pub Timer);
+
+pub fn attack_phase(charge: f32, attack: f32, recover: f32) -> StateMachine{
+    StateMachine::new(ChargePhase(Timer::from_seconds(charge, TimerMode::Once), attack))
+        .trans::<ChargePhase>(DoneTrigger::Success, AttackPhase(Timer::from_seconds(attack, TimerMode::Once)))
+        .trans::<AttackPhase>(DoneTrigger::Success, RecoverPhase(Timer::from_seconds(recover, TimerMode::Once)))
 }
 
 /**
@@ -206,25 +219,21 @@ pub fn attack_spawner(mut event: EventReader<SpawnEnemyAttack>, mut commands: Co
     }
 }
 
-pub fn attack_system(
-    mut query: Query<(&mut State, &mut AttackPhase, &Direction, &Damage, Entity), With<Player>>,
+pub fn charge_phase_system(
+    mut query: Query<(&mut ChargePhase, &Direction, &Damage, Entity)>,
     time: Res<Time>,
     mut commands: Commands,
-) {
-    for (mut state, mut attack_phase, direction, damage, entity) in query.iter_mut() {
-        if !attack_phase.charge.finished() {
-            attack_phase.charge.tick(time.delta());
-
-            if attack_phase.charge.just_finished() {
-                //TODO: Add player meta so we can get the stats, player size and attack size
-                commands.entity(entity).with_children(|children| {
-                    let player_size = Vec2::new(32., 24.) * 0.75;
-                    let offset = player_size.x * 0.75;
+){
+    for (mut charge_phase, direction, damage, entity) in query.iter_mut() {
+        if charge_phase.0.finished() {
+             commands.entity(entity).with_children(|children| {
+                let player_size = Vec2::new(32., 24.) * 0.75;
+                let offset = player_size.x * 0.75;
 
                     children.spawn(MeleeAttackBundle::new(
                         (direction.vec() * offset).extend(10.),
                         player_size,
-                        attack_phase.attack.duration().as_secs_f32(),
+                        charge_phase.1,
                         *damage,
                         Knockback {
                             force: 7.,
@@ -233,19 +242,39 @@ pub fn attack_system(
                         true,
                     ));
                 });
-            }
-            return;
+            
+            commands.entity(entity).insert(Done::Success);
+        }else {
+            charge_phase.0.tick(time.delta());
         }
+    }
+}
 
-        if !attack_phase.attack.finished() {
-            attack_phase.attack.tick(time.delta());
-            return;
+pub fn attack_phase_system(
+    mut query: Query<(&mut AttackPhase, Entity)>,
+    time: Res<Time>,
+    mut commands: Commands,
+    ){
+    for (mut attack_phase, entity) in query.iter_mut() {
+        if attack_phase.0.finished() {
+            commands.entity(entity).insert(Done::Success);
+        } else {
+          attack_phase.0.tick(time.delta());
         }
+    }
+}
 
-        attack_phase.recover.tick(time.delta());
-        if attack_phase.recover.finished() {
+pub fn recover_phase_system(
+    mut query: Query<(&mut RecoverPhase, &mut State, Entity)>,
+    time: Res<Time>,
+    mut commands: Commands,
+    ){
+    for (mut recover_phase, mut state,  entity) in query.iter_mut() {
+        if recover_phase.0.finished() {
             state.set(State::Idle);
-            commands.entity(entity).remove::<AttackPhase>();
+            commands.entity(entity).insert(Done::Success).remove::<StateMachine>().remove::<RecoverPhase>();
+        } else {
+          recover_phase.0.tick(time.delta());
         }
     }
 }
