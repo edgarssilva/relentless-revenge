@@ -18,6 +18,7 @@ mod metadata;
 mod movement;
 mod player;
 mod state;
+mod statistics;
 mod stats;
 mod ui;
 

@@ -1,11 +1,8 @@
-use std::time::Duration;
-
 use bevy::asset::Assets;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_persistent::prelude::*;
 use leafwing_input_manager::prelude::InputManagerPlugin;
-use serde::{Deserialize, Serialize};
 
 use crate::attack::{
     attack_phase_system, attack_spawner, charge_phase_system, recover_phase_system,
@@ -14,7 +11,6 @@ use crate::attack::{
 use crate::controller::combo_system;
 use crate::game_states::ingame::InGameSet::{Normal, Post};
 use crate::metadata::{GameMeta, PlayerMeta};
-use crate::player::Player;
 use crate::ui::draw_hud;
 use crate::{
     animation::AnimationPlugin,
@@ -30,6 +26,7 @@ use crate::{
     },
     movement::movement::{Follow, MovementPlugin},
     player::{PlayerActions, PlayerBundle},
+    statistics::{auto_save, statistics, Statistics},
     stats::{death_system, drop_xp_system},
     GameState,
 };
@@ -41,20 +38,6 @@ pub struct InGamePlugin;
 enum InGameSet {
     Normal,
     Post,
-}
-
-#[derive(Resource, Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Statistics {
-    pub kills: u32,
-    pub deaths: u32,
-    pub dashes: u32,
-    pub damage_dealt: u32,
-    pub damage_taken: u32,
-    pub max_xp: u32,
-    pub max_level: u32,
-    pub revenge_time: f32,
-    pub play_time: f32,
-    pub game_count: u32,
 }
 
 impl Plugin for InGamePlugin {
@@ -129,26 +112,4 @@ fn setup_game(
     camera_bundle.projection.scale = 0.25;
 
     commands.spawn((camera_bundle, Follow::new(player_entity, 3., true, 5.)));
-}
-
-fn auto_save(time: Res<Time>, statistics: ResMut<Persistent<Statistics>>, mut timer: Local<Timer>) {
-    timer.set_duration(Duration::from_secs_f32(25.));
-    timer.set_mode(TimerMode::Repeating);
-    timer.tick(time.delta());
-
-    if timer.just_finished() {
-        statistics.persist();
-    }
-}
-
-fn statistics(
-    mut statistics: ResMut<Persistent<Statistics>>,
-    query: Query<&Player>,
-    time: Res<Time>,
-) {
-    println!("{:?}", statistics.play_time);
-
-    for _ in query.iter() {
-        statistics.play_time += time.delta().as_secs_f32();
-    }
 }
