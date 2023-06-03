@@ -30,14 +30,18 @@ pub fn draw_hud(
                     Image::new(health_bar_border, size),
                 );
 
-                size[0] *= health.current as f32 / health.max as f32;
+                let scale = health.current as f32 / health.max as f32;
+                size[0] *= scale;
 
                 ui.put(
                     Rect {
                         min: egui::pos2(16., 8.),
                         max: egui::pos2(16. + size[0], 8. + size[1]),
                     },
-                    Image::new(health_bar_fill, size),
+                    Image::new(health_bar_fill, size).uv(Rect {
+                        min: egui::pos2(0., 0.),
+                        max: egui::pos2(scale, 1.),
+                    }),
                 );
             });
 
