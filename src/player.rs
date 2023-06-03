@@ -1,9 +1,9 @@
+use bevy::prelude::MouseButton;
 use bevy::{
     prelude::{default, Bundle, Component, KeyCode, Transform, Vec3},
     sprite::SpriteSheetBundle,
     utils::HashMap,
 };
-use bevy::prelude::MouseButton;
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
 };
@@ -23,8 +23,8 @@ use crate::{
     PLAYER_Z,
 };
 
-use leafwing_input_manager::Actionlike;
 use crate::metadata::PlayerMeta;
+use leafwing_input_manager::Actionlike;
 
 #[derive(Component)]
 pub struct Player;
@@ -90,7 +90,6 @@ impl PlayerBundle {
         attack_animations_2.insert(Direction::NORTH, (220..229).collect());
         attack_animations_2.insert(Direction::WEST, (230..239).collect());
 
-
         player_animations.insert(State::Idle, idle_animations);
         player_animations.insert(State::Walking, walk_animations);
         player_animations.insert(State::Attacking(0), attack_animations);
@@ -146,7 +145,7 @@ impl PlayerBundle {
         input_map.insert(KeyCode::A, MoveLeft);
         input_map.insert(KeyCode::D, MoveRight);
 
-        input_map.insert(KeyCode::K, Attack);
+        input_map.insert(KeyCode::J, Attack);
         input_map.insert(MouseButton::Left, Attack);
         input_map.insert(KeyCode::Space, Dash);
 

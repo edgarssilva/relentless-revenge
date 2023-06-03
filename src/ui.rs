@@ -1,7 +1,7 @@
 use bevy::prelude::{AssetServer, Res};
 use bevy::prelude::{Query, With};
-use bevy_egui::{egui, EguiContexts};
 use bevy_egui::egui::{Image, Rect, RichText};
+use bevy_egui::{egui, EguiContexts};
 
 use crate::level::LevelResource;
 use crate::player::Player;

@@ -18,6 +18,7 @@ pub struct Statistics {
     pub revenge_time: f32,
     pub play_time: f32,
     pub game_count: u32,
+    pub healing: u32,
 }
 
 pub fn auto_save(

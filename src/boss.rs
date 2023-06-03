@@ -1,5 +1,5 @@
-use bevy::prelude::{Bundle, Component};
 use crate::stats::StatsBundle;
+use bevy::prelude::{Bundle, Component};
 
 #[derive(Component)]
 pub struct Boss;
@@ -9,6 +9,3 @@ pub struct BossBundle {
     boss: Boss,
     stats: StatsBundle,
 }
-
-
-

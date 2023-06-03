@@ -1,6 +1,8 @@
 use bevy::math::Vec2;
+use bevy::prelude::Commands;
+use bevy::prelude::With;
 use bevy::prelude::{
-    Commands, Component, Entity, EventReader, EventWriter, IVec2, Mut, Query, Res, Transform, With,
+    Component, Entity, EventReader, EventWriter, IVec2, Mut, Query, Res, Transform, UVec2,
 };
 use bevy_ecs_tilemap::prelude::*;
 use turborand::prelude::Rng;
@@ -126,6 +128,7 @@ fn build_map(
                 }
 
                 if i == 0 && room.pos.to_array() == [x, y] {
+                    //TODO: Move player position out
                     player_transform.translation.x = world_pos.x;
                     player_transform.translation.y = world_pos.y;
                 } else {

@@ -25,8 +25,10 @@ pub fn shake_system(
         if shake.duration > 0. {
             let rand = Rng::new();
 
-            trans.translation.x += (rand.i32(-100..=100) as f32 / 100.) * shake.strength * time.delta_seconds();
-            trans.translation.y += (rand.i32(-100..=100) as f32 / 100.) * shake.strength * time.delta_seconds();
+            trans.translation.x +=
+                (rand.i32(-100..=100) as f32 / 100.) * shake.strength * time.delta_seconds();
+            trans.translation.y +=
+                (rand.i32(-100..=100) as f32 / 100.) * shake.strength * time.delta_seconds();
 
             shake.duration -= time.delta_seconds();
         } else {
@@ -81,7 +83,7 @@ impl Default for KeyMaps {
             walk_left: KeyCode::A,
             walk_down: KeyCode::S,
             walk_right: KeyCode::D,
-            attack: KeyCode::K,
+            attack: KeyCode::J,
             dash: KeyCode::Space,
         }
     }
