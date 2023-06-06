@@ -2,7 +2,7 @@ use bevy::math::Vec2;
 use bevy::prelude::Commands;
 use bevy::prelude::With;
 use bevy::prelude::{
-    Component, Entity, EventReader, EventWriter, IVec2, Mut, Query, Res, Transform, UVec2,
+    Component, Entity, EventReader, EventWriter, IVec2, Mut, Query, Res, Transform,
 };
 use bevy_ecs_tilemap::prelude::*;
 use turborand::prelude::Rng;
