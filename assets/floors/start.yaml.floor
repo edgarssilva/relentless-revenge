@@ -1,4 +1,4 @@
-levels: [1, 5]
+floors: [1, 5]
 
 rooms: [2, 3]
 room_size: [3, 4]

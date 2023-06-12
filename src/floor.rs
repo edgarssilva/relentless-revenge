@@ -13,83 +13,83 @@ use turborand::TurboRand;
 
 use crate::map::generation::open_level_portal;
 use crate::map::walkable::travel_through_portal;
-use crate::metadata::{EnemyMeta, GameMeta, LevelMeta};
+use crate::metadata::{EnemyMeta, GameMeta, FloorMeta};
 use crate::{enemy::EnemyBundle, GameState};
 
 #[derive(Default, Resource)]
-pub struct LevelResource {
-    pub level: u32,
-    pub meta: Option<LevelMeta>,
+pub struct FloorResource {
+    pub floor: u32,
+    pub meta: Option<FloorMeta>,
     pub enemies: Vec<Entity>,
 }
 
-//Level Generation Events
-pub struct GenerateLevelEvent;
-pub struct SpawnLevelEntitiesEvent(pub Vec<Vec<Vec2>>); // Available positions
+//Floor Generation Events
+pub struct GenerateFloorEvent;
+pub struct SpawnFloorEntitiesEvent(pub Vec<Vec<Vec2>>); // Available positions
 
-//Level Clearing Events
+//Floor Clearing Events
 pub struct EnemyKilledEvent(pub Entity); // Entity killed
-pub struct LevelFinishedEvent; // All enemies killed
-pub struct TriggerNextLevelEvent; // Player triggered next level
+pub struct FloorClearedEvent; // All enemies killed
+pub struct TriggerNextFloorEvent; // Player triggered next level
 
-pub struct LevelPlugin;
+pub struct FloorPlugin;
 
-impl Plugin for LevelPlugin {
+impl Plugin for FloorPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(LevelResource::default())
-            .add_event::<GenerateLevelEvent>()
-            .add_event::<SpawnLevelEntitiesEvent>()
+        app.insert_resource(FloorResource::default())
+            .add_event::<GenerateFloorEvent>()
+            .add_event::<SpawnFloorEntitiesEvent>()
             .add_event::<EnemyKilledEvent>()
-            .add_event::<LevelFinishedEvent>()
-            .add_event::<TriggerNextLevelEvent>()
+            .add_event::<FloorClearedEvent>()
+            .add_event::<TriggerNextFloorEvent>()
             .add_systems(
-                (enemy_killed, spawn_enemies, generate_level, keymap_generate, open_level_portal, travel_through_portal)
+                (enemy_killed, spawn_enemies, generate_floor, keymap_generate, open_level_portal, travel_through_portal)
                 .distributive_run_if(in_state(GameState::InGame))
                 );
 
     }
 }
 
-fn keymap_generate(keys: Res<Input<KeyCode>>, mut writer: EventWriter<TriggerNextLevelEvent>) {
+fn keymap_generate(keys: Res<Input<KeyCode>>, mut writer: EventWriter<TriggerNextFloorEvent>) {
     if keys.just_pressed(KeyCode::LControl) {
-        writer.send(TriggerNextLevelEvent);
+        writer.send(TriggerNextFloorEvent);
     }
 }
 
-fn generate_level(
-    mut event: EventReader<TriggerNextLevelEvent>,
-    mut writer: EventWriter<GenerateLevelEvent>,
-    mut level_resource: ResMut<LevelResource>,
+fn generate_floor(
+    mut event: EventReader<TriggerNextFloorEvent>,
+    mut writer: EventWriter<GenerateFloorEvent>,
+    mut floor_resource: ResMut<FloorResource>,
     game_meta: Res<GameMeta>,
-    levels: Res<Assets<LevelMeta>>,
+    floors: Res<Assets<FloorMeta>>,
     ) {
     for _ in event.iter() {
-        level_resource.level += 1;
+        floor_resource.floor += 1;
 
         //TODO: Optimize this
-        let level_meta = game_meta
-            .levels
+        let floor_meta = game_meta
+            .floors
             .iter()
             .find_map(|meta| {
-                let meta = levels.get(meta).unwrap();
-                if level_resource.level >= meta.levels.0 && level_resource.level <= meta.levels.1 {
+                let meta = floors.get(meta).unwrap();
+                if floor_resource.floor >= meta.floors.0 && floor_resource.floor <= meta.floors.1 {
                     Some(meta)
                 } else {
                     None
                 }
             })
-            .expect("No level found");
+            .expect("No floor found");
 
-        level_resource.meta = Some(level_meta.clone());
-        writer.send(GenerateLevelEvent);
+        floor_resource.meta = Some(floor_meta.clone());
+        writer.send(GenerateFloorEvent);
     }
 }
 
 fn spawn_enemies(
-    mut event: EventReader<SpawnLevelEntitiesEvent>,
+    mut event: EventReader<SpawnFloorEntitiesEvent>,
     mut commands: Commands,
     enemies: Res<Assets<EnemyMeta>>,
-    mut level: ResMut<LevelResource>,
+    mut level: ResMut<FloorResource>,
 ) {
     for e in event.iter() {
         //TODO: Find a way to not clone this
@@ -132,8 +132,8 @@ fn spawn_enemies(
 
 fn enemy_killed(
     mut event: EventReader<EnemyKilledEvent>,
-    mut level: ResMut<LevelResource>,
-    mut portal_writer: EventWriter<LevelFinishedEvent>,
+    mut level: ResMut<FloorResource>,
+    mut portal_writer: EventWriter<FloorClearedEvent>,
     mut commands: Commands,
 ) {
     for killed in event.iter() {
@@ -146,7 +146,7 @@ fn enemy_killed(
 
 
         if level.enemies.is_empty() {
-            portal_writer.send(LevelFinishedEvent);
+            portal_writer.send(FloorClearedEvent);
         }
     }
 }

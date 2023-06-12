@@ -19,7 +19,7 @@ use crate::{
     controller::{attack_ability, dash_ability, finish_dash, move_player},
     enemy::EnemyBehaviourPlugin,
     helper::{helper_camera_controller, shake_system},
-    level::LevelPlugin,
+    floor::FloorPlugin,
     map::{
         generation::{remake_map, setup_map},
         walkable::restrict_movement,
@@ -47,7 +47,7 @@ impl Plugin for InGamePlugin {
             .add_plugin(CollisionPlugin)
             .add_plugin(AnimationPlugin)
             .add_plugin(EnemyBehaviourPlugin)
-            .add_plugin(LevelPlugin)
+            .add_plugin(FloorPlugin)
             .add_plugin(MovementPlugin)
             .add_event::<SpawnEnemyAttack>() //TODO: Add attack plugin
             .add_systems((auto_save, statistics).in_set(OnUpdate(GameState::InGame)))

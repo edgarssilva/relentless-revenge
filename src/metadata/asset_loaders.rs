@@ -5,7 +5,7 @@ use bevy::asset::{
 };
 use bevy::prelude::App;
 
-use crate::metadata::{AttackMeta, EnemyMeta, LevelMeta, PlayerMeta};
+use crate::metadata::{AttackMeta, EnemyMeta, FloorMeta, PlayerMeta};
 
 /// Calculate an asset's full path relative to another asset
 fn relative_asset_path(asset_path: &Path, relative_path: &str) -> PathBuf {
@@ -106,16 +106,16 @@ impl AssetLoader for PlayerMetaAssetLoader {
     }
 }
 
-struct LevelMetaAssetLoader;
+struct FloorMetaAssetLoader;
 
-impl AssetLoader for LevelMetaAssetLoader {
+impl AssetLoader for FloorMetaAssetLoader {
     fn load<'a>(
         &'a self,
         bytes: &'a [u8],
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), Error>> {
         Box::pin(async move {
-            let mut meta: LevelMeta = serde_yaml::from_slice(bytes)?;
+            let mut meta: FloorMeta = serde_yaml::from_slice(bytes)?;
 
             let self_path = load_context.path();
 
@@ -135,12 +135,12 @@ impl AssetLoader for LevelMetaAssetLoader {
     }
 
     fn extensions(&self) -> &[&str] {
-        &["level"]
+        &["floor"]
     }
 }
 
 pub fn register_asset_loaders(app: &mut App) {
     app.add_asset_loader(EnemyMetaAssetLoader)
         .add_asset_loader(PlayerMetaAssetLoader)
-        .add_asset_loader(LevelMetaAssetLoader);
+        .add_asset_loader(FloorMetaAssetLoader);
 }

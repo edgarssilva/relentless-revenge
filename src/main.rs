@@ -12,7 +12,7 @@ mod controller;
 mod enemy;
 mod game_states;
 mod helper;
-mod level;
+mod floor;
 mod map;
 mod metadata;
 mod movement;

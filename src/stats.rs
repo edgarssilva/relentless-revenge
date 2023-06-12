@@ -13,7 +13,7 @@ use bevy_rapier2d::prelude::{ActiveCollisionTypes, ActiveEvents, Collider, Colli
 
 use crate::{
     collision::BodyLayers, enemy::Enemy, game_states::loading::TextureAssets,
-    level::EnemyKilledEvent, movement::movement::Follow, player::Player,
+    floor::EnemyKilledEvent, movement::movement::Follow, player::Player,
 };
 
 #[derive(Component)]

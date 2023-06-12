@@ -82,8 +82,8 @@ pub struct PlayerMeta {
 
 #[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "18c28813-20dc-4494-a63a-3071a5be69f3"]
-pub struct LevelMeta {
-    pub levels: (u32, u32),
+pub struct FloorMeta {
+    pub floors: (u32, u32),
     pub rooms: (u32, u32),
     pub room_size: (u32, u32),
     pub enemies_per_room: (u32, u32),
@@ -124,12 +124,12 @@ pub struct GameMeta {
     pub player: Handle<PlayerMeta>,
     #[asset(path = "BitPotionExt.ttf")]
     pub text_font: Handle<Font>,
-    #[asset(path = "levels", collection(typed))]
-    pub levels: Vec<Handle<LevelMeta>>,
+    #[asset(path = "floors", collection(typed))]
+    pub floors: Vec<Handle<FloorMeta>>,
 }
 
 pub fn register_assets(app: &mut App) {
     app.add_asset::<EnemyMeta>()
         .add_asset::<PlayerMeta>()
-        .add_asset::<LevelMeta>();
+        .add_asset::<FloorMeta>();
 }

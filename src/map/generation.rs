@@ -9,11 +9,11 @@ use turborand::prelude::Rng;
 use turborand::TurboRand;
 
 use crate::game_states::loading::TextureAssets;
-use crate::level::{
-    GenerateLevelEvent, LevelFinishedEvent, LevelResource, SpawnLevelEntitiesEvent,
+use crate::floor::{
+    GenerateFloorEvent, FloorClearedEvent, FloorResource, SpawnFloorEntitiesEvent,
 };
 use crate::map::room::Room;
-use crate::metadata::LevelMeta;
+use crate::metadata::FloorMeta;
 use crate::player::Player;
 
 use super::bridge::Bridge;
@@ -51,13 +51,13 @@ pub fn setup_map(mut commands: Commands, texture_assets: Res<TextureAssets>) {
 }
 
 pub fn remake_map(
-    mut event: EventReader<GenerateLevelEvent>,
+    mut event: EventReader<GenerateFloorEvent>,
     mut player_query: Query<&mut Transform, With<Player>>,
     mut tile_query: Query<(Entity, &mut TileTextureIndex)>,
     tile_storage_query: Query<&TileStorage>,
-    mut spawn_writer: EventWriter<SpawnLevelEntitiesEvent>,
+    mut spawn_writer: EventWriter<SpawnFloorEntitiesEvent>,
     mut commands: Commands,
-    level: Res<LevelResource>,
+    level: Res<FloorResource>,
 ) {
     if let Some(level_meta) = &level.meta {
         for _ in event.iter() {
@@ -79,14 +79,14 @@ pub fn remake_map(
                     tile_storage,
                     &mut commands,
                 );
-                spawn_writer.send(SpawnLevelEntitiesEvent(spawnable_tiles));
+                spawn_writer.send(SpawnFloorEntitiesEvent(spawnable_tiles));
             }
         }
     }
 }
 
 fn build_map(
-    level_meta: &LevelMeta,
+    level_meta: &FloorMeta,
     mut player_transform: Mut<Transform>,
     tile_query: &mut Query<(Entity, &mut TileTextureIndex)>,
     tile_storage: &TileStorage,
@@ -165,7 +165,7 @@ fn build_map(
 }
 
 pub fn open_level_portal(
-    mut events: EventReader<LevelFinishedEvent>,
+    mut events: EventReader<FloorClearedEvent>,
     mut tile_query: Query<&mut TileTextureIndex, With<LevelPortalTile>>,
 ) {
     if !events.is_empty() {
@@ -177,7 +177,7 @@ pub fn open_level_portal(
     }
 }
 
-fn generate_level(level_meta: &LevelMeta, rand: &mut Rng) -> (Vec<Room>, Vec<Bridge>) {
+fn generate_level(level_meta: &FloorMeta, rand: &mut Rng) -> (Vec<Room>, Vec<Bridge>) {
     let mut rooms = Vec::<Room>::new();
     let mut bridges = Vec::<Bridge>::new();
 
