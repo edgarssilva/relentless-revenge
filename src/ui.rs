@@ -1,7 +1,9 @@
-use bevy::prelude::{AssetServer, Res};
+use bevy::prelude::{AssetServer, Res, Vec3, Window};
 use bevy::prelude::{Query, With};
-use bevy_egui::egui::{Image, Rect, RichText};
+use bevy_egui::egui::{Id, Image, LayerId, Order, Pos2, Rect, RichText};
 use bevy_egui::{egui, EguiContexts};
+
+
 
 use crate::level::LevelResource;
 use crate::player::Player;
@@ -67,5 +69,19 @@ pub fn draw_hud(
                     });
                 });
             });
+    }
+}
+
+pub fn draw_xp_bar(query: Query<&XP, With<Player>>, mut contexts: EguiContexts, windows: Query<&Window>) {
+    let painter = contexts.ctx_mut().debug_painter();
+
+    let width = windows.single().width();
+
+    if let Ok(xp) = query.get_single() {
+        let scale = xp.amount as f32 / 1000.;
+        painter.rect(Rect {
+            min: Pos2::new(0., 0.),
+            max: Pos2::new(width * scale, 8.),
+        }, 0., egui::Color32::DARK_BLUE, egui::Stroke::NONE);
     }
 }

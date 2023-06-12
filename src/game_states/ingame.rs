@@ -11,7 +11,7 @@ use crate::attack::{
 use crate::controller::combo_system;
 use crate::game_states::ingame::InGameSet::{Normal, Post};
 use crate::metadata::{GameMeta, PlayerMeta};
-use crate::ui::draw_hud;
+use crate::ui::{draw_hud, draw_xp_bar};
 use crate::{
     animation::AnimationPlugin,
     attack::{lifetimes, projectile_break, tick_cooldown},
@@ -59,6 +59,7 @@ impl Plugin for InGamePlugin {
             .add_systems(
                 (
                     draw_hud,
+                    draw_xp_bar,
                     helper_camera_controller,
                     move_player,
                     dash_ability,
