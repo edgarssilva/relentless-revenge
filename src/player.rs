@@ -25,6 +25,8 @@ use crate::{
 
 use crate::metadata::PlayerMeta;
 use leafwing_input_manager::Actionlike;
+use crate::stats::Level;
+
 
 #[derive(Component)]
 pub struct Player;
@@ -43,11 +45,12 @@ pub struct PlayerBundle {
     collision_groups: CollisionGroups,
     direction: Direction,
     state: State,
+    level: Level,
     #[bundle]
     stats: StatsBundle,
     damageable: Damageable,
     #[bundle]
-    input: InputManagerBundle<PlayerActions>,
+    input: InputManagerBundle<PlayerActions>
 }
 
 impl PlayerBundle {
@@ -127,11 +130,12 @@ impl PlayerBundle {
                 xp: XP::new(meta.xp),
                 cooldown: Cooldown::new(meta.cooldown),
             },
+            level: Level::default(),
             damageable: Damageable,
             input: InputManagerBundle::<PlayerActions> {
                 action_state: ActionState::default(),
                 input_map: Self::default_keybindings(),
-            },
+            }
         }
     }
 

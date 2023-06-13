@@ -30,6 +30,7 @@ use crate::{
     stats::{death_system, drop_xp_system},
     GameState,
 };
+use crate::stats::level_up;
 
 pub struct InGamePlugin;
 
@@ -67,6 +68,7 @@ impl Plugin for InGamePlugin {
                     attack_spawner,
                     combo_system,
                     drop_xp_system,
+                    level_up,
                     tick_cooldown,
                     shake_system,
                     remake_map,

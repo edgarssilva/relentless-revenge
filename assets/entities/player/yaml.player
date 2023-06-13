@@ -1,6 +1,7 @@
 size: [ 24, 32 ]
 hitbox: [ 24, 32 ]
 
+
 xp: 0
 speed: 75
 health: 250

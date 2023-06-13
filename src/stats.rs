@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use bevy::prelude::Assets;
 use bevy::{
     math::Vec3Swizzles,
     prelude::{
@@ -11,9 +12,10 @@ use bevy::{
 };
 use bevy_rapier2d::prelude::{ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups};
 
+use crate::metadata::{GameMeta, LevelProgressionMeta};
 use crate::{
-    collision::BodyLayers, enemy::Enemy, game_states::loading::TextureAssets,
-    floor::EnemyKilledEvent, movement::movement::Follow, player::Player,
+    collision::BodyLayers, enemy::Enemy, floor::EnemyKilledEvent,
+    game_states::loading::TextureAssets, movement::movement::Follow, player::Player,
 };
 
 #[derive(Component)]
@@ -70,6 +72,19 @@ impl XP {
 
     pub fn add(&mut self, other: &Self) {
         self.amount += other.amount;
+    }
+}
+
+#[derive(Component)]
+pub struct Level {
+    pub level: u32,
+}
+
+impl Level {
+    pub(crate) fn default() -> Level {
+        Self {
+            level: 1,
+        }
     }
 }
 
@@ -185,6 +200,38 @@ pub fn drop_xp_system(
                     texture_assets.xp_texture.clone(),
                     player,
                 );
+            }
+        }
+    }
+}
+
+pub fn level_up(
+    mut query: Query<
+        (
+            &XP,
+            &mut Health,
+            &mut Damage,
+            &mut MovementSpeed,
+            &mut Level,
+        ),
+        With<Player>,
+    >,
+    game_meta: Res<GameMeta>,
+    level_progression: Res<Assets<LevelProgressionMeta>>,
+) {
+    let progression = level_progression.get(&game_meta.level_progression);
+    if let Some(progression) = progression {
+        for (xp, mut health, mut damage, mut speed, mut level) in query.iter_mut() {
+            if xp.amount >= progression.xp_to_level_up(level.level) {
+                //TODO: Add proper stats progression
+                health.max += (health.max as f32 * progression.xp_multiplier / 100.) as u32;
+                health.current = health.max;
+
+                speed.speed += (speed.speed as f32 * progression.xp_multiplier / 100.) as u32;
+
+                damage.amount += (damage.amount as f32 * progression.xp_multiplier / 50.) as u32;
+
+                level.level += 1;
             }
         }
     }

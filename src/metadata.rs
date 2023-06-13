@@ -116,6 +116,19 @@ pub enum AttackMeta {
     },
 }
 
+#[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
+#[uuid = "86e2573e-1b08-4c7c-9959-3a8d9cec1b0d"]
+pub struct LevelProgressionMeta {
+    pub base_xp: u32,
+    pub xp_multiplier: f32,
+}
+
+impl LevelProgressionMeta {
+    pub(crate) fn xp_to_level_up(&self, level: u32) -> u32 {
+        (self.base_xp as f32 * self.xp_multiplier.powi(level as i32)) as u32
+    }
+}
+
 #[derive(AssetCollection, Resource)]
 pub struct GameMeta {
     #[asset(path = "entities/enemies", collection(typed))]
@@ -126,10 +139,14 @@ pub struct GameMeta {
     pub text_font: Handle<Font>,
     #[asset(path = "floors", collection(typed))]
     pub floors: Vec<Handle<FloorMeta>>,
+    #[asset(path = "level.progression.yaml")]
+    pub level_progression: Handle<LevelProgressionMeta>
 }
+
 
 pub fn register_assets(app: &mut App) {
     app.add_asset::<EnemyMeta>()
         .add_asset::<PlayerMeta>()
-        .add_asset::<FloorMeta>();
+        .add_asset::<FloorMeta>()
+        .add_asset::<LevelProgressionMeta>();
 }

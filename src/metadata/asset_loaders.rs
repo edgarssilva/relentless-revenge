@@ -5,7 +5,7 @@ use bevy::asset::{
 };
 use bevy::prelude::App;
 
-use crate::metadata::{AttackMeta, EnemyMeta, FloorMeta, PlayerMeta};
+use crate::metadata::{AttackMeta, EnemyMeta, FloorMeta, LevelProgressionMeta, PlayerMeta};
 
 /// Calculate an asset's full path relative to another asset
 fn relative_asset_path(asset_path: &Path, relative_path: &str) -> PathBuf {
@@ -55,7 +55,10 @@ impl AssetLoader for EnemyMetaAssetLoader {
                 get_relative_asset(load_context, &self_path, &meta.texture.path),
             );
 
-            if let AttackMeta::Ranged { ref mut texture, .. } = meta.attack {
+            if let AttackMeta::Ranged {
+                ref mut texture, ..
+            } = meta.attack
+            {
                 texture.load(
                     load_context,
                     get_relative_asset(load_context, &self_path, &texture.path),
@@ -139,8 +142,29 @@ impl AssetLoader for FloorMetaAssetLoader {
     }
 }
 
+struct LevelProgressionMetaAssetLoader;
+
+impl AssetLoader for LevelProgressionMetaAssetLoader {
+    fn load<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<(), Error>> {
+        Box::pin(async move {
+            let meta: LevelProgressionMeta = serde_yaml::from_slice(bytes)?;
+            load_context.set_default_asset(LoadedAsset::new(meta));
+            Ok(())
+        })
+    }
+
+    fn extensions(&self) -> &[&str] {
+        &["progression.yaml"]
+    }
+}
+
 pub fn register_asset_loaders(app: &mut App) {
     app.add_asset_loader(EnemyMetaAssetLoader)
         .add_asset_loader(PlayerMetaAssetLoader)
-        .add_asset_loader(FloorMetaAssetLoader);
+        .add_asset_loader(FloorMetaAssetLoader)
+        .add_asset_loader(LevelProgressionMetaAssetLoader);
 }
