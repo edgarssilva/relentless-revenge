@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::prelude::Assets;
+use bevy::prelude::{Assets, Time};
 use bevy::{
     math::Vec3Swizzles,
     prelude::{
@@ -82,8 +82,24 @@ pub struct Level {
 
 impl Level {
     pub(crate) fn default() -> Level {
-        Self {
-            level: 1,
+        Self { level: 1 }
+    }
+}
+
+#[derive(Component)]
+pub struct Revenge {
+    pub amount: f32,
+    pub decay: f32,
+    pub active_decay: f32,
+    pub active: bool,
+    pub total: f32,
+}
+
+impl Revenge {
+    pub fn decay(&self) -> f32 {
+        match self.active {
+            true => self.active_decay,
+            false => self.decay,
         }
     }
 }
@@ -233,6 +249,37 @@ pub fn level_up(
 
                 level.level += 1;
             }
+        }
+    }
+}
+
+pub fn revenge_mode(
+    mut query: Query<(&mut Revenge, &mut Damage, &mut MovementSpeed)>,
+    time: Res<Time>,
+) {
+    for (mut revenge, mut damage, mut speed) in query.iter_mut() {
+        if revenge.active {
+            if revenge.amount <= 0. {
+                damage.amount = (damage.amount as f32 / 1.5) as u32;
+                speed.speed = (speed.speed as f32 / 1.5) as u32;
+                revenge.active = false;
+            }
+        } else if revenge.amount >= revenge.total {
+            damage.amount = (damage.amount as f32 * 1.5) as u32;
+            speed.speed = (speed.speed as f32 * 1.5) as u32;
+            revenge.active = true;
+        }
+
+        let decay = revenge.decay() * time.delta_seconds();
+
+        if revenge.amount > revenge.total {
+            revenge.amount = revenge.total;
+        }
+
+        if revenge.amount > decay {
+            revenge.amount -= decay;
+        } else {
+            revenge.amount = 0.;
         }
     }
 }

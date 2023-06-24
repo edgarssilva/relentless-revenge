@@ -25,7 +25,7 @@ use crate::{
 
 use crate::metadata::PlayerMeta;
 use leafwing_input_manager::Actionlike;
-use crate::stats::Level;
+use crate::stats::{Level, Revenge};
 
 
 #[derive(Component)]
@@ -46,6 +46,7 @@ pub struct PlayerBundle {
     direction: Direction,
     state: State,
     level: Level,
+    revenge: Revenge,
     #[bundle]
     stats: StatsBundle,
     damageable: Damageable,
@@ -131,6 +132,13 @@ impl PlayerBundle {
                 cooldown: Cooldown::new(meta.cooldown),
             },
             level: Level::default(),
+            revenge: Revenge {
+                amount: 0.,
+                decay: 4.5,
+                active_decay: 8.,
+                active: false,
+                total: 75.,
+            },
             damageable: Damageable,
             input: InputManagerBundle::<PlayerActions> {
                 action_state: ActionState::default(),

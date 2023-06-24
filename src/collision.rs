@@ -1,7 +1,4 @@
-use bevy::prelude::{
-    Color, IntoSystemConfigs, Res, Text, Text2dBundle, TextAlignment, TextStyle, Timer,
-    Vec2, in_state,
-};
+use bevy::prelude::{in_state, Color, IntoSystemConfigs, Res, Text, Text2dBundle, TextAlignment, TextStyle, Timer, Vec2, Parent};
 use bevy::time::TimerMode;
 use bevy::{
     math::Vec3Swizzles,
@@ -15,6 +12,7 @@ use std::time::Duration;
 
 use crate::attack::Lifetime;
 use crate::metadata::GameMeta;
+use crate::stats::Revenge;
 use crate::{
     attack::{Breakable, Damageable, Knockback},
     helper::Shake,
@@ -30,7 +28,9 @@ impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
             .add_plugin(RapierDebugRenderPlugin::default())
-            .add_systems((damageable_collision, xp_system).distributive_run_if(in_state(GameState::InGame))); 
+            .add_systems(
+                (damageable_collision, xp_system).distributive_run_if(in_state(GameState::InGame)),
+            );
     }
 }
 
@@ -58,7 +58,7 @@ pub fn xp_system(
         };
 
         //If entity removed from world, don't handle collision
-            if !started && *flags == CollisionEventFlags::REMOVED {
+        if !started && *flags == CollisionEventFlags::REMOVED {
             return;
         }
 
@@ -81,8 +81,14 @@ pub fn xp_system(
 
 pub fn damageable_collision(
     mut events: EventReader<CollisionEvent>,
-    mut damage_query: Query<(&Damage, Option<&Knockback>, Option<&mut Breakable>)>,
+    mut damage_query: Query<(
+        &Damage,
+        Option<&Knockback>,
+        Option<&mut Breakable>,
+        Option<&Parent>,
+    )>,
     mut damageable_query: Query<(&mut Health, &Transform), With<Damageable>>,
+    mut player_query: Query<&mut Revenge, With<Player>>,
     camera_query: Query<Entity, With<Camera>>,
     mut commands: Commands,
     game_meta: Res<GameMeta>,
@@ -107,7 +113,8 @@ pub fn damageable_collision(
             (false, true) => Some((*e2, *e1)),
             _ => None,
         } {
-            let (damage, knockback, breakable) = damage_query.get_mut(damage_entity).unwrap();
+            let (damage, knockback, breakable, parent) =
+                damage_query.get_mut(damage_entity).unwrap();
             let (mut health, transform) = damageable_query.get_mut(damaged_entity).unwrap();
 
             health.damage(damage);
@@ -124,6 +131,12 @@ pub fn damageable_collision(
                     transform.translation.xy() + knockback.force * knockback.direction.vec();
                 if let Some(mut ec) = commands.get_entity(damaged_entity) {
                     ec.insert(EaseTo::new(new_pos, EaseFunction::EaseOutExpo, 1.));
+                }
+            }
+
+            if let Some(parent) = parent {
+                if let Ok(mut revenge) = player_query.get_mut(parent.get()) {
+                    revenge.amount += damage.amount as f32 / 10.;
                 }
             }
 

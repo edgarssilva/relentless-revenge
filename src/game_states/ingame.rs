@@ -11,15 +11,16 @@ use crate::attack::{
 use crate::controller::combo_system;
 use crate::game_states::ingame::InGameSet::{Normal, Post};
 use crate::metadata::{GameMeta, PlayerMeta};
-use crate::ui::{draw_hud, draw_xp_bar};
+use crate::stats::{level_up, revenge_mode};
+use crate::ui::{draw_hud, draw_xp_bar, draw_revenge_bar};
 use crate::{
     animation::AnimationPlugin,
     attack::{lifetimes, projectile_break, tick_cooldown},
     collision::CollisionPlugin,
     controller::{attack_ability, dash_ability, finish_dash, move_player},
     enemy::EnemyBehaviourPlugin,
-    helper::{helper_camera_controller, shake_system},
     floor::FloorPlugin,
+    helper::{helper_camera_controller, shake_system},
     map::{
         generation::{remake_map, setup_map},
         walkable::restrict_movement,
@@ -30,7 +31,6 @@ use crate::{
     stats::{death_system, drop_xp_system},
     GameState,
 };
-use crate::stats::level_up;
 
 pub struct InGamePlugin;
 
@@ -61,14 +61,13 @@ impl Plugin for InGamePlugin {
                 (
                     draw_hud,
                     draw_xp_bar,
+                    draw_revenge_bar,
                     helper_camera_controller,
                     move_player,
                     dash_ability,
                     attack_ability,
                     attack_spawner,
                     combo_system,
-                    drop_xp_system,
-                    level_up,
                     tick_cooldown,
                     shake_system,
                     remake_map,
@@ -77,6 +76,7 @@ impl Plugin for InGamePlugin {
                 )
                     .in_set(Normal),
             )
+            .add_systems((drop_xp_system, level_up, revenge_mode).in_set(Normal))
             .add_systems(
                 (
                     charge_phase_system,

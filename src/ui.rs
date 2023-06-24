@@ -6,12 +6,12 @@ use bevy_egui::{egui, EguiContexts};
 use crate::floor::FloorResource;
 use crate::metadata::{GameMeta, LevelProgressionMeta};
 use crate::player::Player;
-use crate::stats::{Damage, Health, Level, MovementSpeed, XP};
+use crate::stats::{Damage, Health, Level, MovementSpeed, Revenge, XP};
 
 pub fn draw_hud(
     mut contexts: EguiContexts,
     asset_server: Res<AssetServer>,
-    query: Query<(&Health, &XP, &MovementSpeed, &Damage, &Level), With<Player>>,
+    query: Query<(&Health, &XP, &MovementSpeed, &Damage, &Level, &Revenge), With<Player>>,
     game_meta: Res<GameMeta>,
     progression: Res<Assets<LevelProgressionMeta>>,
     floor: Res<FloorResource>,
@@ -21,7 +21,7 @@ pub fn draw_hud(
 
     let mut size = [63. * 5., 10. * 5.];
 
-    if let (Ok((health, xp, speed, damage, level)), Some(progression)) = (
+    if let (Ok((health, xp, speed, damage, level, revenge)), Some(progression)) = (
         query.get_single(),
         progression.get(&game_meta.level_progression),
     ) {
@@ -69,6 +69,14 @@ pub fn draw_hud(
                                     "XP: {}/{}",
                                     xp.amount,
                                     progression.xp_to_level_up(level.level)
+                                ))
+                                .size(20.),
+                            );
+
+                            ui.label(
+                                RichText::new(format!(
+                                    "Revenge: {:.2}/{}",
+                                    revenge.amount, revenge.total
                                 ))
                                 .size(20.),
                             );
@@ -123,6 +131,30 @@ pub fn draw_xp_bar(
             },
             0.,
             egui::Color32::DARK_BLUE,
+            egui::Stroke::NONE,
+        );
+    }
+}
+
+pub fn draw_revenge_bar(
+    query: Query<&Revenge, With<Player>>,
+    mut contexts: EguiContexts,
+    windows: Query<&Window>,
+) {
+    let painter = contexts.ctx_mut().debug_painter();
+
+    let width = windows.single().width();
+
+    if let Ok(revenge) = query.get_single() {
+        let scale = revenge.amount / revenge.total;
+
+        painter.rect(
+            Rect {
+                min: Pos2::new(0., 8.),
+                max: Pos2::new(width * scale, 16.),
+            },
+            0.,
+            egui::Color32::DARK_RED,
             egui::Stroke::NONE,
         );
     }
