@@ -1,19 +1,20 @@
 use bevy::{
     math::Vec2,
     prelude::{Commands, Component, Entity, Query, Res, Transform, With},
-    time::{Time, Timer},
+    time::{Time, Timer, TimerMode},
 };
 use bevy::{math::Vec3Swizzles, prelude::RemovedComponents};
 use leafwing_input_manager::prelude::ActionState;
 
 use crate::{
+    attack::{attack_phase, ChargePhase},
     movement::{
         direction::Direction,
         easing::{EaseFunction, EaseTo},
     },
     player::{Player, PlayerActions},
     state::State,
-    stats::{Cooldown, MovementSpeed}, attack::attack_phase,
+    stats::{Cooldown, MovementSpeed},
 };
 
 #[derive(Component)]
@@ -83,7 +84,7 @@ pub fn dash_ability(
             &mut Cooldown,
             Entity,
         ),
-        With<Player>
+        With<Player>,
     >,
     mut commands: Commands,
 ) {
@@ -176,8 +177,9 @@ pub fn attack_ability(
             let new_pos = transform.translation.xy() + (direction.vec().normalize() * 5.);
 
             if let Some(mut ec) = commands.get_entity(entity) {
-                ec.insert(attack_phase(0.05, 0.25, 0.1))
-                    .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.55));
+                ec.insert(attack_phase(0.05, 0.2, 0.075))
+                    .insert(ChargePhase(Timer::from_seconds(0.05, TimerMode::Once), 0.2))
+                    .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.5));
             } else {
                 println!("Failed to get entity");
                 state.set(State::Idle);

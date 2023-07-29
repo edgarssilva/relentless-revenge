@@ -1,4 +1,5 @@
 use bevy::prelude::MouseButton;
+use bevy::reflect::TypePath;
 use bevy::{
     prelude::{default, Bundle, Component, KeyCode, Transform, Vec3},
     sprite::SpriteSheetBundle,
@@ -24,9 +25,8 @@ use crate::{
 };
 
 use crate::metadata::PlayerMeta;
-use leafwing_input_manager::Actionlike;
 use crate::stats::{Level, Revenge};
-
+use leafwing_input_manager::Actionlike;
 
 #[derive(Component)]
 pub struct Player;
@@ -34,7 +34,6 @@ pub struct Player;
 #[derive(Bundle)]
 pub struct PlayerBundle {
     player: Player,
-    #[bundle]
     sprite_bundle: SpriteSheetBundle,
     collider: Collider,
     controlled: Controlled,
@@ -47,11 +46,9 @@ pub struct PlayerBundle {
     state: State,
     level: Level,
     revenge: Revenge,
-    #[bundle]
     stats: StatsBundle,
     damageable: Damageable,
-    #[bundle]
-    input: InputManagerBundle<PlayerActions>
+    input: InputManagerBundle<PlayerActions>,
 }
 
 impl PlayerBundle {
@@ -143,7 +140,7 @@ impl PlayerBundle {
             input: InputManagerBundle::<PlayerActions> {
                 action_state: ActionState::default(),
                 input_map: Self::default_keybindings(),
-            }
+            },
         }
     }
 
@@ -165,7 +162,7 @@ impl PlayerBundle {
     }
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+#[derive(Actionlike, PartialEq, TypePath, Eq, Clone, Copy, Hash, Debug)]
 pub enum PlayerActions {
     MoveUp,
     MoveDown,

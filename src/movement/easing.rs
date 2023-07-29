@@ -264,7 +264,7 @@ fn ease_in_elastic(x: f32) -> f32 {
     } else if x == 1. {
         1.
     } else {
-        -2f32.powf(10. * x - 10.) * (2. * std::f32::consts::PI * (x - 0.1) / 0.4).sin()
+        -(2f32.powf(10. * x - 10.)) * (2. * std::f32::consts::PI * (x - 0.1) / 0.4).sin()
     }
 }
 
@@ -284,7 +284,7 @@ fn ease_in_out_elastic(x: f32) -> f32 {
     } else if x == 1. {
         1.
     } else if x < 0.5 {
-        -2f32.powf(20. * x - 10.) * (2. * std::f32::consts::PI * (20. * x - 11.5) / 4.).sin() / 2.
+        -(2f32.powf(20. * x - 10.)) * (2. * std::f32::consts::PI * (20. * x - 11.5) / 4.).sin() / 2.
     } else {
         2f32.powf(-20. * x + 10.) * (2. * std::f32::consts::PI * (20. * x - 11.5) / 4.).sin() / 2.
             + 1.

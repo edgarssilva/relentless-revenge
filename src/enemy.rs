@@ -14,7 +14,7 @@ use crate::{
     stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
 };
 
-mod state_machine;
+pub mod state_machine;
 
 pub struct EnemyBehaviourPlugin;
 
@@ -30,9 +30,7 @@ pub struct Enemy(pub EnemyMeta);
 #[derive(Bundle)]
 pub struct EnemyBundle {
     enemy: Enemy,
-    #[bundle]
     pub spritesheet: SpriteSheetBundle,
-    #[bundle]
     pub stats: StatsBundle,
     pub damageable: Damageable,
     pub animation: Animation,

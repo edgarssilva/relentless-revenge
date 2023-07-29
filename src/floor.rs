@@ -1,6 +1,6 @@
 use bevy::asset::Assets;
 use bevy::hierarchy::DespawnRecursiveExt;
-use bevy::prelude::{IntoSystemConfigs, in_state};
+use bevy::prelude::{in_state, Event, IntoSystemConfigs, Update};
 use bevy::{
     input::Input,
     math::Vec2,
@@ -11,9 +11,10 @@ use bevy::{
 use turborand::rng::Rng;
 use turborand::TurboRand;
 
+use crate::enemy::state_machine::Idle;
 use crate::map::generation::open_level_portal;
 use crate::map::walkable::travel_through_portal;
-use crate::metadata::{EnemyMeta, GameMeta, FloorMeta};
+use crate::metadata::{EnemyMeta, FloorMeta, GameMeta};
 use crate::{enemy::EnemyBundle, GameState};
 
 #[derive(Default, Resource)]
@@ -24,12 +25,20 @@ pub struct FloorResource {
 }
 
 //Floor Generation Events
+#[derive(Event)]
 pub struct GenerateFloorEvent;
+
+#[derive(Event)]
 pub struct SpawnFloorEntitiesEvent(pub Vec<Vec<Vec2>>); // Available positions
 
 //Floor Clearing Events
+#[derive(Event)]
 pub struct EnemyKilledEvent(pub Entity); // Entity killed
+
+#[derive(Event)]
 pub struct FloorClearedEvent; // All enemies killed
+
+#[derive(Event)]
 pub struct TriggerNextFloorEvent; // Player triggered next level
 
 pub struct FloorPlugin;
@@ -43,15 +52,22 @@ impl Plugin for FloorPlugin {
             .add_event::<FloorClearedEvent>()
             .add_event::<TriggerNextFloorEvent>()
             .add_systems(
-                (enemy_killed, spawn_enemies, generate_floor, keymap_generate, open_level_portal, travel_through_portal)
-                .distributive_run_if(in_state(GameState::InGame))
-                );
-
+                Update,
+                (
+                    enemy_killed,
+                    spawn_enemies,
+                    generate_floor,
+                    keymap_generate,
+                    open_level_portal,
+                    travel_through_portal,
+                )
+                    .run_if(in_state(GameState::InGame)),
+            );
     }
 }
 
 fn keymap_generate(keys: Res<Input<KeyCode>>, mut writer: EventWriter<TriggerNextFloorEvent>) {
-    if keys.just_pressed(KeyCode::LControl) {
+    if keys.just_pressed(KeyCode::ControlLeft) {
         writer.send(TriggerNextFloorEvent);
     }
 }
@@ -62,7 +78,7 @@ fn generate_floor(
     mut floor_resource: ResMut<FloorResource>,
     game_meta: Res<GameMeta>,
     floors: Res<Assets<FloorMeta>>,
-    ) {
+) {
     for _ in event.iter() {
         floor_resource.floor += 1;
 
@@ -118,6 +134,7 @@ fn spawn_enemies(
                             level.enemies.push(
                                 commands
                                     .spawn(EnemyBundle::new(enemy_meta, pos.extend(100.0)))
+                                    .insert(Idle)
                                     .id(),
                             );
                         }
@@ -139,11 +156,10 @@ fn enemy_killed(
     for killed in event.iter() {
         level.enemies.retain(|e| *e != killed.0);
 
-//        commands.entity(killed.0).despawn_recursive();
+        //        commands.entity(killed.0).despawn_recursive();
         if let Some(ec) = commands.get_entity(killed.0) {
             ec.despawn_recursive();
         }
-
 
         if level.enemies.is_empty() {
             portal_writer.send(FloorClearedEvent);

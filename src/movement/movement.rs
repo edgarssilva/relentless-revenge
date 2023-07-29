@@ -1,6 +1,10 @@
 use crate::map::walkable::WalkableTile;
+use crate::GameState;
 use bevy::math::{Vec2, Vec3Swizzles};
-use bevy::prelude::{App, Commands, Component, Entity, Plugin, Query, Res, Time, Transform};
+use bevy::prelude::{
+    in_state, App, Commands, Component, Entity, IntoSystemConfigs, Plugin, Query, Res, Time,
+    Transform, Update,
+};
 use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapSize, TilemapType};
 use bevy_ecs_tilemap::prelude::{TilePos, TileStorage};
 
@@ -10,9 +14,11 @@ pub struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(follow_entity_system)
-            .add_system(movement_system)
-            .add_system(ease_to_position);
+        app.add_systems(
+            Update,
+            (follow_entity_system, movement_system, ease_to_position)
+                .run_if(in_state(GameState::InGame)),
+        );
     }
 }
 
@@ -90,7 +96,8 @@ pub fn movement_system(
     for (velocity, mut transform) in query_velocity.iter_mut() {
         let new_pos = transform.translation + velocity.0.extend(0.) * time.delta_seconds();
 
-        if !velocity.1 { //If not restricted to walkable tiles
+        if !velocity.1 {
+            //If not restricted to walkable tiles
             transform.translation = new_pos;
             continue;
         }

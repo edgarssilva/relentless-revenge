@@ -8,14 +8,13 @@ pub enum Direction {
     EAST,
 }
 
-
 impl Direction {
     pub fn vec(&self) -> Vec2 {
-        match self {
-            &Self::NORTH => Vec2::Y,
-            &Self::SOUTH => -Vec2::Y,
-            &Self::WEST => -Vec2::X,
-            &Self::EAST => Vec2::X,
+        match *self {
+            Self::NORTH => Vec2::Y,
+            Self::SOUTH => -Vec2::Y,
+            Self::WEST => -Vec2::X,
+            Self::EAST => Vec2::X,
         }
     }
 

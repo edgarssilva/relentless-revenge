@@ -8,10 +8,8 @@ use bevy_ecs_tilemap::prelude::*;
 use turborand::prelude::Rng;
 use turborand::TurboRand;
 
+use crate::floor::{FloorClearedEvent, FloorResource, GenerateFloorEvent, SpawnFloorEntitiesEvent};
 use crate::game_states::loading::TextureAssets;
-use crate::floor::{
-    GenerateFloorEvent, FloorClearedEvent, FloorResource, SpawnFloorEntitiesEvent,
-};
 use crate::map::room::Room;
 use crate::metadata::FloorMeta;
 use crate::player::Player;
@@ -73,7 +71,7 @@ pub fn remake_map(
 
             if let Ok(tile_storage) = tile_storage_query.get_single() {
                 let spawnable_tiles = build_map(
-                    &level_meta,
+                    level_meta,
                     transform,
                     &mut tile_query,
                     tile_storage,

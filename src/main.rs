@@ -10,9 +10,9 @@ mod boss;
 mod collision;
 mod controller;
 mod enemy;
+mod floor;
 mod game_states;
 mod helper;
-mod floor;
 mod map;
 mod metadata;
 mod movement;
@@ -41,8 +41,8 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(20. / 255., 0. / 255., 25. / 255.)))
         .insert_resource(KeyMaps::default())
         .add_state::<GameState>()
-        .add_plugin(LoadingPlugin)
-        .add_plugin(MainMenuPlugin)
-        .add_plugin(InGamePlugin)
+        .add_plugins(LoadingPlugin)
+        .add_plugins(MainMenuPlugin)
+        .add_plugins(InGamePlugin)
         .run();
 }

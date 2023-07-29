@@ -1,9 +1,8 @@
 use crate::{movement::direction::Direction, state::State, GameState};
-use bevy::prelude::{IntoSystemConfig, OnUpdate};
 use bevy::{
     prelude::{
-        App, Commands, Component, Entity, Plugin, Query, Res, TextureAtlasSprite, Time, Timer,
-        With, Without,
+        in_state, App, Commands, Component, Entity, IntoSystemConfigs, Plugin, Query, Res,
+        TextureAtlasSprite, Time, Timer, Update, With, Without,
     },
     time::TimerMode,
     utils::{Duration, HashMap},
@@ -13,9 +12,11 @@ pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(animation_spawner.in_set(OnUpdate(GameState::InGame)))
-            .add_system(animation_cycling.in_set(OnUpdate(GameState::InGame)))
-            .add_system(animation_state.in_set(OnUpdate(GameState::InGame)));
+        app.add_systems(
+            Update,
+            (animation_spawner, animation_state, animation_cycling)
+                .run_if(in_state(GameState::InGame)),
+        );
     }
 }
 

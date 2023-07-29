@@ -1,8 +1,4 @@
-use bevy::prelude::{
-    App, Input, IntoSystemAppConfig, IntoSystemConfig, KeyCode, NextState, OnEnter, Plugin, Res, ResMut,
-};
-
-use bevy::ecs::schedule::OnUpdate;
+use bevy::prelude::{App, Input, KeyCode, NextState, OnEnter, Plugin, Res, ResMut};
 
 use crate::GameState;
 
@@ -10,8 +6,7 @@ pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup_menu.in_schedule(OnEnter(GameState::MainMenu)))
-            .add_system(skip_menu.in_set(OnUpdate(GameState::MainMenu)));
+        app.add_systems(OnEnter(GameState::MainMenu), (setup_menu, skip_menu));
     }
 }
 

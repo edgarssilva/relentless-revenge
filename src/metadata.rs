@@ -1,6 +1,6 @@
 use bevy::asset::{AssetPath, LoadContext, LoadedAsset};
 use bevy::prelude::*;
-use bevy::reflect::TypeUuid;
+use bevy::reflect::{TypePath, TypeUuid};
 use bevy_asset_loader::asset_collection::AssetCollection;
 
 pub mod asset_loaders;
@@ -44,14 +44,14 @@ impl TextureMeta {
             ))
             .with_dependency(texture_path),
         );
-        
+
         if self.frames.is_empty() {
             self.frames = (0..self.columns * self.rows).collect();
         }
     }
 }
 
-#[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
+#[derive(serde::Deserialize, TypePath, TypeUuid, Debug, Clone)]
 #[uuid = "5e14f87b-d4f1-40e7-a2c8-b10ac660972b"]
 pub struct EnemyMeta {
     // pub name: String,
@@ -66,7 +66,7 @@ pub struct EnemyMeta {
     pub attack: AttackMeta,
 }
 
-#[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
+#[derive(serde::Deserialize, TypePath, TypeUuid, Debug, Clone)]
 #[uuid = "1b7e6673-6604-445a-b877-3735243a0b42"]
 pub struct PlayerMeta {
     pub size: Vec2,
@@ -80,7 +80,7 @@ pub struct PlayerMeta {
     //TODO: Add animation data
 }
 
-#[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
+#[derive(serde::Deserialize, TypePath, TypeUuid, Debug, Clone)]
 #[uuid = "18c28813-20dc-4494-a63a-3071a5be69f3"]
 pub struct FloorMeta {
     pub floors: (u32, u32),
@@ -116,7 +116,7 @@ pub enum AttackMeta {
     },
 }
 
-#[derive(serde::Deserialize, TypeUuid, Debug, Clone)]
+#[derive(serde::Deserialize, TypePath, TypeUuid, Debug, Clone)]
 #[uuid = "86e2573e-1b08-4c7c-9959-3a8d9cec1b0d"]
 pub struct LevelProgressionMeta {
     pub base_xp: u32,
@@ -140,9 +140,8 @@ pub struct GameMeta {
     #[asset(path = "floors", collection(typed))]
     pub floors: Vec<Handle<FloorMeta>>,
     #[asset(path = "level.progression.yaml")]
-    pub level_progression: Handle<LevelProgressionMeta>
+    pub level_progression: Handle<LevelProgressionMeta>,
 }
-
 
 pub fn register_assets(app: &mut App) {
     app.add_asset::<EnemyMeta>()

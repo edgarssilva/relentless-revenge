@@ -1,4 +1,4 @@
-use bevy::prelude::EventReader;
+use bevy::prelude::{Event, EventReader};
 use bevy::reflect::Reflect;
 use bevy::time::TimerMode;
 use bevy::{
@@ -54,20 +54,20 @@ pub struct AttackPhase(pub Timer);
 #[component(storage = "SparseSet")]
 pub struct RecoverPhase(pub Timer);
 
-pub fn attack_phase(charge: f32, attack: f32, recover: f32) -> StateMachine {
-    StateMachine::new(ChargePhase(
-        Timer::from_seconds(charge, TimerMode::Once),
-        attack,
-    ))
-    .trans::<ChargePhase>(
-        DoneTrigger::Success,
-        AttackPhase(Timer::from_seconds(attack, TimerMode::Once)),
-    )
-    .trans::<AttackPhase>(
-        DoneTrigger::Success,
-        RecoverPhase(Timer::from_seconds(recover, TimerMode::Once)),
-    )
+pub fn attack_phase(_charge: f32, attack: f32, recover: f32) -> StateMachine {
+    StateMachine::default()
+        .trans::<ChargePhase>(
+            DoneTrigger::Success,
+            AttackPhase(Timer::from_seconds(attack, TimerMode::Once)),
+        )
+        .trans::<AttackPhase>(
+            DoneTrigger::Success,
+            RecoverPhase(Timer::from_seconds(recover, TimerMode::Once)),
+        )
 }
+
+#[derive(Component)]
+pub struct EntitiesHit(pub Vec<Entity>);
 
 /**
  * Generic attack bundle, missing an transform that can be added alone or with an sprite
@@ -75,6 +75,7 @@ pub fn attack_phase(charge: f32, attack: f32, recover: f32) -> StateMachine {
 #[derive(Bundle)]
 struct AttackBundle {
     attack: Attack,
+    entities_hit: EntitiesHit,
     collider: Collider,
     sensor: Sensor,
     events: ActiveEvents,
@@ -94,6 +95,7 @@ impl AttackBundle {
 
         Self {
             attack: Attack,
+            entities_hit: EntitiesHit(Vec::new()),
             collider: Collider::cuboid(size.x / 2., size.y / 2.),
             sensor: Sensor,
             events: ActiveEvents::COLLISION_EVENTS,
@@ -108,9 +110,7 @@ impl AttackBundle {
 
 #[derive(Bundle)]
 pub struct MeleeAttackBundle {
-    #[bundle]
     attack: AttackBundle,
-    #[bundle]
     transform_bundle: TransformBundle,
     knockback: Knockback,
 }
@@ -137,9 +137,7 @@ impl MeleeAttackBundle {
 
 #[derive(Bundle)]
 pub struct ProjectileBundle {
-    #[bundle]
     attack: AttackBundle,
-    #[bundle]
     spritesheet_bundle: SpriteSheetBundle,
     velocity: Velocity,
     breakable: Breakable,
@@ -174,6 +172,7 @@ impl ProjectileBundle {
     }
 }
 
+#[derive(Event)]
 pub struct SpawnEnemyAttack {
     pub meta: AttackMeta,
     pub position: Vec3,
@@ -246,7 +245,7 @@ pub fn charge_phase_system(
                     *damage,
                     Knockback {
                         force: 7.,
-                        direction: direction.clone(),
+                        direction: *direction,
                     },
                     true,
                 ));

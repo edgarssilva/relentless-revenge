@@ -31,7 +31,7 @@ pub fn auto_save(
     timer.tick(time.delta());
 
     if timer.just_finished() {
-        statistics.persist();
+        let _ = statistics.persist();
     }
 }
 

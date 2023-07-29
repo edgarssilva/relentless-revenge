@@ -163,7 +163,6 @@ pub struct XPDropBundle {
     pub drop: Drop,
     pub xp: XP,
     //TODO: Check if this a simple sprite or a sprite sheet animation
-    #[bundle]
     pub sprite_bundle: SpriteBundle,
     pub follow: Follow,
     pub collider: Collider,

@@ -2,42 +2,47 @@ use std::time::Duration;
 
 use bevy::math::{Vec2, Vec3Swizzles};
 use bevy::prelude::{
-    App, Commands, Component, Entity, EventWriter, FromReflect, IntoSystemConfigs, Local,
-    Query, Reflect, Res, Time, Timer, TimerMode, Transform, With, in_state,
+    in_state, App, Commands, Component, Entity, EventWriter, IntoSystemConfigs, Local, Query,
+    Reflect, Res, Time, Timer, TimerMode, Transform, Update, With,
 };
 use bevy::utils::HashMap;
 use seldom_state::prelude::*;
+use seldom_state::trigger::NotTrigger;
 use turborand::rng::Rng;
 use turborand::TurboRand;
 
 use crate::attack::SpawnEnemyAttack;
 use crate::enemy::Enemy;
+use crate::metadata::AttackMeta;
 use crate::movement::movement::{Follow, Velocity};
 use crate::player::Player;
 use crate::stats::{Cooldown, Damage};
 use crate::GameState;
 
 pub(crate) fn register(app: &mut App) {
-    app.add_plugin(StateMachinePlugin) //TODO: Move somewhere else
-        .add_plugin(TriggerPlugin::<NearPlayer>::default())
-        .add_systems((idle, wander, follow_player, attack_player).distributive_run_if(in_state(GameState::InGame)));
+    app.add_plugins(StateMachinePlugin) //TODO: Move somewhere else
+        .add_systems(
+            Update,
+            (idle, wander, follow_player, attack_player).run_if(in_state(GameState::InGame)),
+        );
 }
 
 pub(crate) fn get_state_machine() -> StateMachine {
-        StateMachine::new(Idle)
-          .trans::<Idle>(DoneTrigger::Success, Wander)
-          .trans::<Wander>(DoneTrigger::Success, Idle)
-          .trans::<Wander>(NearPlayer { range: 120.0 }, FollowPlayer)
-          .trans::<FollowPlayer>(DoneTrigger::Success, Attack)
-          .trans::<FollowPlayer>(NotTrigger(NearPlayer { range: 120.0 }), Wander)
-          .trans::<Attack>(DoneTrigger::Success, Wander)
-          .remove_on_exit::<Wander, Velocity>()
+    let near_player = NearPlayer { range: 120.0 };
+
+    StateMachine::default()
+        .trans::<Idle>(DoneTrigger::Success, Wander)
+        .trans::<Wander>(near_player, FollowPlayer)
+        .trans::<Wander>(DoneTrigger::Success, Idle)
+        .trans::<FollowPlayer>(DoneTrigger::Success, Attack)
+        .trans::<FollowPlayer>(NotTrigger(near_player), Wander)
+        .trans::<Attack>(DoneTrigger::Success, Idle)
 }
 
 //States
 #[derive(Component, Clone, Reflect)]
 #[component(storage = "SparseSet")]
-struct Idle;
+pub struct Idle;
 
 #[derive(Component, Clone, Reflect)]
 #[component(storage = "SparseSet")]
@@ -52,7 +57,7 @@ struct FollowPlayer;
 struct Attack;
 
 //Triggers
-#[derive(Clone, Copy, FromReflect, Reflect)]
+#[derive(Clone, Copy, Reflect)]
 struct NearPlayer {
     range: f32,
 }
@@ -63,7 +68,7 @@ impl BoolTrigger for NearPlayer {
         Query<'w, 's, &'static Transform, With<Player>>,
     );
 
-    fn trigger(&self, entity: Entity, (enemies, player): &Self::Param<'_, '_>) -> bool {
+    fn trigger(&self, entity: Entity, (enemies, player): Self::Param<'_, '_>) -> bool {
         if let Ok(enemy_transform) = enemies.get(entity) {
             if let Ok(player_transform) = player.get_single() {
                 let distance = player_transform
@@ -100,7 +105,7 @@ fn idle(
             }
         } else {
             commands.entity(entity).insert(IdleDuration(Timer::new(
-                Duration::from_millis(rand.u64(0..=1000)),
+                Duration::from_millis(rand.u64(0..=1500)),
                 TimerMode::Once,
             )));
         }
@@ -122,10 +127,9 @@ fn wander(
 
                 if *timer >= rand.i32(1..=3) as f32 {
                     timers.remove(&entity);
-                    commands
-                        .entity(entity)
-                        .remove::<Velocity>()
-                        .insert(Done::Success);
+                    if let Some(mut ec) = commands.get_entity(entity) {
+                        ec.insert(Done::Success).remove::<Velocity>();
+                    }
                 }
             }
             continue;
@@ -136,9 +140,9 @@ fn wander(
         let speed = 15.;
         let direction = Vec2::new(x, y); //.normalize_or_zero();
 
-        commands
-            .entity(entity)
-            .insert(Velocity(direction * speed, true));
+        if let Some(mut ec) = commands.get_entity(entity) {
+            ec.insert(Velocity(direction * speed, true));
+        }
         timers.insert(entity, 0.);
     }
 }
@@ -153,15 +157,12 @@ fn follow_player(
         if let Ok(player) = player.get_single() {
             if let Ok(follow) = follows.get(enemy) {
                 if follow.on_target {
-                    commands
-                        .entity(enemy)
-                        .remove::<Follow>()
-                        .insert(Done::Success);
+                    if let Some(mut ec) = commands.get_entity(enemy) {
+                        ec.insert(Done::Success).remove::<Follow>();
+                    }
                 }
-            } else {
-                commands
-                    .entity(enemy)
-                    .insert(Follow::new(player, 0.10, true, 80.));
+            } else if let Some(mut ec) = commands.get_entity(enemy) {
+                ec.insert(Follow::new(player, 0.10, true, 80.));
             }
         }
     }
@@ -172,13 +173,22 @@ fn attack_player(
     mut event: EventWriter<SpawnEnemyAttack>,
     mut enemies: Query<(Entity, &Enemy, &Transform, &Damage, &mut Cooldown), With<Attack>>,
     mut commands: Commands,
+    mut durations: Local<HashMap<Entity, f32>>,
+    time: Res<Time>,
 ) {
     for (entity, enemy, transform, damage, mut cooldown) in enemies.iter_mut() {
-        if cooldown.is_ready() {
+        if !durations.contains_key(&entity) && cooldown.is_ready() {
             if let Ok(player) = player_query.get_single() {
                 let direction = (player.translation - transform.translation)
                     .xy()
                     .normalize();
+
+                let duration = match enemy.0.attack {
+                    AttackMeta::Melee { duration, .. } => duration,
+                    AttackMeta::Ranged { duration, .. } => duration,
+                };
+
+                durations.insert(entity, duration);
 
                 event.send(SpawnEnemyAttack {
                     meta: enemy.0.attack.clone(),
@@ -188,9 +198,19 @@ fn attack_player(
                     enemy_size: enemy.0.hitbox,
                 });
                 cooldown.reset();
-                commands.entity(entity).insert(Done::Success);
             }
             // commands.entity(enemy).insert(Done::Failure);
+        }
+
+        if let Some(duration) = durations.get_mut(&entity) {
+            *duration -= time.delta_seconds();
+
+            if *duration <= 0. {
+                durations.remove(&entity);
+                if let Some(mut ec) = commands.get_entity(entity) {
+                    ec.insert(Done::Success);
+                }
+            }
         }
     }
 }
