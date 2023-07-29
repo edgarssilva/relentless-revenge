@@ -1,5 +1,6 @@
 use bevy::asset::Assets;
 use bevy::prelude::*;
+use bevy_ecs_tilemap::prelude::TilemapRenderSettings;
 use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_persistent::prelude::*;
 use leafwing_input_manager::prelude::InputManagerPlugin;
@@ -44,6 +45,10 @@ enum InGameSet {
 impl Plugin for InGamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TilemapPlugin)
+            .insert_resource(TilemapRenderSettings {
+                render_chunk_size: UVec2::new(32, 1),
+                y_sort: true,
+            })
             .add_plugins(InputManagerPlugin::<PlayerActions>::default())
             .add_plugins(CollisionPlugin)
             .add_plugins(AnimationPlugin)

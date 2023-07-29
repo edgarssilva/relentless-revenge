@@ -1,13 +1,13 @@
 use bevy::math::Vec3Swizzles;
-use bevy::prelude::{Component, EventWriter, Local, Query, Res, Time, Transform, With};
+use bevy::prelude::{Component, EventWriter, Local, Query, Res, Time, Transform, Vec2, With};
 use bevy_ecs_tilemap::{
     prelude::{TilemapGridSize, TilemapSize, TilemapType},
-    tiles::{TilePos, TileStorage}
+    tiles::{TilePos, TileStorage},
 };
 
-use crate::{controller::Controlled, state::State};
 use crate::floor::TriggerNextFloorEvent;
 use crate::map::generation::LevelPortalTile;
+use crate::{controller::Controlled, state::State};
 
 #[derive(Component)]
 pub struct WalkableTile;
@@ -20,8 +20,11 @@ pub fn restrict_movement(
     if let Some((tile_storage, tilemap_type, map_size, grid_size)) = query.iter().next() {
         for (controlled, mut transform, state) in controlled_query.iter_mut() {
             if let Some(move_to) = controlled.move_to {
+                let grid_pos = move_to + Vec2::new(0., -16.); //Account for the tile being 32x32 on a
+                                                              //32x16 grid
+
                 if let Some(tile_pos) =
-                    TilePos::from_world_pos(&move_to, map_size, grid_size, tilemap_type)
+                    TilePos::from_world_pos(&grid_pos, map_size, grid_size, tilemap_type)
                 {
                     //Don't move if the player doesn't want to move
                     if let Some(state) = state {
@@ -51,12 +54,10 @@ pub fn travel_through_portal(
 ) {
     if let Some((tile_storage, tilemap_type, map_size, grid_size)) = query.iter().next() {
         for transform in controlled_query.iter() {
-            if let Some(tile_pos) = TilePos::from_world_pos(
-                &transform.translation.xy(),
-                map_size,
-                grid_size,
-                tilemap_type,
-            ) {
+            let pos = transform.translation.xy() + Vec2::new(0., -16.); //Account for the tile being 32x32 on a
+                                                                        //32x16 grid
+            if let Some(tile_pos) = TilePos::from_world_pos(&pos, map_size, grid_size, tilemap_type)
+            {
                 if let Some(tile_entity) = tile_storage.get(&tile_pos) {
                     if portal_query.get(tile_entity).is_ok() {
                         *timer += delta.delta_seconds();

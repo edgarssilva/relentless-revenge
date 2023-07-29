@@ -26,7 +26,7 @@ pub fn setup_map(mut commands: Commands, texture_assets: Res<TextureAssets>) {
     let tilemap_entity = commands.spawn_empty().id();
     let tilemap_id = TilemapId(tilemap_entity);
 
-    let tile_size = TilemapTileSize { x: 32.0, y: 16.0 };
+    let tile_size = TilemapTileSize { x: 32.0, y: 32.0 };
     let grid_size = TilemapGridSize { x: 32.0, y: 16.0 };
 
     fill_tilemap(
@@ -121,7 +121,7 @@ fn build_map(
                 if let Some(tile_entity) = tile_storage.get(&tile_pos) {
                     commands.entity(tile_entity).insert(WalkableTile);
                     if let Ok((_, mut tile_texture)) = tile_query.get_mut(tile_entity) {
-                        tile_texture.0 = 3;
+                        tile_texture.0 = 2;
 
                         //Check if the tile is in the outer edge of the room
                         if x == room.pos.x - room.radius
@@ -129,7 +129,7 @@ fn build_map(
                             || y == room.pos.y - room.radius
                             || y == room.pos.y + room.radius
                         {
-                            // tile_texture.0 = 1;
+                            //tile_texture.0 = 0;
                         } else {
                             spawnable_tiles.push(world_pos);
                         }
@@ -164,7 +164,7 @@ fn build_map(
             }) {
                 commands.entity(tile_entity).insert(WalkableTile);
                 if let Ok((_, mut tile_texture)) = tile_query.get_mut(tile_entity) {
-                    tile_texture.0 = 3;
+                    tile_texture.0 = 2;
                 }
             }
         }
