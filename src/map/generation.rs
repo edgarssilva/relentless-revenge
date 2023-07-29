@@ -122,6 +122,17 @@ fn build_map(
                     commands.entity(tile_entity).insert(WalkableTile);
                     if let Ok((_, mut tile_texture)) = tile_query.get_mut(tile_entity) {
                         tile_texture.0 = 3;
+
+                        //Check if the tile is in the outer edge of the room
+                        if x == room.pos.x - room.radius
+                            || x == room.pos.x + room.radius - 1
+                            || y == room.pos.y - room.radius
+                            || y == room.pos.y + room.radius
+                        {
+                            // tile_texture.0 = 1;
+                        } else {
+                            spawnable_tiles.push(world_pos);
+                        }
                     }
                 }
 
@@ -129,8 +140,7 @@ fn build_map(
                     //TODO: Move player position out
                     player_transform.translation.x = world_pos.x;
                     player_transform.translation.y = world_pos.y;
-                } else {
-                    spawnable_tiles.push(world_pos);
+                    spawnable_tiles.pop();
                 }
 
                 if i == rooms.len() - 1 && room.pos.to_array() == [x, y] {

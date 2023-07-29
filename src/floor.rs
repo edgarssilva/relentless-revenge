@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use bevy::asset::Assets;
 use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::prelude::{in_state, Event, IntoSystemConfigs, Update};
@@ -8,6 +10,7 @@ use bevy::{
         App, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res, ResMut, Resource,
     },
 };
+use noisy_bevy::simplex_noise_2d;
 use turborand::rng::Rng;
 use turborand::TurboRand;
 
@@ -111,35 +114,43 @@ fn spawn_enemies(
         //TODO: Find a way to not clone this
         if let Some(meta) = &level.meta.clone() {
             let rand = Rng::new();
-            let mut spawnable_room_positions = e.0.clone();
+            let spawnable_room_positions = e.0.clone();
 
             let spawnable_enemies = meta.enemies.clone();
             let weight_count = spawnable_enemies.iter().map(|e| e.weight).sum::<u32>();
 
-            for spawnable_positions in spawnable_room_positions.iter_mut() {
-                rand.shuffle(spawnable_positions); //Shuffle positions
-                let enemies_per_room = rand.u32(meta.enemies_per_room.0..=meta.enemies_per_room.1);
+            for spawnable_positions in spawnable_room_positions.iter() {
+                let mut positions_noise = BTreeMap::new();
 
-                for _ in 0..enemies_per_room {
-                    let mut weight = rand.u32(0..=weight_count) as i32; //Get random weight
-                    let pos = spawnable_positions.pop().unwrap(); //Get first position
+                for pos in spawnable_positions.iter() {
+                    let noise = (simplex_noise_2d(*pos) * 100.) as i32;
+                    positions_noise.insert(noise, pos);
+                }
 
-                    for enemy in spawnable_enemies.iter() {
-                        weight -= enemy.weight as i32;
-                        if weight > 0 {
-                            continue;
+                let enemies_room_count =
+                    rand.u32(meta.enemies_per_room.0..=meta.enemies_per_room.1);
+
+                for _ in 0..enemies_room_count {
+                    if let Some(pos) = positions_noise.pop_last() {
+                        let mut weight = rand.u32(0..=weight_count) as i32;
+
+                        for enemy in spawnable_enemies.iter() {
+                            weight -= enemy.weight as i32;
+                            if weight > 0 {
+                                continue;
+                            }
+
+                            if let Some(enemy_meta) = enemies.get(&enemy.enemy) {
+                                level.enemies.push(
+                                    commands
+                                        .spawn(EnemyBundle::new(enemy_meta, pos.1.extend(100.0)))
+                                        .insert(Idle)
+                                        .id(),
+                                );
+                            }
+
+                            break;
                         }
-
-                        if let Some(enemy_meta) = enemies.get(&enemy.enemy) {
-                            level.enemies.push(
-                                commands
-                                    .spawn(EnemyBundle::new(enemy_meta, pos.extend(100.0)))
-                                    .insert(Idle)
-                                    .id(),
-                            );
-                        }
-
-                        break;
                     }
                 }
             }
