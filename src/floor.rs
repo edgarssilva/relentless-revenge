@@ -143,7 +143,7 @@ fn spawn_enemies(
                             if let Some(enemy_meta) = enemies.get(&enemy.enemy) {
                                 level.enemies.push(
                                     commands
-                                        .spawn(EnemyBundle::new(enemy_meta, pos.1.extend(100.0)))
+                                        .spawn(EnemyBundle::new(enemy_meta, pos.1.extend(38.0)))
                                         .insert(Idle)
                                         .id(),
                                 );

@@ -141,6 +141,8 @@ pub struct GameMeta {
     pub floors: Vec<Handle<FloorMeta>>,
     #[asset(path = "level.progression.yaml")]
     pub level_progression: Handle<LevelProgressionMeta>,
+    #[asset(path = "shadow.png")]
+    pub shadow_texture: Handle<Image>,
 }
 
 pub fn register_assets(app: &mut App) {

@@ -9,6 +9,7 @@ mod attack;
 mod boss;
 mod collision;
 mod controller;
+mod effects;
 mod enemy;
 mod floor;
 mod game_states;

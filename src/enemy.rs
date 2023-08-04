@@ -6,6 +6,7 @@ use bevy_rapier2d::prelude::{
 };
 use seldom_state::prelude::StateMachine;
 
+use crate::effects::Shadow;
 use crate::metadata::EnemyMeta;
 use crate::{
     animation::Animation,
@@ -39,6 +40,7 @@ pub struct EnemyBundle {
     pub collision_groups: CollisionGroups,
     pub active_events: ActiveEvents,
     pub active_collision_types: ActiveCollisionTypes,
+    pub shadow: Shadow,
     // finding_player: FindingPLayer,
     state_machine: StateMachine,
 }
@@ -78,6 +80,7 @@ impl EnemyBundle {
             active_events: ActiveEvents::COLLISION_EVENTS,
             active_collision_types: ActiveCollisionTypes::all(),
             state_machine: state_machine::get_state_machine(),
+            shadow: Shadow,
         }
     }
 }

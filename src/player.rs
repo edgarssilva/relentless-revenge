@@ -13,6 +13,7 @@ use leafwing_input_manager::{
     InputManagerBundle,
 };
 
+use crate::effects::Shadow;
 use crate::{
     animation::AnimationState,
     attack::Damageable,
@@ -49,6 +50,7 @@ pub struct PlayerBundle {
     stats: StatsBundle,
     damageable: Damageable,
     input: InputManagerBundle<PlayerActions>,
+    shadow: Shadow,
 }
 
 impl PlayerBundle {
@@ -141,6 +143,7 @@ impl PlayerBundle {
                 action_state: ActionState::default(),
                 input_map: Self::default_keybindings(),
             },
+            shadow: Shadow,
         }
     }
 

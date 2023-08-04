@@ -10,6 +10,7 @@ use crate::attack::{
     SpawnEnemyAttack,
 };
 use crate::controller::combo_system;
+use crate::effects::spawn_shadows;
 use crate::game_states::ingame::InGameSet::{Normal, Post};
 use crate::metadata::{GameMeta, PlayerMeta};
 use crate::stats::{level_up, revenge_mode};
@@ -91,7 +92,7 @@ impl Plugin for InGamePlugin {
             )
             .add_systems(
                 Update,
-                (restrict_movement, finish_dash, death_system)
+                (spawn_shadows, restrict_movement, finish_dash, death_system)
                     .in_set(Post)
                     .after(Normal)
                     .run_if(in_state(GameState::InGame)),
