@@ -1,6 +1,6 @@
 use bevy::{math::Vec2, prelude::Component};
 
-#[derive(Component, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Component, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum Direction {
     NORTH,
     SOUTH,

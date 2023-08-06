@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 
 use bevy::asset::Assets;
 use bevy::hierarchy::DespawnRecursiveExt;
-use bevy::prelude::{in_state, Event, IntoSystemConfigs, Update};
+use bevy::prelude::{
+    in_state, Camera, Event, IntoSystemConfigs, Query, Transform, Update, With, Without,
+};
 use bevy::{
     input::Input,
     math::Vec2,
@@ -18,6 +20,7 @@ use crate::enemy::state_machine::Idle;
 use crate::map::generation::open_level_portal;
 use crate::map::walkable::travel_through_portal;
 use crate::metadata::{EnemyMeta, FloorMeta, GameMeta};
+use crate::player::Player;
 use crate::{enemy::EnemyBundle, GameState};
 
 #[derive(Default, Resource)]
@@ -32,7 +35,10 @@ pub struct FloorResource {
 pub struct GenerateFloorEvent;
 
 #[derive(Event)]
-pub struct SpawnFloorEntitiesEvent(pub Vec<Vec<Vec2>>); // Available positions
+pub struct SpawnFloorEntitiesEvent {
+    pub spawnable_pos: Vec<Vec2>,
+    pub player_pos: Vec2,
+}
 
 //Floor Clearing Events
 #[derive(Event)]
@@ -57,6 +63,7 @@ impl Plugin for FloorPlugin {
             .add_systems(
                 Update,
                 (
+                    move_player,
                     enemy_killed,
                     spawn_enemies,
                     generate_floor,
@@ -104,6 +111,26 @@ fn generate_floor(
     }
 }
 
+fn move_player(
+    mut player_query: Query<&mut Transform, (With<Player>, Without<Camera>)>,
+    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
+    mut event: EventReader<SpawnFloorEntitiesEvent>,
+) {
+    for e in event.iter() {
+        let pos = e.player_pos;
+
+        if let Ok(mut transform) = player_query.get_single_mut() {
+            transform.translation.x = pos.x;
+            transform.translation.y = pos.y;
+        }
+
+        if let Ok(mut transform) = camera_query.get_single_mut() {
+            transform.translation.x = pos.x;
+            transform.translation.y = pos.y;
+        }
+    }
+}
+
 fn spawn_enemies(
     mut event: EventReader<SpawnFloorEntitiesEvent>,
     mut commands: Commands,
@@ -111,46 +138,39 @@ fn spawn_enemies(
     mut level: ResMut<FloorResource>,
 ) {
     for e in event.iter() {
-        //TODO: Find a way to not clone this
-        if let Some(meta) = &level.meta.clone() {
+        if let Some(meta) = &level.meta {
             let rand = Rng::new();
-            let spawnable_room_positions = e.0.clone();
+            let spawnable_pos = &e.spawnable_pos;
 
             let spawnable_enemies = meta.enemies.clone();
+            let enemy_count = rand.u32(meta.enemies_count.0..=meta.enemies_count.1);
             let weight_count = spawnable_enemies.iter().map(|e| e.weight).sum::<u32>();
 
-            for spawnable_positions in spawnable_room_positions.iter() {
-                let mut positions_noise = BTreeMap::new();
+            let mut pos_noise = spawnable_pos
+                .iter()
+                .map(|p| ((simplex_noise_2d(*p) * 100.) as i32, p))
+                .collect::<BTreeMap<i32, &Vec2>>();
 
-                for pos in spawnable_positions.iter() {
-                    let noise = (simplex_noise_2d(*pos) * 100.) as i32;
-                    positions_noise.insert(noise, pos);
-                }
+            for _ in 0..enemy_count {
+                if let Some(pos) = pos_noise.pop_last() {
+                    let mut weight = rand.u32(0..=weight_count) as i32;
 
-                let enemies_room_count =
-                    rand.u32(meta.enemies_per_room.0..=meta.enemies_per_room.1);
-
-                for _ in 0..enemies_room_count {
-                    if let Some(pos) = positions_noise.pop_last() {
-                        let mut weight = rand.u32(0..=weight_count) as i32;
-
-                        for enemy in spawnable_enemies.iter() {
-                            weight -= enemy.weight as i32;
-                            if weight > 0 {
-                                continue;
-                            }
-
-                            if let Some(enemy_meta) = enemies.get(&enemy.enemy) {
-                                level.enemies.push(
-                                    commands
-                                        .spawn(EnemyBundle::new(enemy_meta, pos.1.extend(38.0)))
-                                        .insert(Idle)
-                                        .id(),
-                                );
-                            }
-
-                            break;
+                    for enemy in spawnable_enemies.iter() {
+                        weight -= enemy.weight as i32;
+                        if weight > 0 {
+                            continue;
                         }
+
+                        if let Some(enemy_meta) = enemies.get(&enemy.enemy) {
+                            level.enemies.push(
+                                commands
+                                    .spawn(EnemyBundle::new(enemy_meta, pos.1.extend(38.0)))
+                                    .insert(Idle)
+                                    .id(),
+                            );
+                        }
+
+                        break;
                     }
                 }
             }

@@ -2,7 +2,7 @@ floors: [1, 5]
 
 rooms: [2, 3]
 room_size: [3, 4]
-enemies_per_room: [1, 2]
+enemies_count: [2, 6]
 
 enemies:
   - path: "../entities/enemies/yaml.enemy"

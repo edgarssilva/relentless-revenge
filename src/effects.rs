@@ -13,7 +13,7 @@ pub fn spawn_shadows(
         commands.entity(entity).with_children(|parent| {
             parent.spawn(SpriteBundle {
                 texture: meta.shadow_texture.clone(),
-                transform: Transform::from_xyz(0., -14., -0.5),
+                transform: Transform::from_xyz(0., -13., -0.5),
                 ..Default::default()
             });
         });

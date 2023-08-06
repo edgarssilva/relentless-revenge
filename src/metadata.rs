@@ -86,7 +86,7 @@ pub struct FloorMeta {
     pub floors: (u32, u32),
     pub rooms: (u32, u32),
     pub room_size: (u32, u32),
-    pub enemies_per_room: (u32, u32),
+    pub enemies_count: (u32, u32),
 
     pub enemies: Vec<SpawnMeta>,
     // pub boss: BossMeta
