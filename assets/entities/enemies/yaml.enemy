@@ -28,3 +28,5 @@ attack:
     rows: 5
     columns: 6
     duration: 100
+
+feet_offset: 24 

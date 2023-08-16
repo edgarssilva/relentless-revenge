@@ -64,6 +64,7 @@ pub struct EnemyMeta {
     pub hitbox: Vec2,
     pub scale: Vec2,
     pub attack: AttackMeta,
+    pub feet_offset: Option<f32>,
 }
 
 #[derive(serde::Deserialize, TypePath, TypeUuid, Debug, Clone)]
@@ -77,6 +78,7 @@ pub struct PlayerMeta {
     pub xp: u32,
     pub texture: TextureMeta,
     pub hitbox: Vec2,
+    pub feet_offset: Option<f32>,
     //TODO: Add animation data
 }
 

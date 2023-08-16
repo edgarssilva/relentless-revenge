@@ -22,3 +22,5 @@ attack:
   size: [40, 40]
   duration: 3.0
   knockback: 5.0
+
+feet_offset: 20

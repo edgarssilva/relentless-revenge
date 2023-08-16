@@ -13,6 +13,7 @@ use crate::controller::combo_system;
 use crate::effects::spawn_shadows;
 use crate::game_states::ingame::InGameSet::{Normal, Post};
 use crate::metadata::{GameMeta, PlayerMeta};
+use crate::sorting::ysort;
 use crate::stats::{level_up, revenge_mode};
 use crate::ui::{draw_hud, draw_revenge_bar, draw_xp_bar};
 use crate::{
@@ -92,7 +93,13 @@ impl Plugin for InGamePlugin {
             )
             .add_systems(
                 Update,
-                (spawn_shadows, restrict_movement, finish_dash, death_system)
+                (
+                    spawn_shadows,
+                    restrict_movement,
+                    finish_dash,
+                    death_system,
+                    ysort,
+                )
                     .in_set(Post)
                     .after(Normal)
                     .run_if(in_state(GameState::InGame)),

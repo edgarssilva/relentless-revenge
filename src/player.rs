@@ -14,6 +14,7 @@ use leafwing_input_manager::{
 };
 
 use crate::effects::Shadow;
+use crate::sorting::{self, FeetOffset, YSort};
 use crate::{
     animation::AnimationState,
     attack::Damageable,
@@ -50,6 +51,8 @@ pub struct PlayerBundle {
     stats: StatsBundle,
     damageable: Damageable,
     input: InputManagerBundle<PlayerActions>,
+    ysort: YSort,
+    feet_offset: FeetOffset,
     shadow: Shadow,
 }
 
@@ -100,6 +103,8 @@ impl PlayerBundle {
         player_animations.insert(State::Attacking(2), attack_animations_2);
         player_animations.insert(State::Dashing, dash_animations);
 
+        let feet_offset = meta.feet_offset.unwrap_or_default();
+
         PlayerBundle {
             player: Player,
             sprite_bundle: SpriteSheetBundle {
@@ -143,6 +148,8 @@ impl PlayerBundle {
                 action_state: ActionState::default(),
                 input_map: Self::default_keybindings(),
             },
+            ysort: YSort(sorting::ENTITIES_LAYER),
+            feet_offset: FeetOffset(feet_offset),
             shadow: Shadow,
         }
     }

@@ -8,6 +8,7 @@ use seldom_state::prelude::StateMachine;
 
 use crate::effects::Shadow;
 use crate::metadata::EnemyMeta;
+use crate::sorting::{self, FeetOffset, YSort};
 use crate::{
     animation::Animation,
     attack::Damageable,
@@ -40,7 +41,9 @@ pub struct EnemyBundle {
     pub collision_groups: CollisionGroups,
     pub active_events: ActiveEvents,
     pub active_collision_types: ActiveCollisionTypes,
+    pub ysort: YSort,
     pub shadow: Shadow,
+    pub feet_offset: FeetOffset,
     // finding_player: FindingPLayer,
     state_machine: StateMachine,
 }
@@ -80,6 +83,8 @@ impl EnemyBundle {
             active_events: ActiveEvents::COLLISION_EVENTS,
             active_collision_types: ActiveCollisionTypes::all(),
             state_machine: state_machine::get_state_machine(),
+            ysort: YSort(sorting::ENTITIES_LAYER),
+            feet_offset: FeetOffset(meta.feet_offset.unwrap_or_default()),
             shadow: Shadow,
         }
     }
