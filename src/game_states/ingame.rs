@@ -1,6 +1,4 @@
-use bevy::asset::Assets;
 use bevy::prelude::*;
-use bevy_ecs_tilemap::prelude::TilemapRenderSettings;
 use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_persistent::prelude::*;
 use leafwing_input_manager::prelude::InputManagerPlugin;
@@ -12,7 +10,7 @@ use crate::attack::{
 use crate::controller::combo_system;
 use crate::effects::spawn_shadows;
 use crate::game_states::ingame::InGameSet::{Normal, Post};
-use crate::metadata::{GameMeta, PlayerMeta};
+use crate::manifest::player::PlayerManifest;
 use crate::sorting::ysort;
 use crate::stats::{level_up, revenge_mode};
 use crate::ui::{draw_hud, draw_revenge_bar, draw_xp_bar};
@@ -47,10 +45,6 @@ enum InGameSet {
 impl Plugin for InGamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TilemapPlugin)
-            .insert_resource(TilemapRenderSettings {
-                render_chunk_size: UVec2::new(32, 1),
-                y_sort: true,
-            })
             .add_plugins(InputManagerPlugin::<PlayerActions>::default())
             .add_plugins(CollisionPlugin)
             .add_plugins(AnimationPlugin)
@@ -107,11 +101,7 @@ impl Plugin for InGamePlugin {
     }
 }
 
-fn setup_game(
-    mut commands: Commands,
-    game_meta: Res<GameMeta>,
-    player_meta: Res<Assets<PlayerMeta>>,
-) {
+fn setup_game(mut commands: Commands, player_manifest: Res<PlayerManifest>) {
     let dir = dirs::data_dir().unwrap().join("relentless_revenge");
 
     commands.insert_resource(
@@ -124,10 +114,8 @@ fn setup_game(
             .expect("Failed to create persistent statistics"),
     );
 
-    let player = player_meta
-        .get(&game_meta.player)
-        .expect("Player Meta not found");
-    let player_entity = commands.spawn(PlayerBundle::new(player)).id();
+    let player_data = &player_manifest.player_data;
+    let player_entity = commands.spawn(PlayerBundle::new(&player_data)).id();
 
     //Add Camera after so we can give it the player entity
     let mut camera_bundle = Camera2dBundle::default();

@@ -1,7 +1,7 @@
 use bevy::prelude::{IVec2, Vec2};
 use turborand::{rng::Rng, TurboRand};
 
-use crate::{metadata::FloorMeta, movement::direction::Direction};
+use crate::{manifest::floor::DomainData, movement::direction::Direction};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Room {
@@ -121,14 +121,14 @@ impl Into<Vec<Tile>> for Map {
     }
 }
 
-pub fn generate_map(floor_meta: &FloorMeta) -> Map {
+pub fn generate_map(domain_data: &DomainData) -> Map {
     let mut rand = Rng::new();
     let mut rooms = Vec::<Room>::new();
     let mut bridges = Vec::<Bridge>::new();
 
-    let num_rooms = rand.u32(floor_meta.rooms.0..=floor_meta.rooms.1);
-    let room_min_radius = floor_meta.room_size.0;
-    let room_max_radius = floor_meta.room_size.1;
+    let num_rooms = rand.u32(domain_data.rooms.0..=domain_data.rooms.1);
+    let room_min_radius = domain_data.room_size.0;
+    let room_max_radius = domain_data.room_size.1;
 
     let mut old_room = Room::new(
         IVec2::new(80, 80),

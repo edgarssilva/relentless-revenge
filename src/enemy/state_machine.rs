@@ -1,19 +1,22 @@
 use std::time::Duration;
 
+use bevy::ecs::query::Without;
+use bevy::ecs::system::In;
 use bevy::math::{Vec2, Vec3Swizzles};
 use bevy::prelude::{
     in_state, App, Commands, Component, Entity, EventWriter, IntoSystemConfigs, Local, Query,
     Reflect, Res, Time, Timer, TimerMode, Transform, Update, With,
 };
 use bevy::utils::HashMap;
+use leafwing_manifest::identifier::Id;
 use seldom_state::prelude::*;
-use seldom_state::trigger::NotTrigger;
 use turborand::rng::Rng;
 use turborand::TurboRand;
 
 use crate::attack::SpawnEnemyAttack;
 use crate::enemy::Enemy;
-use crate::metadata::AttackMeta;
+use crate::manifest::enemy::EnemyManifest;
+use crate::manifest::AttackData;
 use crate::movement::movement::{Follow, Velocity};
 use crate::player::Player;
 use crate::stats::{Cooldown, Damage};
@@ -28,15 +31,36 @@ pub(crate) fn register(app: &mut App) {
 }
 
 pub(crate) fn get_state_machine() -> StateMachine {
-    let near_player = NearPlayer { range: 120.0 };
+    //   let near_player = NearPlayer { range: 120.0 };
+
+    let near_player = move |In(entity): In<Entity>,
+                            transform: Query<&Transform, Without<Player>>,
+                            player: Query<&Transform, With<Player>>| {
+        if player.is_empty() {
+            return Err(0.0);
+        }
+
+        let distance = player
+            .get_single()
+            .expect("Player not found in near_player state")
+            .translation
+            .truncate()
+            .distance(transform.get(entity).unwrap().translation.truncate());
+
+        if distance <= 120.0 {
+            Ok(distance)
+        } else {
+            Err(distance)
+        }
+    };
 
     StateMachine::default()
-        .trans::<Idle>(DoneTrigger::Success, Wander)
-        .trans::<Wander>(near_player, FollowPlayer)
-        .trans::<Wander>(DoneTrigger::Success, Idle)
-        .trans::<FollowPlayer>(DoneTrigger::Success, Attack)
-        .trans::<FollowPlayer>(NotTrigger(near_player), Wander)
-        .trans::<Attack>(DoneTrigger::Success, Idle)
+        .trans::<Idle, _>(done(Some(Done::Success)), Wander)
+        .trans::<Wander, _>(near_player, FollowPlayer)
+        .trans::<Wander, _>(done(Some(Done::Success)), Idle)
+        .trans::<FollowPlayer, _>(done(Some(Done::Success)), Attack)
+        .trans::<FollowPlayer, _>(near_player.not(), Wander)
+        .trans::<Attack, _>(done(Some(Done::Success)), Idle)
 }
 
 //States
@@ -55,34 +79,6 @@ struct FollowPlayer;
 #[derive(Component, Clone, Reflect)]
 #[component(storage = "SparseSet")]
 struct Attack;
-
-//Triggers
-#[derive(Clone, Copy, Reflect)]
-struct NearPlayer {
-    range: f32,
-}
-
-impl BoolTrigger for NearPlayer {
-    type Param<'w, 's> = (
-        Query<'w, 's, &'static Transform, With<Enemy>>,
-        Query<'w, 's, &'static Transform, With<Player>>,
-    );
-
-    fn trigger(&self, entity: Entity, (enemies, player): Self::Param<'_, '_>) -> bool {
-        if let Ok(enemy_transform) = enemies.get(entity) {
-            if let Ok(player_transform) = player.get_single() {
-                let distance = player_transform
-                    .translation
-                    .xy()
-                    .distance(enemy_transform.translation.xy());
-
-                return distance <= self.range;
-            }
-        }
-
-        false
-    }
-}
 
 #[derive(Component)]
 struct IdleDuration(Timer);
@@ -174,6 +170,7 @@ fn attack_player(
     mut enemies: Query<(Entity, &Enemy, &Transform, &Damage, &mut Cooldown), With<Attack>>,
     mut commands: Commands,
     mut durations: Local<HashMap<Entity, f32>>,
+    enemy_manifest: Res<EnemyManifest>,
     time: Res<Time>,
 ) {
     for (entity, enemy, transform, damage, mut cooldown) in enemies.iter_mut() {
@@ -183,19 +180,24 @@ fn attack_player(
                     .xy()
                     .normalize();
 
-                let duration = match enemy.0.attack {
-                    AttackMeta::Melee { duration, .. } => duration,
-                    AttackMeta::Ranged { duration, .. } => duration,
+                let enemy_data = enemy_manifest
+                    .enemies
+                    .get(&Id::from_name(enemy.0.as_str()))
+                    .unwrap();
+
+                let duration = match enemy_data.attack {
+                    AttackData::Melee { duration, .. } => duration,
+                    AttackData::Ranged { duration, .. } => duration,
                 };
 
                 durations.insert(entity, duration);
 
                 event.send(SpawnEnemyAttack {
-                    meta: enemy.0.attack.clone(),
+                    data: enemy_data.attack.clone(),
                     damage: *damage,
                     direction,
                     position: transform.translation,
-                    enemy_size: enemy.0.hitbox,
+                    enemy_size: enemy_data.hitbox,
                 });
                 cooldown.reset();
             }

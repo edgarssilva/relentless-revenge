@@ -53,7 +53,7 @@ pub fn move_player(
         let mut dir = Vec2::ZERO;
 
         for action in PlayerActions::DIRECTIONS {
-            if action_state.pressed(action) {
+            if action_state.pressed(&action) {
                 if let Some(action_dir) = action.direction() {
                     dir += action_dir.vec();
                     direction.set(action_dir);
@@ -98,7 +98,7 @@ pub fn dash_ability(
         }
 
         for action in PlayerActions::DIRECTIONS {
-            if action_state.pressed(action) {
+            if action_state.pressed(&action) {
                 if let Some(action_dir) = action.direction() {
                     dir += action_dir.vec();
                 }
@@ -109,7 +109,7 @@ pub fn dash_ability(
             dir = direction.vec();
         }
 
-        if action_state.just_pressed(PlayerActions::Dash) && cooldown.is_ready() {
+        if action_state.just_pressed(&PlayerActions::Dash) && cooldown.is_ready() {
             state.set(State::Dashing);
             cooldown.reset();
 
@@ -126,7 +126,7 @@ pub fn finish_dash(
     mut query: Query<&mut State, With<Player>>,
     mut removals: RemovedComponents<EaseTo>,
 ) {
-    for entity in removals.iter() {
+    for entity in removals.read() {
         if let Ok(mut state) = query.get_mut(entity) {
             if state.equals(State::Dashing) {
                 state.set(State::Idle);
@@ -154,7 +154,7 @@ pub fn attack_ability(
             return;
         }
 
-        if action_state.just_pressed(PlayerActions::Attack) && cooldown.is_ready() {
+        if action_state.just_pressed(&PlayerActions::Attack) && cooldown.is_ready() {
             if let Some(mut combo) = combo {
                 combo.current += 1;
                 combo.timer.reset();

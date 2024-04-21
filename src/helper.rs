@@ -1,7 +1,8 @@
 use crate::movement::movement::Follow;
+use bevy::input::ButtonInput;
 use bevy::math::Vec3Swizzles;
 use bevy::prelude::{
-    Commands, Component, Entity, Input, KeyCode, Query, Res, Resource, Time, Transform, With,
+    Commands, Component, Entity, KeyCode, Query, Res, Resource, Time, Transform, With,
 };
 use bevy::render::camera::OrthographicProjection;
 use noisy_bevy::fbm_simplex_2d_seeded;
@@ -71,27 +72,27 @@ pub fn shake_system(
 //Helper camera controller
 pub fn helper_camera_controller(
     mut query: Query<(&mut OrthographicProjection, &mut Transform), With<Follow>>,
-    keys: Res<Input<KeyCode>>,
+    keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
 ) {
     if let Ok((mut projection, mut transform)) = query.get_single_mut() {
-        if keys.pressed(KeyCode::Up) {
+        if keys.pressed(KeyCode::ArrowUp) {
             transform.translation.y += 150.0 * time.delta_seconds();
         }
-        if keys.pressed(KeyCode::Left) {
+        if keys.pressed(KeyCode::ArrowLeft) {
             transform.translation.x -= 150.0 * time.delta_seconds();
         }
-        if keys.pressed(KeyCode::Down) {
+        if keys.pressed(KeyCode::ArrowDown) {
             transform.translation.y -= 150.0 * time.delta_seconds();
         }
-        if keys.pressed(KeyCode::Right) {
+        if keys.pressed(KeyCode::ArrowRight) {
             transform.translation.x += 150.0 * time.delta_seconds();
         }
 
-        if keys.pressed(KeyCode::Z) {
+        if keys.pressed(KeyCode::KeyZ) {
             projection.scale -= 1. * time.delta_seconds();
         }
-        if keys.pressed(KeyCode::X) {
+        if keys.pressed(KeyCode::KeyX) {
             projection.scale += 1. * time.delta_seconds();
         }
     }
@@ -110,11 +111,11 @@ pub struct KeyMaps {
 impl Default for KeyMaps {
     fn default() -> Self {
         KeyMaps {
-            walk_up: KeyCode::W,
-            walk_left: KeyCode::A,
-            walk_down: KeyCode::S,
-            walk_right: KeyCode::D,
-            attack: KeyCode::J,
+            walk_up: KeyCode::KeyW,
+            walk_left: KeyCode::KeyA,
+            walk_down: KeyCode::KeyS,
+            walk_right: KeyCode::KeyD,
+            attack: KeyCode::KeyJ,
             dash: KeyCode::Space,
         }
     }

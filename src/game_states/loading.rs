@@ -1,35 +1,42 @@
 use bevy::prelude::*;
-use bevy_asset_loader::prelude::*;
 use bevy_egui::EguiPlugin;
+use leafwing_manifest::asset_state::SimpleAssetState;
 
-use crate::metadata::asset_loaders::register_asset_loaders;
-use crate::metadata::{register_assets, GameMeta};
-use crate::GameState;
+use crate::{manifest::DataManifestPlugin, GameState};
 
 pub struct LoadingPlugin;
 
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
-        register_assets(app);
-        register_asset_loaders(app);
-
-        app.add_plugins(EguiPlugin)
-            .add_loading_state(
-                LoadingState::new(GameState::Loading).continue_to_state(GameState::InGame),
-            )
-            .add_collection_to_loading_state::<_, TextureAssets>(GameState::Loading)
-            .add_collection_to_loading_state::<_, GameMeta>(GameState::Loading);
+        app.add_plugins((EguiPlugin, DataManifestPlugin {}))
+            .add_systems(OnEnter(GameState::Loading), setup_assets)
+            .add_systems(OnEnter(SimpleAssetState::Ready), finish_loading);
     }
 }
 
-#[derive(AssetCollection, Resource)]
-pub struct TextureAssets {
-    /*  #[asset(texture_atlas(tile_size_x = 100., tile_size_y = 100., columns = 6, rows = 5))]
-    #[asset(path = "arrow.png")]
-    pub arrow_atlas: Handle<TextureAtlas>,*/
-    #[asset(path = "xp.png")]
+#[derive(Resource)]
+pub struct GameAssets {
+    pub font: Handle<Font>,
     pub xp_texture: Handle<Image>,
-
-    #[asset(path = "tileset.png")]
     pub map_texture: Handle<Image>,
+    pub shadow_texture: Handle<Image>,
+}
+
+fn setup_assets(asset_server: Res<AssetServer>, mut commands: Commands) {
+    let font = asset_server.load("BitPotionExt.ttf");
+    let xp_texture = asset_server.load("xp.png");
+    let map_texture = asset_server.load("tileset.png");
+    let shadow_texture = asset_server.load("shadow.png");
+
+    commands.insert_resource(GameAssets {
+        font,
+        xp_texture,
+        map_texture,
+        shadow_texture,
+    });
+}
+
+fn finish_loading(mut next_state: ResMut<NextState<GameState>>) {
+    //TODO: Check if our own assets have loaded aswell
+    next_state.set(GameState::InGame);
 }

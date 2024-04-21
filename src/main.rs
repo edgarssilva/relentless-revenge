@@ -14,8 +14,8 @@ mod enemy;
 mod floor;
 mod game_states;
 mod helper;
+mod manifest;
 mod map;
-mod metadata;
 mod movement;
 mod player;
 mod sorting;
@@ -42,7 +42,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .insert_resource(ClearColor(Color::rgb(20. / 255., 0. / 255., 25. / 255.)))
         .insert_resource(KeyMaps::default())
-        .add_state::<GameState>()
+        .init_state::<GameState>()
         .add_plugins(LoadingPlugin)
         .add_plugins(MainMenuPlugin)
         .add_plugins(InGamePlugin)

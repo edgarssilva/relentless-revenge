@@ -1,5 +1,7 @@
 use bevy::prelude::{Event, EventReader};
 use bevy::reflect::Reflect;
+use bevy::render::texture::Image;
+use bevy::sprite::TextureAtlasLayout;
 use bevy::time::TimerMode;
 use bevy::{
     prelude::{
@@ -13,9 +15,10 @@ use bevy::{
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, Sensor,
 };
-use seldom_state::prelude::{Done, DoneTrigger, StateMachine};
+use seldom_state::prelude::{Done, StateMachine};
+use seldom_state::trigger::done;
 
-use crate::metadata::AttackMeta;
+use crate::manifest::AttackData;
 use crate::{
     collision::BodyLayers,
     movement::direction::Direction,
@@ -56,12 +59,12 @@ pub struct RecoverPhase(pub Timer);
 
 pub fn attack_phase(_charge: f32, attack: f32, recover: f32) -> StateMachine {
     StateMachine::default()
-        .trans::<ChargePhase>(
-            DoneTrigger::Success,
+        .trans::<ChargePhase, _>(
+            done(Some(Done::Success)),
             AttackPhase(Timer::from_seconds(attack, TimerMode::Once)),
         )
-        .trans::<AttackPhase>(
-            DoneTrigger::Success,
+        .trans::<AttackPhase, _>(
+            done(Some(Done::Success)),
             RecoverPhase(Timer::from_seconds(recover, TimerMode::Once)),
         )
 }
@@ -145,7 +148,8 @@ pub struct ProjectileBundle {
 
 impl ProjectileBundle {
     pub fn new(
-        texture: Handle<TextureAtlas>,
+        texture: Handle<Image>,
+        atlas: Handle<TextureAtlasLayout>,
         position: Vec3,
         rotation: f32,
         size: Vec2,
@@ -157,7 +161,11 @@ impl ProjectileBundle {
         Self {
             attack: AttackBundle::new(size, duration, damage, is_player_attack),
             spritesheet_bundle: SpriteSheetBundle {
-                texture_atlas: texture,
+                texture: texture.clone(),
+                atlas: TextureAtlas {
+                    layout: atlas,
+                    index: 0,
+                },
                 transform: Transform {
                     translation: position,
                     rotation: Quat::from_rotation_z(rotation),
@@ -174,7 +182,7 @@ impl ProjectileBundle {
 
 #[derive(Event)]
 pub struct SpawnEnemyAttack {
-    pub meta: AttackMeta,
+    pub data: AttackData,
     pub position: Vec3,
     pub direction: Vec2,
     pub damage: Damage,
@@ -182,9 +190,9 @@ pub struct SpawnEnemyAttack {
 }
 
 pub fn attack_spawner(mut event: EventReader<SpawnEnemyAttack>, mut commands: Commands) {
-    for spawn_attack in event.iter() {
-        match &spawn_attack.meta {
-            AttackMeta::Melee {
+    for spawn_attack in event.read() {
+        match &spawn_attack.data {
+            AttackData::Melee {
                 size,
                 duration,
                 knockback,
@@ -206,14 +214,16 @@ pub fn attack_spawner(mut event: EventReader<SpawnEnemyAttack>, mut commands: Co
                     false,
                 ));
             }
-            AttackMeta::Ranged {
+            AttackData::Ranged {
                 texture,
                 velocity,
                 size,
                 duration,
+                atlas,
             } => {
                 commands.spawn(ProjectileBundle::new(
-                    texture.atlas_handle.clone(),
+                    texture.clone(),
+                    atlas.clone(),
                     spawn_attack.position,
                     f32::atan2(spawn_attack.direction.y, spawn_attack.direction.x),
                     *size / 2.,

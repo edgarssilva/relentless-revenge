@@ -1,9 +1,10 @@
 use crate::{movement::direction::Direction, state::State, GameState};
 use bevy::{
     prelude::{
-        in_state, App, Commands, Component, Entity, IntoSystemConfigs, Plugin, Query, Res,
-        TextureAtlasSprite, Time, Timer, Update, With, Without,
+        in_state, App, Commands, Component, Entity, IntoSystemConfigs, Plugin, Query, Res, Time,
+        Timer, Update, With, Without,
     },
+    sprite::TextureAtlas,
     time::TimerMode,
     utils::{Duration, HashMap},
 };
@@ -104,10 +105,7 @@ pub fn animation_state(
     }
 }
 
-pub fn animation_cycling(
-    mut query: Query<(&mut Animation, &mut TextureAtlasSprite)>,
-    time: Res<Time>,
-) {
+pub fn animation_cycling(mut query: Query<(&mut Animation, &mut TextureAtlas)>, time: Res<Time>) {
     for (mut animation, mut atlas) in query.iter_mut() {
         if animation.is_finished() {
             continue;

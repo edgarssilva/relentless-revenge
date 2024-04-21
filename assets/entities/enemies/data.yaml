@@ -1,0 +1,95 @@
+enemies:
+  - name: "Cool Enemy"
+
+    xp: 50
+    damage: 10
+    health: 100
+    speed: 20
+    cooldown: 7000
+
+    texture:
+      path: "monster_flesh_teeth_sheet.png"
+      tile_size: [256, 256]
+      rows: 3
+      columns: 3
+      frames: [0, 1, 2, 3, 4, 5, 6]
+      animation_duration: 250
+
+    scale: [0.25, 0.25]
+    hitbox: [96, 96]
+
+    attack:
+      type: "Ranged"
+      size: [100, 20]
+      velocity: 70
+      duration: 3.0
+      texture:
+        path: "arrow.png"
+        tile_size: [100, 100]
+        rows: 5
+        columns: 6
+        animation_duration: 100
+
+    feet_offset: 24 
+
+
+  - name: "Mushroom"
+
+    xp: 75
+    damage: 5
+    health: 200
+    speed: 15
+    cooldown: 7500
+
+    texture:
+      path: "entities/enemies/Mushroom.png"
+      tile_size: [150, 150]
+      rows: 1
+      columns: 8
+      frames: [0, 1, 2, 3, 4, 5, 6, 7]
+      animation_duration: 100
+
+    scale: [1, 1]
+    hitbox: [25, 40]
+
+    attack:
+      type: "Melee"
+      size: [40, 40]
+      duration: 3.0
+      knockback: 5.0
+
+    feet_offset: 20
+
+
+  - name: "Flying Eye"
+
+    xp: 55
+    damage: 15
+    health: 60
+    speed: 30
+    cooldown: 6500
+
+    texture:
+      path: "entities/enemies/FlyingEye.png"
+      tile_size: [150, 150]
+      rows: 1
+      columns: 8
+      frames: [0, 1, 2, 3, 4, 5, 6]
+      animation_duration: 100
+
+    scale: [1.2, 1.2]
+    hitbox: [24, 24]
+
+    attack:
+      type: "Ranged"
+      size: [100, 20]
+      velocity: 70
+      duration: 3.0
+      texture:
+        path: "arrow.png"
+        tile_size: [100, 100]
+        rows: 5
+        columns: 6
+        animation_duration: 100
+
+    feet_offset: 20 

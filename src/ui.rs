@@ -1,30 +1,38 @@
-use bevy::prelude::{AssetServer, Assets, Res, Window};
+use bevy::prelude::{AssetServer, Res, Window};
 use bevy::prelude::{Query, With};
+use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::{Image, Pos2, Rect, RichText};
 use bevy_egui::{egui, EguiContexts};
 
 use crate::floor::FloorResource;
-use crate::metadata::{GameMeta, LevelProgressionMeta};
 use crate::player::Player;
 use crate::stats::{Damage, Health, Level, MovementSpeed, Revenge, XP};
+use crate::Progression;
 
 pub fn draw_hud(
     mut contexts: EguiContexts,
     asset_server: Res<AssetServer>,
-    query: Query<(&Health, &XP, &MovementSpeed, &Damage, &Level, &Revenge), With<Player>>,
-    game_meta: Res<GameMeta>,
-    progression: Res<Assets<LevelProgressionMeta>>,
+    query: Query<
+        (
+            &Health,
+            &XP,
+            &Progression,
+            &MovementSpeed,
+            &Damage,
+            &Level,
+            &Revenge,
+        ),
+        With<Player>,
+    >,
     floor: Res<FloorResource>,
 ) {
+    //TODO: Check if calling asset_server.load multiple times is bad
     let health_bar_fill = contexts.add_image(asset_server.load("health_bar_fill.png"));
     let health_bar_border = contexts.add_image(asset_server.load("health_bar_border.png"));
 
     let mut size = [63. * 5., 10. * 5.];
 
-    if let (Ok((health, xp, speed, damage, level, revenge)), Some(progression)) = (
-        query.get_single(),
-        progression.get(&game_meta.level_progression),
-    ) {
+    if let Ok((health, xp, progression, speed, damage, level, revenge)) = query.get_single() {
         egui::CentralPanel::default()
             .frame(egui::Frame::none())
             .show(contexts.ctx_mut(), |ui| {
@@ -33,7 +41,7 @@ pub fn draw_hud(
                         min: egui::pos2(16., 8.),
                         max: egui::pos2(16. + size[0], 8. + size[1]),
                     },
-                    Image::new(health_bar_border, size),
+                    Image::new(SizedTexture::new(health_bar_border, size)),
                 );
 
                 let scale = health.current as f32 / health.max as f32;
@@ -44,7 +52,7 @@ pub fn draw_hud(
                         min: egui::pos2(16., 8.),
                         max: egui::pos2(16. + size[0], 8. + size[1]),
                     },
-                    Image::new(health_bar_fill, size).uv(Rect {
+                    Image::new(SizedTexture::new(health_bar_fill, size)).uv(Rect {
                         min: egui::pos2(0., 0.),
                         max: egui::pos2(scale, 1.),
                     }),
@@ -103,9 +111,7 @@ pub fn draw_hud(
 }
 
 pub fn draw_xp_bar(
-    query: Query<(&XP, &Level), With<Player>>,
-    game_meta: Res<GameMeta>,
-    progression: Res<Assets<LevelProgressionMeta>>,
+    query: Query<(&XP, &Progression, &Level), With<Player>>,
     mut contexts: EguiContexts,
     windows: Query<&Window>,
 ) {
@@ -113,10 +119,7 @@ pub fn draw_xp_bar(
 
     let width = windows.single().width();
 
-    if let (Some(progression), Ok((xp, level))) = (
-        progression.get(&game_meta.level_progression),
-        query.get_single(),
-    ) {
+    if let Ok((xp, progression, level)) = query.get_single() {
         let start_xp = match level.level {
             1 => 0,
             _ => progression.xp_to_level_up(level.level - 1),

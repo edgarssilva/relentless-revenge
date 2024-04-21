@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::prelude::{Assets, Time};
+use bevy::prelude::Time;
 use bevy::{
     math::Vec3Swizzles,
     prelude::{
@@ -12,10 +12,10 @@ use bevy::{
 };
 use bevy_rapier2d::prelude::{ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups};
 
-use crate::metadata::{GameMeta, LevelProgressionMeta};
+use crate::game_states::loading::GameAssets;
 use crate::{
-    collision::BodyLayers, enemy::Enemy, floor::EnemyKilledEvent,
-    game_states::loading::TextureAssets, movement::movement::Follow, player::Player,
+    collision::BodyLayers, enemy::Enemy, floor::EnemyKilledEvent, movement::movement::Follow,
+    player::Player,
 };
 
 #[derive(Component)]
@@ -76,8 +76,27 @@ impl XP {
 }
 
 #[derive(Component)]
+pub struct Progression {
+    pub base_xp: u32,
+    pub multiplier: f32,
+}
+
+impl Progression {
+    pub fn new(base_xp: u32, multiplier: f32) -> Self {
+        Self {
+            base_xp,
+            multiplier,
+        }
+    }
+
+    pub fn xp_to_level_up(&self, level: i32) -> u32 {
+        (self.base_xp as f32 * self.multiplier.powi(level)) as u32
+    }
+}
+
+#[derive(Component)]
 pub struct Level {
-    pub level: u32,
+    pub level: i32,
 }
 
 impl Level {
@@ -202,17 +221,17 @@ pub fn drop_xp_system(
     mut commands: Commands,
     mut enemy_kill_reader: EventReader<EnemyKilledEvent>,
     query: Query<(&Transform, &XP), With<Enemy>>,
-    texture_assets: Res<TextureAssets>,
+    game_assets: Res<GameAssets>,
     player_query: Query<Entity, With<Player>>,
 ) {
     if let Ok(player) = player_query.get_single() {
-        for event in enemy_kill_reader.iter() {
+        for event in enemy_kill_reader.read() {
             if let Ok((transform, xp)) = query.get(event.0) {
                 XPDropBundle::spawn_enemy_drop(
                     transform.translation.xy(),
                     xp.amount,
                     &mut commands,
-                    texture_assets.xp_texture.clone(),
+                    game_assets.xp_texture.clone(),
                     player,
                 );
             }
@@ -224,6 +243,7 @@ pub fn level_up(
     mut query: Query<
         (
             &XP,
+            &Progression,
             &mut Health,
             &mut Damage,
             &mut MovementSpeed,
@@ -231,23 +251,18 @@ pub fn level_up(
         ),
         With<Player>,
     >,
-    game_meta: Res<GameMeta>,
-    level_progression: Res<Assets<LevelProgressionMeta>>,
 ) {
-    let progression = level_progression.get(&game_meta.level_progression);
-    if let Some(progression) = progression {
-        for (xp, mut health, mut damage, mut speed, mut level) in query.iter_mut() {
-            if xp.amount >= progression.xp_to_level_up(level.level) {
-                //TODO: Add proper stats progression
-                health.max += (health.max as f32 * progression.xp_multiplier / 100.) as u32;
-                health.current = health.max;
+    for (xp, progression, mut health, mut damage, mut speed, mut level) in query.iter_mut() {
+        if xp.amount >= progression.xp_to_level_up(level.level as i32) {
+            //TODO: Add proper stats progression
+            health.max += (health.max as f32 * progression.multiplier / 100.) as u32;
+            health.current = health.max;
 
-                speed.speed += (speed.speed as f32 * progression.xp_multiplier / 100.) as u32;
+            speed.speed += (speed.speed as f32 * progression.multiplier / 100.) as u32;
 
-                damage.amount += (damage.amount as f32 * progression.xp_multiplier / 50.) as u32;
+            damage.amount += (damage.amount as f32 * progression.multiplier / 50.) as u32;
 
-                level.level += 1;
-            }
+            level.level += 1;
         }
     }
 }

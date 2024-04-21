@@ -1,3 +1,4 @@
+use bevy::math::UVec2;
 use bevy::math::Vec2;
 use bevy::prelude::Commands;
 use bevy::prelude::With;
@@ -5,8 +6,8 @@ use bevy::prelude::{Component, Entity, EventReader, EventWriter, Query, Res};
 use bevy_ecs_tilemap::prelude::*;
 
 use crate::floor::{FloorClearedEvent, FloorResource, GenerateFloorEvent, SpawnFloorEntitiesEvent};
-use crate::game_states::loading::TextureAssets;
 
+use crate::game_states::loading::GameAssets;
 use crate::map::map::generate_map;
 use crate::map::map::Tile;
 use crate::map::map::TileVariant;
@@ -18,7 +19,7 @@ pub struct LevelStartTile;
 #[derive(Component)]
 pub struct LevelPortalTile;
 
-pub fn setup_map(mut commands: Commands, texture_assets: Res<TextureAssets>) {
+pub fn setup_map(mut commands: Commands, game_assets: Res<GameAssets>) {
     let tilemap_size = TilemapSize { x: 160, y: 160 };
     let mut tile_storage = TileStorage::empty(tilemap_size);
     let tilemap_entity = commands.spawn_empty().id();
@@ -39,9 +40,13 @@ pub fn setup_map(mut commands: Commands, texture_assets: Res<TextureAssets>) {
         grid_size,
         size: tilemap_size,
         storage: tile_storage,
-        texture: TilemapTexture::Single(texture_assets.map_texture.clone()),
+        texture: TilemapTexture::Single(game_assets.map_texture.clone()),
         tile_size,
         map_type: TilemapType::Isometric(IsoCoordSystem::Diamond),
+        render_settings: TilemapRenderSettings {
+            render_chunk_size: UVec2::new(32, 1),
+            y_sort: true,
+        },
         ..Default::default()
     });
 }
@@ -52,10 +57,10 @@ pub fn remake_map(
     tile_storage_query: Query<&TileStorage>,
     mut spawn_writer: EventWriter<SpawnFloorEntitiesEvent>,
     mut commands: Commands,
-    level: Res<FloorResource>,
+    floor: Res<FloorResource>,
 ) {
-    if let Some(level_meta) = &level.meta {
-        for _ in event.iter() {
+    if let Some(domain_data) = &floor.domain {
+        for _ in event.read() {
             //Change all tiles to clear texture
             for (entity, mut tile) in tile_query.iter_mut() {
                 tile.0 = 8;
@@ -66,7 +71,7 @@ pub fn remake_map(
             }
 
             if let Ok(tile_storage) = tile_storage_query.get_single() {
-                let map = generate_map(level_meta);
+                let map = generate_map(domain_data);
                 let tiles: Vec<Tile> = map.into();
                 let spawn_event = build_map(tiles, &mut tile_query, tile_storage, &mut commands);
 

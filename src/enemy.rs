@@ -7,7 +7,7 @@ use bevy_rapier2d::prelude::{
 use seldom_state::prelude::StateMachine;
 
 use crate::effects::Shadow;
-use crate::metadata::EnemyMeta;
+use crate::manifest::enemy::EnemyData;
 use crate::sorting::{self, FeetOffset, YSort};
 use crate::{
     animation::Animation,
@@ -27,7 +27,7 @@ impl Plugin for EnemyBehaviourPlugin {
 }
 
 #[derive(Component)]
-pub struct Enemy(pub EnemyMeta);
+pub struct Enemy(String);
 
 #[derive(Bundle)]
 pub struct EnemyBundle {
@@ -49,42 +49,46 @@ pub struct EnemyBundle {
 }
 
 impl EnemyBundle {
-    pub fn new(meta: &EnemyMeta, translation: Vec3) -> Self {
+    pub fn new(data: &EnemyData, translation: Vec3) -> Self {
         Self {
-            enemy: Enemy(meta.clone()),
+            enemy: Enemy(data.name.clone()),
             spritesheet: SpriteSheetBundle {
-                texture_atlas: meta.texture.atlas_handle.clone(),
+                texture: data.texture.clone(),
+                atlas: TextureAtlas {
+                    layout: data.atlas.clone(),
+                    index: 0,
+                },
                 transform: Transform {
                     translation,
-                    scale: meta.scale.extend(1.),
+                    scale: data.scale.extend(1.),
                     ..default()
                 },
                 ..default()
             },
             stats: StatsBundle {
-                health: Health::new(meta.health),
-                damage: Damage::new(meta.damage),
-                speed: MovementSpeed::new(meta.speed),
-                xp: XP::new(meta.xp),
-                cooldown: Cooldown::new(meta.cooldown),
+                health: Health::new(data.health),
+                damage: Damage::new(data.damage),
+                speed: MovementSpeed::new(data.speed),
+                xp: XP::new(data.xp),
+                cooldown: Cooldown::new(data.cooldown),
             },
             damageable: Damageable,
             animation: Animation {
-                frames: meta.texture.frames.clone(),
+                frames: data.frames.clone(),
                 current_frame: 0,
                 timer: Timer::new(
-                    Duration::from_millis(meta.texture.duration),
+                    Duration::from_millis(data.frame_duration),
                     TimerMode::Repeating,
                 ),
             },
             rigid_body: RigidBody::KinematicPositionBased,
-            collider: Collider::cuboid(meta.hitbox.x / 2., meta.hitbox.y / 2.),
+            collider: Collider::cuboid(data.hitbox.x / 2., data.hitbox.y / 2.),
             collision_groups: CollisionGroups::new(BodyLayers::ENEMY, BodyLayers::PLAYER_ATTACK),
             active_events: ActiveEvents::COLLISION_EVENTS,
             active_collision_types: ActiveCollisionTypes::all(),
             state_machine: state_machine::get_state_machine(),
             ysort: YSort(sorting::ENTITIES_LAYER),
-            feet_offset: FeetOffset(meta.feet_offset.unwrap_or_default()),
+            feet_offset: FeetOffset(data.feet_offset.unwrap_or_default()),
             shadow: Shadow,
         }
     }

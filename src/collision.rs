@@ -1,7 +1,8 @@
 use bevy::prelude::{
-    in_state, Color, IntoSystemConfigs, Parent, Res, Text, Text2dBundle, TextAlignment, TextStyle,
-    Timer, Update, Vec2,
+    in_state, Color, IntoSystemConfigs, Parent, Res, Text, Text2dBundle, TextStyle, Timer, Update,
+    Vec2,
 };
+use bevy::text::JustifyText;
 use bevy::time::TimerMode;
 use bevy::{
     math::Vec3Swizzles,
@@ -14,7 +15,7 @@ use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 use std::time::Duration;
 
 use crate::attack::{EntitiesHit, Lifetime};
-use crate::metadata::GameMeta;
+use crate::game_states::loading::GameAssets;
 use crate::stats::Revenge;
 use crate::{
     attack::{Breakable, Damageable, Knockback},
@@ -55,7 +56,7 @@ pub fn xp_system(
     drop_query: Query<&XP, (With<Drop>, Without<Player>)>,
     mut player_query: Query<&mut XP, (With<Player>, Without<Drop>)>,
 ) {
-    events.iter().for_each(|e| {
+    events.read().for_each(|e| {
         let (e1, e2, started, flags) = match e {
             CollisionEvent::Started(e1, e2, flags) => (e1, e2, true, flags),
             CollisionEvent::Stopped(e1, e2, flags) => (e1, e2, false, flags),
@@ -96,9 +97,9 @@ pub fn damageable_collision(
     mut player_query: Query<&mut Revenge, With<Player>>,
     camera_query: Query<Entity, With<Camera>>,
     mut commands: Commands,
-    game_meta: Res<GameMeta>,
+    game_assets: Res<GameAssets>,
 ) {
-    events.iter().for_each(|e| {
+    events.read().for_each(|e| {
         let (e1, e2, started, flags) = match e {
             CollisionEvent::Started(e1, e2, flags) => (e1, e2, true, flags),
             CollisionEvent::Stopped(e1, e2, flags) => (e1, e2, false, flags),
@@ -166,17 +167,16 @@ pub fn damageable_collision(
 
             //TODO: Move this into a separate system using events
             let text_style = TextStyle {
-                font: game_meta.text_font.clone(),
+                font: game_assets.font.clone(),
                 font_size: 12.0,
                 color: Color::WHITE,
             };
-            let text_alignment = TextAlignment::Center;
 
             //Spawn damage indicator text
             commands.spawn((
                 Text2dBundle {
                     text: Text::from_section(format!("-{}", damage.amount), text_style)
-                        .with_alignment(text_alignment),
+                        .with_justify(JustifyText::Center),
                     transform: Transform::from_translation(transform.translation.xy().extend(500.)),
                     ..Default::default()
                 },

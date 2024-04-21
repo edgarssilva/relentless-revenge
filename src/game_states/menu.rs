@@ -1,4 +1,7 @@
-use bevy::prelude::{App, Input, KeyCode, NextState, OnEnter, Plugin, Res, ResMut};
+use bevy::{
+    input::ButtonInput,
+    prelude::{App, KeyCode, NextState, OnEnter, Plugin, Res, ResMut},
+};
 
 use crate::GameState;
 
@@ -12,7 +15,7 @@ impl Plugin for MainMenuPlugin {
 
 fn setup_menu() {}
 
-fn skip_menu(keys: Res<Input<KeyCode>>, mut state: ResMut<NextState<GameState>>) {
+fn skip_menu(keys: Res<ButtonInput<KeyCode>>, mut state: ResMut<NextState<GameState>>) {
     if keys.any_just_pressed([KeyCode::Space, KeyCode::Backslash]) {
         state.set(GameState::InGame);
     }

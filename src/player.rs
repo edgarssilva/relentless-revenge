@@ -1,5 +1,6 @@
 use bevy::prelude::MouseButton;
-use bevy::reflect::TypePath;
+use bevy::reflect::Reflect;
+use bevy::sprite::TextureAtlas;
 use bevy::{
     prelude::{default, Bundle, Component, KeyCode, Transform, Vec3},
     sprite::SpriteSheetBundle,
@@ -14,7 +15,9 @@ use leafwing_input_manager::{
 };
 
 use crate::effects::Shadow;
+use crate::manifest::player::PlayerData;
 use crate::sorting::{self, FeetOffset, YSort};
+use crate::Progression;
 use crate::{
     animation::AnimationState,
     attack::Damageable,
@@ -26,7 +29,6 @@ use crate::{
     PLAYER_Z,
 };
 
-use crate::metadata::PlayerMeta;
 use crate::stats::{Level, Revenge};
 use leafwing_input_manager::Actionlike;
 
@@ -49,6 +51,7 @@ pub struct PlayerBundle {
     level: Level,
     revenge: Revenge,
     stats: StatsBundle,
+    progression: Progression,
     damageable: Damageable,
     input: InputManagerBundle<PlayerActions>,
     ysort: YSort,
@@ -57,7 +60,7 @@ pub struct PlayerBundle {
 }
 
 impl PlayerBundle {
-    pub fn new(meta: &PlayerMeta) -> Self {
+    pub fn new(data: &PlayerData) -> Self {
         let mut player_animations = HashMap::new();
 
         let mut idle_animations = HashMap::new();
@@ -103,12 +106,16 @@ impl PlayerBundle {
         player_animations.insert(State::Attacking(2), attack_animations_2);
         player_animations.insert(State::Dashing, dash_animations);
 
-        let feet_offset = meta.feet_offset.unwrap_or_default();
+        let feet_offset = data.feet_offset.unwrap_or_default();
 
         PlayerBundle {
             player: Player,
             sprite_bundle: SpriteSheetBundle {
-                texture_atlas: meta.texture.atlas_handle.clone(),
+                texture: data.texture.clone(),
+                atlas: TextureAtlas {
+                    layout: data.atlas.clone(),
+                    index: 0,
+                },
                 transform: Transform {
                     translation: Vec3::new(0., 0., PLAYER_Z),
                     scale: Vec3::new(0.75, 0.75, 0.75),
@@ -117,9 +124,9 @@ impl PlayerBundle {
                 ..default()
             },
             controlled: Controlled { move_to: None },
-            collider: Collider::cuboid(meta.hitbox.x / 2., meta.hitbox.y / 2.),
+            collider: Collider::cuboid(data.hitbox.x / 2., data.hitbox.y / 2.),
             rigid_body: RigidBody::KinematicPositionBased,
-            animation_state: AnimationState::new(player_animations, meta.texture.duration, true),
+            animation_state: AnimationState::new(player_animations, data.frame_duration, true),
             collision_events: ActiveEvents::COLLISION_EVENTS,
             collision_types: ActiveCollisionTypes::all(),
             collision_groups: CollisionGroups::new(
@@ -129,12 +136,13 @@ impl PlayerBundle {
             direction: Direction::SOUTH,
             state: State::Idle,
             stats: StatsBundle {
-                health: Health::new(meta.health),
-                damage: Damage::new(meta.damage),
-                speed: MovementSpeed::new(meta.speed),
-                xp: XP::new(meta.xp),
-                cooldown: Cooldown::new(meta.cooldown),
+                health: Health::new(data.health),
+                damage: Damage::new(data.damage),
+                speed: MovementSpeed::new(data.speed),
+                xp: XP::new(data.xp),
+                cooldown: Cooldown::new(data.cooldown),
             },
+            progression: Progression::new(data.base_xp, data.xp_multiplier),
             level: Level::default(),
             revenge: Revenge {
                 amount: 0.,
@@ -156,23 +164,20 @@ impl PlayerBundle {
 
     fn default_keybindings() -> InputMap<PlayerActions> {
         //TODO: Check best keybindings
-        let mut input_map = InputMap::default();
-
         use PlayerActions::*;
-        input_map.insert(KeyCode::W, MoveUp);
-        input_map.insert(KeyCode::S, MoveDown);
-        input_map.insert(KeyCode::A, MoveLeft);
-        input_map.insert(KeyCode::D, MoveRight);
-
-        input_map.insert(KeyCode::J, Attack);
-        input_map.insert(MouseButton::Left, Attack);
-        input_map.insert(KeyCode::Space, Dash);
-
-        input_map
+        InputMap::default()
+            .insert(PlayerActions::MoveUp, KeyCode::KeyW)
+            .insert(MoveDown, KeyCode::KeyS)
+            .insert(MoveLeft, KeyCode::KeyA)
+            .insert(MoveRight, KeyCode::KeyD)
+            .insert(Attack, KeyCode::KeyJ)
+            .insert(Attack, MouseButton::Left)
+            .insert(Dash, KeyCode::Space)
+            .build()
     }
 }
 
-#[derive(Actionlike, PartialEq, TypePath, Eq, Clone, Copy, Hash, Debug)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 pub enum PlayerActions {
     MoveUp,
     MoveDown,

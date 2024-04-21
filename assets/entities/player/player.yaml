@@ -1,18 +1,20 @@
 size: [ 24, 32 ]
 hitbox: [ 24, 32 ]
 
-
 xp: 0
 speed: 75
 health: 250
 damage: 55
 cooldown: 400
 
+base_xp: 100
+xp_multiplier: 1.5
+
 texture:
-  path: "GUMDROP.E64.R.PNG"
+  path: "entities/player/GUMDROP.E64.R.PNG"
   tile_size: [ 64, 64 ]
   columns: 10
   rows: 48
-  duration: 69
+  animation_duration: 69
 
-feet_offset: 16
+feet_offset: 14
