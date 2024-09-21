@@ -1,7 +1,0 @@
-name: Player
-
-schematics:
-  player::Player:
-
-  bevy_sprite::bundle::SpriteSheetBundle:
-    - sprite:

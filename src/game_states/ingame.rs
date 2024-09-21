@@ -13,7 +13,8 @@ use crate::game_states::ingame::InGameSet::{Normal, Post};
 use crate::manifest::player::PlayerManifest;
 use crate::sorting::ysort;
 use crate::stats::{level_up, revenge_mode};
-use crate::ui::{draw_hud, draw_revenge_bar, draw_xp_bar};
+use crate::ui::boss::draw_domain_name;
+use crate::ui::player::{draw_hud, draw_revenge_bar, draw_xp_bar};
 use crate::{
     animation::AnimationPlugin,
     attack::{lifetimes, projectile_break, tick_cooldown},
@@ -60,10 +61,13 @@ impl Plugin for InGamePlugin {
             //TODO: Check system ordering and optimize it
             .add_systems(
                 Update,
+                (draw_hud, draw_domain_name, draw_xp_bar, draw_revenge_bar)
+                    .in_set(Normal)
+                    .run_if(in_state(GameState::InGame)),
+            )
+            .add_systems(
+                Update,
                 (
-                    draw_hud,
-                    draw_xp_bar,
-                    draw_revenge_bar,
                     helper_camera_controller,
                     move_player,
                     dash_ability,

@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
+use std::time::Duration;
 
 use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::input::ButtonInput;
 use bevy::prelude::{
     in_state, Camera, Event, IntoSystemConfigs, Query, Transform, Update, With, Without,
 };
+use bevy::time::Timer;
 use bevy::{
     math::Vec2,
     prelude::{
@@ -22,6 +24,7 @@ use crate::manifest::floor::{DomainData, DomainManifest};
 use crate::map::generation::open_level_portal;
 use crate::map::walkable::travel_through_portal;
 use crate::player::Player;
+use crate::ui::boss::DomainName;
 use crate::{enemy::EnemyBundle, GameState};
 
 #[derive(Default, Resource)]
@@ -64,6 +67,7 @@ impl Plugin for FloorPlugin {
             .add_systems(
                 Update,
                 (
+                    new_domain_trigger,
                     move_player,
                     enemy_killed,
                     spawn_enemies,
@@ -84,6 +88,27 @@ fn keymap_generate(
     if keys.just_pressed(KeyCode::ControlLeft) {
         writer.send(TriggerNextFloorEvent);
     }
+}
+
+fn new_domain_trigger(
+    mut commands: Commands,
+    mut event: EventReader<SpawnFloorEntitiesEvent>,
+    floor: Res<FloorResource>,
+) {
+    if event.is_empty() {
+        return;
+    }
+
+    if let Some(domain) = &floor.domain {
+        if floor.floor == domain.floors.0 {
+            commands.spawn(DomainName(
+                domain.name.clone(),
+                Timer::new(Duration::from_secs(3), bevy::time::TimerMode::Once),
+            ));
+        }
+    }
+
+    event.clear();
 }
 
 fn generate_floor(

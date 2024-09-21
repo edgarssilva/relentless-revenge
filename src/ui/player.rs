@@ -1,5 +1,3 @@
-mod boss;
-
 use bevy::prelude::{AssetServer, Res, Window};
 use bevy::prelude::{Query, With};
 use bevy_egui::egui::load::SizedTexture;
