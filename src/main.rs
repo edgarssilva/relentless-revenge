@@ -40,7 +40,7 @@ enum GameState {
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
-        .insert_resource(ClearColor(Color::rgb(20. / 255., 0. / 255., 25. / 255.)))
+        .insert_resource(ClearColor(Color::srgb(20. / 255., 0. / 255., 25. / 255.)))
         .insert_resource(KeyMaps::default())
         .init_state::<GameState>()
         .add_plugins(LoadingPlugin)

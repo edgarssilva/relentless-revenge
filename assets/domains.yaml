@@ -10,6 +10,7 @@ domains:
       - [4, "Cool Enemy"]
       - [1, "Flying Eye"]
 
+
   - name: "Dungeon"
     floors: [6, 20]
 

@@ -1,4 +1,5 @@
-mod boss;
+pub mod boss;
+pub mod player;
 
 use bevy::prelude::{AssetServer, Res, Window};
 use bevy::prelude::{Query, With};

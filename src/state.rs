@@ -1,6 +1,7 @@
 use bevy::prelude::Component;
+use serde::{Deserialize, Serialize};
 
-#[derive(Component, PartialEq, Eq, Hash, Clone, Copy, Debug)]
+#[derive(Component, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum State {
     Idle,
     Walking,

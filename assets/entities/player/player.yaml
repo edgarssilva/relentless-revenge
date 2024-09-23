@@ -1,5 +1,5 @@
 size: [ 24, 32 ]
-hitbox: [ 24, 32 ]
+hitbox: [ 18, 28 ]
 
 xp: 0
 speed: 75
@@ -15,6 +15,53 @@ texture:
   tile_size: [ 64, 64 ]
   columns: 10
   rows: 48
-  animation_duration: 69
 
 feet_offset: 14
+
+animations:
+  - state: Idle 
+    duration: 69
+    directions: 
+       SOUTH: [0, 1, 2, 3, 4, 5, 6, 7]
+       EAST: [10, 11, 12, 13, 14, 15, 16, 17]
+       NORTH: [20, 21, 22, 23, 24, 25, 26, 27]
+       WEST: [30, 31, 32, 33, 34, 35, 36, 37]
+
+  - state: Walking 
+    duration: 69
+    directions: 
+       SOUTH: [40, 41, 42, 43, 44, 45, 46, 47]
+       EAST: [50, 51, 52, 53, 54, 55, 56, 57]
+       NORTH: [60, 61, 62, 63, 64, 65, 66, 67]
+       WEST: [70, 71, 72, 73, 74, 75, 76, 77]
+
+  - state: Dashing 
+    duration: 69
+    directions: 
+      SOUTH: [80, 81, 82, 83, 84, 85, 86, 87]
+      EAST: [90, 91, 92, 93, 94, 95, 96, 97]
+      NORTH: [100, 101, 102, 103, 104, 105, 106, 107]
+      WEST: [110, 111, 112, 113, 114, 115, 116, 117]
+
+  - state: !Attacking 0
+    duration: 69
+    directions:
+      SOUTH: [120, 121, 122, 123, 124, 125]
+      EAST: [130, 131, 132, 133, 134, 135]
+      NORTH: [140, 141, 142, 143, 144, 145]
+      WEST: [150, 151, 152, 153, 154, 155]
+
+  - state: !Attacking 1
+    duration: 69
+    directions:
+      SOUTH: [160, 161, 162, 163, 164, 165]
+      EAST: [170, 171, 172, 173, 174, 175]
+      NORTH: [180, 181, 182, 183, 184, 185]
+      WEST: [190, 191, 192, 193, 194, 195]
+  - state: !Attacking 2
+    duration: 69
+    directions:
+      SOUTH: [200, 201, 202, 203, 204, 205, 206, 207, 208, 209]
+      EAST: [210, 211, 212, 213, 214, 215, 216, 217, 218, 219]
+      NORTH: [220, 221, 222, 223, 224, 225, 226, 227, 228, 229]
+      WEST: [230, 231, 232, 233, 234, 235, 236, 237, 238, 239]

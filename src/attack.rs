@@ -1,16 +1,14 @@
 use bevy::prelude::{Event, EventReader};
 use bevy::reflect::Reflect;
 use bevy::render::texture::Image;
-use bevy::sprite::TextureAtlasLayout;
+use bevy::sprite::{SpriteBundle, TextureAtlas, TextureAtlasLayout};
 use bevy::time::TimerMode;
 use bevy::{
     prelude::{
         default, BuildChildren, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle,
-        Quat, Query, Res, Transform, Vec2, Vec3,
+        Quat, Query, Res, Transform, TransformBundle, Vec2, Vec3,
     },
-    sprite::{SpriteSheetBundle, TextureAtlas},
     time::{Time, Timer},
-    transform::TransformBundle,
 };
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, Sensor,
@@ -141,7 +139,8 @@ impl MeleeAttackBundle {
 #[derive(Bundle)]
 pub struct ProjectileBundle {
     attack: AttackBundle,
-    spritesheet_bundle: SpriteSheetBundle,
+    texture_atlas: TextureAtlas,
+    sprite_bundle: SpriteBundle,
     velocity: Velocity,
     breakable: Breakable,
 }
@@ -160,12 +159,12 @@ impl ProjectileBundle {
     ) -> Self {
         Self {
             attack: AttackBundle::new(size, duration, damage, is_player_attack),
-            spritesheet_bundle: SpriteSheetBundle {
+            texture_atlas: TextureAtlas {
+                layout: atlas,
+                index: 0,
+            },
+            sprite_bundle: SpriteBundle {
                 texture: texture.clone(),
-                atlas: TextureAtlas {
-                    layout: atlas,
-                    index: 0,
-                },
                 transform: Transform {
                     translation: position,
                     rotation: Quat::from_rotation_z(rotation),

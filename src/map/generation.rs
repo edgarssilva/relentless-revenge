@@ -1,8 +1,4 @@
-use bevy::math::UVec2;
-use bevy::math::Vec2;
-use bevy::prelude::Commands;
-use bevy::prelude::With;
-use bevy::prelude::{Component, Entity, EventReader, EventWriter, Query, Res};
+use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
 use crate::floor::{FloorClearedEvent, FloorResource, GenerateFloorEvent, SpawnFloorEntitiesEvent};

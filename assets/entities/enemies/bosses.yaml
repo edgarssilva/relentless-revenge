@@ -1,0 +1,40 @@
+bosses:
+  - name: "Demon Slime"
+
+    xp: 1500
+    damage: 50
+    health: 100
+    speed: 20
+
+    scale: [0.25, 0.25]
+    hitbox: [96, 96]
+
+    feet_offset: 24 
+
+    texture:
+      path: "entities/enemies/demon_slime.png"
+      tile_size: [6336, 800]
+      rows: 5
+      columns: 22
+
+    animations:
+      - name: "idle"
+        frames: [0, 5]
+        duration: 250
+
+      - name: "jump"
+        frames: [22, 33]
+        duration: 250
+
+      - name: "attack"
+        frames: [44, 58]
+        duration: 250
+
+      - name: "hit"
+        frames: [66, 70]
+        duration: 250
+
+      - name: "death"
+        frames: [88, 109]
+        duration: 250
+      

@@ -1,6 +1,7 @@
 use bevy::{math::Vec2, prelude::Component};
+use serde::{Deserialize, Serialize};
 
-#[derive(Component, PartialEq, Eq, Hash, Clone, Copy, Debug)]
+#[derive(Component, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum Direction {
     NORTH,
     SOUTH,

@@ -9,13 +9,19 @@ use bevy::{
     sprite::TextureAtlasLayout,
     utils::HashMap,
 };
+use bevy_spritesheet_animation::prelude::AnimationId;
 use leafwing_manifest::{
     identifier::Id,
     manifest::{Manifest, ManifestFormat},
 };
 use serde::{Deserialize, Serialize};
 
-use super::{load_attack_data, load_texture_data, AttackData, RawAttackData, TextureData};
+use crate::animation::Animations;
+
+use super::{
+    load_animations, load_attack_data, load_texture_data, AttackData, RawAnimationData,
+    RawAttackData, RawTextureData,
+};
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct RawEnemyData {
@@ -25,11 +31,12 @@ pub struct RawEnemyData {
     speed: u32,
     cooldown: u32,
     xp: u32,
-    texture: TextureData,
     hitbox: Vec2,
     scale: Vec2,
-    attack: RawAttackData,
     feet_offset: Option<f32>,
+    attack: RawAttackData,
+    texture: RawTextureData,
+    animations: Vec<RawAnimationData>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -40,14 +47,13 @@ pub struct EnemyData {
     pub speed: u32,
     pub cooldown: u32,
     pub xp: u32,
-    pub texture: Handle<Image>,
-    pub atlas: Handle<TextureAtlasLayout>,
     pub hitbox: Vec2,
     pub scale: Vec2,
-    pub frames: Vec<usize>,
-    pub frame_duration: u64,
     pub attack: AttackData,
     pub feet_offset: Option<f32>,
+    pub texture: Handle<Image>,
+    pub atlas: Handle<TextureAtlasLayout>,
+    pub animations: Animations,
 }
 
 #[derive(Debug, Asset, TypePath, Serialize, Deserialize, PartialEq)]
@@ -79,12 +85,6 @@ impl Manifest for EnemyManifest {
             .map(|raw_enemy| {
                 let (texture, atlas) = load_texture_data(&raw_enemy.texture, world);
 
-                let frames = if raw_enemy.texture.frames.is_empty() {
-                    (0..raw_enemy.texture.columns * raw_enemy.texture.rows).collect()
-                } else {
-                    raw_enemy.texture.frames.clone()
-                };
-
                 let enemy_data = EnemyData {
                     name: raw_enemy.name.clone(),
                     health: raw_enemy.health,
@@ -94,12 +94,11 @@ impl Manifest for EnemyManifest {
                     xp: raw_enemy.xp,
                     hitbox: raw_enemy.hitbox,
                     scale: raw_enemy.scale,
-                    frames,
                     feet_offset: raw_enemy.feet_offset,
                     texture,
                     atlas,
                     attack: load_attack_data(&raw_enemy.attack, world),
-                    frame_duration: raw_enemy.texture.animation_duration,
+                    animations: load_animations(&raw_enemy.name, &raw_enemy.animations, world),
                 };
 
                 (Id::from_name(raw_enemy.name.as_str()), enemy_data)

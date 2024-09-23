@@ -4,13 +4,14 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
 };
+use bevy_spritesheet_animation::prelude::SpritesheetAnimation;
 use seldom_state::prelude::StateMachine;
 
+use crate::animation::Animations;
 use crate::effects::Shadow;
 use crate::manifest::enemy::EnemyData;
 use crate::sorting::{self, FeetOffset, YSort};
 use crate::{
-    animation::Animation,
     attack::Damageable,
     collision::BodyLayers,
     stats::{Cooldown, Damage, Health, MovementSpeed, StatsBundle, XP},
@@ -32,10 +33,12 @@ pub struct Enemy(String);
 #[derive(Bundle)]
 pub struct EnemyBundle {
     enemy: Enemy,
-    pub spritesheet: SpriteSheetBundle,
+    pub sprite: SpriteBundle,
+    pub atlas: TextureAtlas,
     pub stats: StatsBundle,
     pub damageable: Damageable,
-    pub animation: Animation,
+    pub animations: Animations,
+    pub animation: SpritesheetAnimation,
     pub rigid_body: RigidBody,
     pub collider: Collider,
     pub collision_groups: CollisionGroups,
@@ -52,12 +55,12 @@ impl EnemyBundle {
     pub fn new(data: &EnemyData, translation: Vec3) -> Self {
         Self {
             enemy: Enemy(data.name.clone()),
-            spritesheet: SpriteSheetBundle {
+            atlas: TextureAtlas {
+                layout: data.atlas.clone(),
+                index: 0,
+            },
+            sprite: SpriteBundle {
                 texture: data.texture.clone(),
-                atlas: TextureAtlas {
-                    layout: data.atlas.clone(),
-                    index: 0,
-                },
                 transform: Transform {
                     translation,
                     scale: data.scale.extend(1.),
@@ -73,14 +76,15 @@ impl EnemyBundle {
                 cooldown: Cooldown::new(data.cooldown),
             },
             damageable: Damageable,
-            animation: Animation {
-                frames: data.frames.clone(),
-                current_frame: 0,
-                timer: Timer::new(
-                    Duration::from_millis(data.frame_duration),
-                    TimerMode::Repeating,
-                ),
-            },
+            animation: SpritesheetAnimation::from_id(
+                *data
+                    .animations
+                    .0
+                    .values()
+                    .next()
+                    .expect(format!("No animations for {}", data.name).as_str()),
+            ),
+            animations: data.animations.clone(),
             rigid_body: RigidBody::KinematicPositionBased,
             collider: Collider::cuboid(data.hitbox.x / 2., data.hitbox.y / 2.),
             collision_groups: CollisionGroups::new(BodyLayers::ENEMY, BodyLayers::PLAYER_ATTACK),

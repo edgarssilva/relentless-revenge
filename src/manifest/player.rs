@@ -8,10 +8,15 @@ use bevy::{
     render::texture::Image,
     sprite::TextureAtlasLayout,
 };
+
 use leafwing_manifest::manifest::{Manifest, ManifestFormat};
 use serde::{Deserialize, Serialize};
 
-use super::{load_texture_data, TextureData};
+use crate::animation::DirectionalAnimations;
+
+use super::{
+    load_directional_animations, load_texture_data, RawDirectionalAnimationData, RawTextureData,
+};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct RawPlayerData {
@@ -23,9 +28,10 @@ pub struct RawPlayerData {
     xp: u32,
     base_xp: u32,
     xp_multiplier: f32,
-    texture: TextureData,
     hitbox: Vec2,
     feet_offset: Option<f32>,
+    texture: RawTextureData,
+    animations: Vec<RawDirectionalAnimationData>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -38,12 +44,11 @@ pub struct PlayerData {
     pub xp: u32,
     pub base_xp: u32,
     pub xp_multiplier: f32,
-    pub texture: Handle<Image>,
-    pub atlas: Handle<TextureAtlasLayout>,
-    pub frame_duration: u64,
     pub hitbox: Vec2,
     pub feet_offset: Option<f32>,
-    //TODO: Add animation data
+    pub texture: Handle<Image>,
+    pub atlas: Handle<TextureAtlasLayout>,
+    pub animations: DirectionalAnimations,
 }
 
 #[derive(Debug, Asset, TypePath, Serialize, Deserialize, PartialEq)]
@@ -83,10 +88,10 @@ impl Manifest for PlayerManifest {
             base_xp: raw_data.base_xp,
             xp_multiplier: raw_data.xp_multiplier,
             hitbox: raw_data.hitbox,
+            feet_offset: raw_data.feet_offset,
             texture,
             atlas,
-            frame_duration: raw_data.texture.animation_duration,
-            feet_offset: raw_data.feet_offset,
+            animations: load_directional_animations(&raw_data.animations, world),
         };
 
         Ok(PlayerManifest { player_data })

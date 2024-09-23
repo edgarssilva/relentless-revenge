@@ -3,18 +3,32 @@ use std::path::PathBuf;
 use bevy::{
     app::Plugin,
     asset::{AssetServer, Assets, Handle},
-    math::Vec2,
+    math::{UVec2, Vec2},
+    prelude::AppExtStates,
     render::texture::Image,
     sprite::TextureAtlasLayout,
+    utils::HashMap,
 };
+use bevy_spritesheet_animation::{
+    clip::Clip,
+    prelude::{Animation, AnimationDuration, AnimationId, AnimationLibrary},
+};
+use boss::BossManifest;
 use leafwing_manifest::{
     asset_state::SimpleAssetState,
     plugin::{ManifestPlugin, RegisterManifest},
 };
 use serde::{Deserialize, Serialize};
 
+use crate::{
+    animation::{Animations, DirectionalAnimations},
+    movement::direction::Direction,
+    state::State,
+};
+
 use self::{enemy::EnemyManifest, floor::DomainManifest, player::PlayerManifest};
 
+pub mod boss;
 pub mod enemy;
 pub mod floor;
 pub mod player;
@@ -27,21 +41,19 @@ impl Plugin for DataManifestPlugin {
             .add_plugins(ManifestPlugin::<SimpleAssetState>::default())
             .register_manifest::<EnemyManifest>("entities/enemies/data.yaml")
             .register_manifest::<PlayerManifest>("entities/player/player.yaml")
-            .register_manifest::<DomainManifest>("domains.yaml");
+            .register_manifest::<DomainManifest>("domains.yaml")
+            .register_manifest::<BossManifest>("entities/enemies/bosses.yaml");
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub struct TextureData {
+pub struct RawTextureData {
     pub path: PathBuf,
-    pub tile_size: Vec2,
-    pub columns: usize,
-    pub rows: usize,
-    pub padding: Option<Vec2>,
-    pub offset: Option<Vec2>,
-    #[serde(default)]
-    pub frames: Vec<usize>,
-    pub animation_duration: u64,
+    pub tile_size: UVec2,
+    pub columns: u32,
+    pub rows: u32,
+    pub padding: Option<UVec2>,
+    pub offset: Option<UVec2>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -56,7 +68,7 @@ pub enum RawAttackData {
         size: Vec2,
         duration: f32,
         velocity: f32,
-        texture: TextureData,
+        texture: RawTextureData,
     },
 }
 
@@ -77,7 +89,7 @@ pub enum AttackData {
 }
 
 pub fn load_texture_data(
-    data: &TextureData,
+    data: &RawTextureData,
     world: &mut bevy::prelude::World,
 ) -> (Handle<Image>, Handle<TextureAtlasLayout>) {
     let asset_server = world.resource::<AssetServer>();
@@ -123,4 +135,77 @@ pub fn load_attack_data(data: &RawAttackData, world: &mut bevy::prelude::World) 
             knockback: *raw_knockback,
         },
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct RawAnimationData {
+    pub name: String,
+    pub frames: Vec<usize>,
+    pub duration: u32,
+}
+
+pub fn load_animations(
+    name: &str,
+    data: &Vec<RawAnimationData>,
+    world: &mut bevy::prelude::World,
+) -> Animations {
+    let mut library = world
+        .get_resource_mut::<AnimationLibrary>()
+        .expect("No AnimationLibrary found!");
+
+    Animations(
+        data.iter()
+            .map(|raw| {
+                let clip_id = library.register_clip(
+                    Clip::from_frames(raw.frames.clone())
+                        .with_duration(AnimationDuration::PerFrame(raw.duration)),
+                );
+                let animation_id = library.register_animation(Animation::from_clip(clip_id));
+
+                library
+                    .name_animation(animation_id, format!("{}_{}", name, raw.name))
+                    .expect(format!("Failed to name animation for {}_{}", name, raw.name).as_str());
+
+                (raw.name.clone(), animation_id)
+            })
+            .collect(),
+    )
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct RawDirectionalAnimationData {
+    pub duration: u32,
+    pub state: State,
+    pub directions: HashMap<Direction, Vec<usize>>,
+}
+
+pub fn load_directional_animations(
+    data: &Vec<RawDirectionalAnimationData>,
+    world: &mut bevy::prelude::World,
+) -> DirectionalAnimations {
+    let mut library = world
+        .get_resource_mut::<AnimationLibrary>()
+        .expect("No AnimationLibrary found!");
+
+    let mut states: HashMap<State, HashMap<Direction, AnimationId>> = HashMap::new();
+
+    for raw in data {
+        states.insert(
+            raw.state,
+            raw.directions
+                .iter()
+                .map(|(dir, frames)| {
+                    let clip_id = library.register_clip(
+                        Clip::from_frames(frames.clone())
+                            .with_duration(AnimationDuration::PerFrame(raw.duration)),
+                    );
+                    let animation_id = library.register_animation(Animation::from_clip(clip_id));
+
+                    (*dir, animation_id)
+                })
+                .collect(),
+        );
+    }
+
+    DirectionalAnimations(states)
 }
