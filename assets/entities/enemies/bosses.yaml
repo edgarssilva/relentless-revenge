@@ -6,20 +6,21 @@ bosses:
     health: 100
     speed: 20
 
-    scale: [0.25, 0.25]
+    scale: [1, 1]
     hitbox: [96, 96]
 
-    feet_offset: 24 
+    feet_offset: 48
 
     texture:
       path: "entities/enemies/demon_slime.png"
-      tile_size: [6336, 800]
+      tile_size: [288, 160]
       rows: 5
       columns: 22
 
     animations:
       - name: "idle"
-        frames: [0, 5]
+        #frames: [0, 1, 2, 3, 4, 5]
+        frames: [22, 23, 24, 25,26,27,28,29,30,31]
         duration: 250
 
       - name: "jump"

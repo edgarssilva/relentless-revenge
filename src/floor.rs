@@ -4,7 +4,7 @@ use std::time::Duration;
 use bevy::hierarchy::DespawnRecursiveExt;
 use bevy::input::ButtonInput;
 use bevy::prelude::{
-    in_state, Camera, Event, IntoSystemConfigs, Query, Transform, Update, With, Without,
+    in_state, Camera, Event, IntoSystemConfigs, Query, Transform, Update, With, Without, World,
 };
 use bevy::time::Timer;
 use bevy::{
@@ -13,12 +13,14 @@ use bevy::{
         App, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res, ResMut, Resource,
     },
 };
-use leafwing_manifest::identifier::Id;
+use leafwing_manifest::manifest::Manifest;
 use noisy_bevy::simplex_noise_2d;
 use turborand::rng::Rng;
 use turborand::TurboRand;
 
+use crate::boss::BossBundle;
 use crate::enemy::state_machine::Idle;
+use crate::manifest::boss::BossManifest;
 use crate::manifest::enemy::EnemyManifest;
 use crate::manifest::floor::{DomainData, DomainManifest};
 use crate::map::generation::open_level_portal;
@@ -32,6 +34,7 @@ pub struct FloorResource {
     pub floor: u32,
     pub domain: Option<DomainData>,
     pub enemies: Vec<Entity>,
+    pub boss: Option<Entity>,
 }
 
 //Floor Generation Events
@@ -42,6 +45,7 @@ pub struct GenerateFloorEvent;
 pub struct SpawnFloorEntitiesEvent {
     pub spawnable_pos: Vec<Vec2>,
     pub player_pos: Vec2,
+    pub portal_pos: Vec2,
 }
 
 //Floor Clearing Events
@@ -71,6 +75,7 @@ impl Plugin for FloorPlugin {
                     move_player,
                     enemy_killed,
                     spawn_enemies,
+                    spawn_boss,
                     generate_floor,
                     keymap_generate,
                     open_level_portal,
@@ -92,7 +97,7 @@ fn keymap_generate(
 
 fn new_domain_trigger(
     mut commands: Commands,
-    mut event: EventReader<SpawnFloorEntitiesEvent>,
+    mut event: EventReader<GenerateFloorEvent>,
     floor: Res<FloorResource>,
 ) {
     if event.is_empty() {
@@ -160,14 +165,42 @@ fn move_player(
     }
 }
 
-fn spawn_enemies(
-    mut event: EventReader<SpawnFloorEntitiesEvent>,
+fn spawn_boss(
     mut commands: Commands,
-    enemy_manifest: Res<EnemyManifest>,
+    boss_manifest: Res<BossManifest>,
     mut floor: ResMut<FloorResource>,
+    mut event: EventReader<SpawnFloorEntitiesEvent>,
 ) {
     for e in event.read() {
         if let Some(domain) = &floor.domain {
+            if domain.floors.1 != floor.floor {
+                return;
+            }
+
+            if let Some(boss) = boss_manifest.get_by_name(domain.boss.clone()) {
+                floor.boss = Some(
+                    commands
+                        .spawn(BossBundle::new(boss, e.portal_pos.extend(38.0)))
+                        .insert(Idle)
+                        .id(),
+                );
+            }
+        }
+    }
+}
+
+fn spawn_enemies(
+    mut commands: Commands,
+    enemy_manifest: Res<EnemyManifest>,
+    mut floor: ResMut<FloorResource>,
+    mut event: EventReader<SpawnFloorEntitiesEvent>,
+) {
+    for e in event.read() {
+        if let Some(domain) = &floor.domain {
+            if domain.floors.1 == floor.floor {
+                return;
+            }
+
             let rand = Rng::new();
             let spawnable_pos = &e.spawnable_pos;
 
@@ -190,9 +223,7 @@ fn spawn_enemies(
                             continue;
                         }
 
-                        if let Some(enemy_data) =
-                            enemy_manifest.enemies.get(&Id::from_name(enemy.1.as_str()))
-                        {
+                        if let Some(enemy_data) = enemy_manifest.get_by_name(enemy.1.clone()) {
                             floor.enemies.push(
                                 commands
                                     .spawn(EnemyBundle::new(enemy_data, pos.1.extend(38.0)))

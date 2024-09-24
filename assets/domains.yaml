@@ -6,6 +6,8 @@ domains:
     room_size: [3, 4]
     enemies_count: [2, 6]
 
+    boss: "Demon Slime"
+
     enemies:
       - [4, "Cool Enemy"]
       - [1, "Flying Eye"]
@@ -17,6 +19,8 @@ domains:
     rooms: [3, 6]
     room_size: [4, 6]
     enemies_count: [6, 24]
+
+    boss: "Demon Slime"
 
     enemies:
       - [2, "Cool Enemy"]

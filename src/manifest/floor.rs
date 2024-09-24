@@ -13,6 +13,7 @@ pub struct DomainData {
     pub floors: (u32, u32),
     pub rooms: (u32, u32),
     pub room_size: (u32, u32),
+    pub boss: String, //Boss name
     pub enemies_count: (u32, u32),
     pub enemies: Vec<(u32, String)>, // [(Spawn Weight, Enemy Name)]
 }

@@ -85,6 +85,7 @@ fn build_map(
 ) -> SpawnFloorEntitiesEvent {
     let mut player_pos = Vec2::ZERO;
     let mut spawnable_pos = Vec::new();
+    let mut portal_pos = Vec2::ZERO;
 
     for tile in &tiles {
         let tile_pos = TilePos {
@@ -123,6 +124,7 @@ fn build_map(
                     player_pos = world_pos;
                 } else if tile.last_room {
                     ec.insert(LevelPortalTile);
+                    portal_pos = world_pos;
                 }
             }
         }
@@ -131,6 +133,7 @@ fn build_map(
     SpawnFloorEntitiesEvent {
         spawnable_pos,
         player_pos,
+        portal_pos,
     }
 }
 
