@@ -3,11 +3,8 @@ use std::time::Duration;
 use bevy::ecs::query::Without;
 use bevy::ecs::system::In;
 use bevy::math::{Vec2, Vec3Swizzles};
-use bevy::prelude::{
-    in_state, App, Commands, Component, Entity, EventWriter, IntoSystemConfigs, Local, Query,
-    Reflect, Res, Time, Timer, TimerMode, Transform, Update, With,
-};
-use bevy::utils::HashMap;
+use bevy::platform::collections::HashMap;
+use bevy::prelude::*;
 use leafwing_manifest::identifier::Id;
 use seldom_state::prelude::*;
 use turborand::rng::Rng;
@@ -23,7 +20,7 @@ use crate::stats::{Cooldown, Damage};
 use crate::GameState;
 
 pub(crate) fn register(app: &mut App) {
-    app.add_plugins(StateMachinePlugin) //TODO: Move somewhere else
+    app.add_plugins(StateMachinePlugin::default()) //TODO: Move somewhere else
         .add_systems(
             Update,
             (idle, wander, follow_player, attack_player).run_if(in_state(GameState::InGame)),
@@ -41,7 +38,7 @@ pub(crate) fn get_state_machine() -> StateMachine {
         }
 
         let distance = player
-            .get_single()
+            .single()
             .expect("Player not found in near_player state")
             .translation
             .truncate()
@@ -93,7 +90,7 @@ fn idle(
         if let Some(mut timer) = timer {
             timer.0.tick(time.delta());
 
-            if timer.0.finished() {
+            if timer.0.is_finished() {
                 commands
                     .entity(entity)
                     .remove::<IdleDuration>()
@@ -113,17 +110,17 @@ fn wander(
     mut commands: Commands,
     mut timers: Local<HashMap<Entity, f32>>,
     time: Res<Time>,
-) {
+) -> Result {
     let rand = Rng::new();
     for (entity, velocity) in enemies.iter() {
         if velocity.is_some() {
             if timers.contains_key(&entity) {
                 let timer = timers.get_mut(&entity).unwrap();
-                *timer += time.delta_seconds();
+                *timer += time.delta_secs();
 
                 if *timer >= rand.i32(1..=3) as f32 {
                     timers.remove(&entity);
-                    if let Some(mut ec) = commands.get_entity(entity) {
+                    if let Ok(mut ec) = commands.get_entity(entity) {
                         ec.insert(Done::Success).remove::<Velocity>();
                     }
                 }
@@ -136,11 +133,14 @@ fn wander(
         let speed = 15.;
         let direction = Vec2::new(x, y); //.normalize_or_zero();
 
-        if let Some(mut ec) = commands.get_entity(entity) {
-            ec.insert(Velocity(direction * speed, true));
-        }
+        commands
+            .get_entity(entity)?
+            .insert(Velocity(direction * speed, true));
+
         timers.insert(entity, 0.);
     }
+
+    Ok(())
 }
 
 fn follow_player(
@@ -148,34 +148,37 @@ fn follow_player(
     player: Query<Entity, With<Player>>,
     follows: Query<&Follow, With<Enemy>>,
     mut commands: Commands,
-) {
+) -> Result {
     for enemy in enemies.iter() {
-        if let Ok(player) = player.get_single() {
+        if let Ok(player) = player.single() {
             if let Ok(follow) = follows.get(enemy) {
                 if follow.on_target {
-                    if let Some(mut ec) = commands.get_entity(enemy) {
-                        ec.insert(Done::Success).remove::<Follow>();
-                    }
+                    commands
+                        .get_entity(enemy)?
+                        .insert(Done::Success)
+                        .remove::<Follow>();
                 }
-            } else if let Some(mut ec) = commands.get_entity(enemy) {
-                ec.insert(Follow::new(player, 0.10, true, 80.));
+            } else {
+                commands
+                    .get_entity(enemy)?
+                    .insert(Follow::new(player, 0.10, true, 80.));
             }
         }
     }
+    Ok(())
 }
 
 fn attack_player(
     player_query: Query<&Transform, With<Player>>,
-    mut event: EventWriter<SpawnEnemyAttack>,
     mut enemies: Query<(Entity, &Enemy, &Transform, &Damage, &mut Cooldown), With<Attack>>,
     mut commands: Commands,
     mut durations: Local<HashMap<Entity, f32>>,
     enemy_manifest: Res<EnemyManifest>,
     time: Res<Time>,
-) {
+) -> Result {
     for (entity, enemy, transform, damage, mut cooldown) in enemies.iter_mut() {
         if !durations.contains_key(&entity) && cooldown.is_ready() {
-            if let Ok(player) = player_query.get_single() {
+            if let Ok(player) = player_query.single() {
                 let direction = (player.translation - transform.translation)
                     .xy()
                     .normalize();
@@ -192,7 +195,7 @@ fn attack_player(
 
                 durations.insert(entity, duration);
 
-                event.send(SpawnEnemyAttack {
+                commands.trigger(SpawnEnemyAttack {
                     data: enemy_data.attack.clone(),
                     damage: *damage,
                     direction,
@@ -205,14 +208,13 @@ fn attack_player(
         }
 
         if let Some(duration) = durations.get_mut(&entity) {
-            *duration -= time.delta_seconds();
+            *duration -= time.delta_secs();
 
             if *duration <= 0. {
                 durations.remove(&entity);
-                if let Some(mut ec) = commands.get_entity(entity) {
-                    ec.insert(Done::Success);
-                }
+                commands.get_entity(entity)?.insert(Done::Success);
             }
         }
     }
+    Ok(())
 }

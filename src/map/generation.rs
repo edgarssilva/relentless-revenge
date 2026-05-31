@@ -1,13 +1,18 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::floor::{FloorClearedEvent, FloorResource, GenerateFloorEvent, SpawnFloorEntitiesEvent};
+use crate::floor::{
+    FloorClearedMessage, FloorResource, GenerateFloorMessage, SpawnFloorEntitiesMessage,
+};
 
 use crate::game_states::loading::GameAssets;
 use crate::map::map::generate_map;
 use crate::map::map::Tile;
 use crate::map::map::TileVariant;
 use crate::map::walkable::WalkableTile;
+
+const QUADRANT_SIDE_LENGTH: u32 = 64;
+const TILE_SIZE: f32 = 32.0;
 
 #[derive(Component)]
 pub struct LevelStartTile;
@@ -16,13 +21,23 @@ pub struct LevelStartTile;
 pub struct LevelPortalTile;
 
 pub fn setup_map(mut commands: Commands, game_assets: Res<GameAssets>) {
-    let tilemap_size = TilemapSize { x: 160, y: 160 };
+    let tilemap_size = TilemapSize {
+        x: QUADRANT_SIDE_LENGTH * 2,
+        y: QUADRANT_SIDE_LENGTH * 2,
+    };
+
     let mut tile_storage = TileStorage::empty(tilemap_size);
     let tilemap_entity = commands.spawn_empty().id();
     let tilemap_id = TilemapId(tilemap_entity);
 
-    let tile_size = TilemapTileSize { x: 32.0, y: 32.0 };
-    let grid_size = TilemapGridSize { x: 32.0, y: 16.0 };
+    let tile_size = TilemapTileSize {
+        x: TILE_SIZE,
+        y: TILE_SIZE,
+    };
+    let grid_size = TilemapGridSize {
+        x: TILE_SIZE,
+        y: TILE_SIZE / 2.,
+    };
 
     fill_tilemap(
         TileTextureIndex(8),
@@ -48,10 +63,17 @@ pub fn setup_map(mut commands: Commands, game_assets: Res<GameAssets>) {
 }
 
 pub fn remake_map(
-    mut event: EventReader<GenerateFloorEvent>,
+    mut event: MessageReader<GenerateFloorMessage>,
     mut tile_query: Query<(Entity, &mut TileTextureIndex)>,
+    map_query: Query<(
+        &TilemapSize,
+        &TilemapGridSize,
+        &TilemapTileSize,
+        &TilemapType,
+        &TilemapAnchor,
+    )>,
     tile_storage_query: Query<&TileStorage>,
-    mut spawn_writer: EventWriter<SpawnFloorEntitiesEvent>,
+    mut spawn_writer: MessageWriter<SpawnFloorEntitiesMessage>,
     mut commands: Commands,
     floor: Res<FloorResource>,
 ) {
@@ -66,12 +88,18 @@ pub fn remake_map(
                 commands.entity(entity).remove::<LevelPortalTile>();
             }
 
-            if let Ok(tile_storage) = tile_storage_query.get_single() {
+            if let Ok(tile_storage) = tile_storage_query.single() {
                 let map = generate_map(domain_data);
                 let tiles: Vec<Tile> = map.into();
-                let spawn_event = build_map(tiles, &mut tile_query, tile_storage, &mut commands);
+                let spawn_event = build_map(
+                    tiles,
+                    &mut tile_query,
+                    &map_query,
+                    tile_storage,
+                    &mut commands,
+                );
 
-                spawn_writer.send(spawn_event);
+                spawn_writer.write(spawn_event);
             }
         }
     }
@@ -80,9 +108,16 @@ pub fn remake_map(
 fn build_map(
     tiles: Vec<Tile>,
     tile_query: &mut Query<(Entity, &mut TileTextureIndex)>,
+    map_query: &Query<(
+        &TilemapSize,
+        &TilemapGridSize,
+        &TilemapTileSize,
+        &TilemapType,
+        &TilemapAnchor,
+    )>,
     tile_storage: &TileStorage,
     commands: &mut Commands,
-) -> SpawnFloorEntitiesEvent {
+) -> SpawnFloorEntitiesMessage {
     let mut player_pos = Vec2::ZERO;
     let mut spawnable_pos = Vec::new();
     let mut portal_pos = Vec2::ZERO;
@@ -93,44 +128,43 @@ fn build_map(
             y: tile.pos.y as u32,
         };
 
-        //TODO: Get the grid-size and map type from the current map
-        let world_pos = tile_pos.center_in_world(
-            &TilemapGridSize { x: 32., y: 16. },
-            &TilemapType::Isometric(IsoCoordSystem::Diamond),
-        );
+        if let Ok((map_size, grid_size, tile_size, map_type, anchor)) = map_query.single() {
+            let world_pos =
+                tile_pos.center_in_world(map_size, grid_size, tile_size, map_type, anchor);
 
-        //TODO: Build room using neighbors
-        if let Some(tile_entity) = tile_storage.get(&tile_pos) {
-            let mut ec = commands.entity(tile_entity);
+            //TODO: Build room using neighbors
+            if let Some(tile_entity) = tile_storage.get(&tile_pos) {
+                let mut ec = commands.entity(tile_entity);
 
-            if let Ok((_, mut tile_texture)) = tile_query.get_mut(tile_entity) {
-                tile_texture.0 = match tile.variant {
-                    TileVariant::Standard => 2,
-                    TileVariant::Accented => 0,
-                };
-            }
+                if let Ok((_, mut tile_texture)) = tile_query.get_mut(tile_entity) {
+                    tile_texture.0 = match tile.variant {
+                        TileVariant::Standard => 2,
+                        TileVariant::Accented => 0,
+                    };
+                }
 
-            if tile.spawnable {
-                spawnable_pos.push(world_pos);
-            }
+                if tile.spawnable {
+                    spawnable_pos.push(world_pos);
+                }
 
-            if tile.walkable {
-                ec.insert(WalkableTile);
-            }
+                if tile.walkable {
+                    ec.insert(WalkableTile);
+                }
 
-            if tile.is_center {
-                if tile.firt_room {
-                    ec.insert(LevelStartTile);
-                    player_pos = world_pos;
-                } else if tile.last_room {
-                    ec.insert(LevelPortalTile);
-                    portal_pos = world_pos;
+                if tile.is_center {
+                    if tile.firt_room {
+                        ec.insert(LevelStartTile);
+                        player_pos = world_pos;
+                    } else if tile.last_room {
+                        ec.insert(LevelPortalTile);
+                        portal_pos = world_pos;
+                    }
                 }
             }
         }
     }
 
-    SpawnFloorEntitiesEvent {
+    SpawnFloorEntitiesMessage {
         spawnable_pos,
         player_pos,
         portal_pos,
@@ -138,7 +172,7 @@ fn build_map(
 }
 
 pub fn open_level_portal(
-    mut events: EventReader<FloorClearedEvent>,
+    mut events: MessageReader<FloorClearedMessage>,
     mut tile_query: Query<&mut TileTextureIndex, With<LevelPortalTile>>,
 ) {
     if !events.is_empty() {

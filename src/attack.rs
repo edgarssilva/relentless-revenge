@@ -1,18 +1,20 @@
-use bevy::prelude::{Event, EventReader};
+use bevy::ecs::observer::On;
+use bevy::image::Image;
+use bevy::image::TextureAtlas;
+use bevy::image::TextureAtlasLayout;
+use bevy::prelude::Bundle;
+use bevy::prelude::Event;
 use bevy::reflect::Reflect;
-use bevy::render::texture::Image;
-use bevy::sprite::{SpriteBundle, TextureAtlas, TextureAtlasLayout};
+use bevy::sprite::Sprite;
 use bevy::time::TimerMode;
 use bevy::{
     prelude::{
-        default, BuildChildren, Bundle, Commands, Component, DespawnRecursiveExt, Entity, Handle,
-        Quat, Query, Res, Transform, TransformBundle, Vec2, Vec3,
+        default, Commands, Component, Entity, Handle, Quat, Query, Res, Transform, Vec2, Vec3,
     },
     time::{Time, Timer},
 };
-use bevy_rapier2d::prelude::{
-    ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, Sensor,
-};
+use bevy_rapier2d::prelude::CollisionGroups;
+use bevy_rapier2d::prelude::{ActiveCollisionTypes, ActiveEvents, Collider, Sensor};
 use seldom_state::prelude::{Done, StateMachine};
 use seldom_state::trigger::done;
 
@@ -112,7 +114,7 @@ impl AttackBundle {
 #[derive(Bundle)]
 pub struct MeleeAttackBundle {
     attack: AttackBundle,
-    transform_bundle: TransformBundle,
+    transform: Transform,
     knockback: Knockback,
 }
 
@@ -127,10 +129,7 @@ impl MeleeAttackBundle {
     ) -> Self {
         Self {
             attack: AttackBundle::new(size, duration, damage, is_player_attack),
-            transform_bundle: TransformBundle {
-                local: Transform::from_translation(position),
-                ..default()
-            },
+            transform: Transform::from_translation(position),
             knockback,
         }
     }
@@ -139,8 +138,8 @@ impl MeleeAttackBundle {
 #[derive(Bundle)]
 pub struct ProjectileBundle {
     attack: AttackBundle,
-    texture_atlas: TextureAtlas,
-    sprite_bundle: SpriteBundle,
+    sprite: Sprite,
+    transform: Transform,
     velocity: Velocity,
     breakable: Breakable,
 }
@@ -159,18 +158,17 @@ impl ProjectileBundle {
     ) -> Self {
         Self {
             attack: AttackBundle::new(size, duration, damage, is_player_attack),
-            texture_atlas: TextureAtlas {
-                layout: atlas,
-                index: 0,
-            },
-            sprite_bundle: SpriteBundle {
-                texture: texture.clone(),
-                transform: Transform {
-                    translation: position,
-                    rotation: Quat::from_rotation_z(rotation),
-                    // scale: Vec3::new(size.x, size.y, 1.0),
-                    ..default()
+            sprite: Sprite::from_atlas_image(
+                texture.clone(),
+                TextureAtlas {
+                    layout: atlas,
+                    index: 0,
                 },
+            ),
+            transform: Transform {
+                translation: position,
+                rotation: Quat::from_rotation_z(rotation),
+                // scale: Vec3::new(size.x, size.y, 1.0),
                 ..default()
             },
             velocity,
@@ -188,50 +186,48 @@ pub struct SpawnEnemyAttack {
     pub enemy_size: Vec2,
 }
 
-pub fn attack_spawner(mut event: EventReader<SpawnEnemyAttack>, mut commands: Commands) {
-    for spawn_attack in event.read() {
-        match &spawn_attack.data {
-            AttackData::Melee {
-                size,
-                duration,
-                knockback,
-            } => {
-                let direction = Direction::from_vec2(spawn_attack.direction * -1.)
-                    .expect("Bad knockback direction");
+pub fn attack_spawner_observer(spawn_attack: On<SpawnEnemyAttack>, mut commands: Commands) {
+    match &spawn_attack.data {
+        AttackData::Melee {
+            size,
+            duration,
+            knockback,
+        } => {
+            let direction = Direction::from_vec2(spawn_attack.direction * -1.)
+                .expect("Bad knockback direction");
 
-                let offset = spawn_attack.direction * spawn_attack.enemy_size / 2.;
+            let offset = spawn_attack.direction * spawn_attack.enemy_size / 2.;
 
-                commands.spawn(MeleeAttackBundle::new(
-                    spawn_attack.position + offset.extend(0.),
-                    *size / 2.,
-                    *duration,
-                    spawn_attack.damage,
-                    Knockback {
-                        force: *knockback,
-                        direction,
-                    },
-                    false,
-                ));
-            }
-            AttackData::Ranged {
-                texture,
-                velocity,
-                size,
-                duration,
-                atlas,
-            } => {
-                commands.spawn(ProjectileBundle::new(
-                    texture.clone(),
-                    atlas.clone(),
-                    spawn_attack.position,
-                    f32::atan2(spawn_attack.direction.y, spawn_attack.direction.x),
-                    *size / 2.,
-                    *duration,
-                    spawn_attack.damage,
-                    false,
-                    Velocity(spawn_attack.direction * *velocity, false),
-                ));
-            }
+            commands.spawn(MeleeAttackBundle::new(
+                spawn_attack.position + offset.extend(0.),
+                *size / 2.,
+                *duration,
+                spawn_attack.damage,
+                Knockback {
+                    force: *knockback,
+                    direction,
+                },
+                false,
+            ));
+        }
+        AttackData::Ranged {
+            texture,
+            velocity,
+            size,
+            duration,
+            atlas,
+        } => {
+            commands.spawn(ProjectileBundle::new(
+                texture.clone(),
+                atlas.clone(),
+                spawn_attack.position,
+                f32::atan2(spawn_attack.direction.y, spawn_attack.direction.x),
+                *size / 2.,
+                *duration,
+                spawn_attack.damage,
+                false,
+                Velocity(spawn_attack.direction * *velocity, false),
+            ));
         }
     }
 }
@@ -242,7 +238,7 @@ pub fn charge_phase_system(
     mut commands: Commands,
 ) {
     for (mut charge_phase, direction, damage, entity) in query.iter_mut() {
-        if charge_phase.0.finished() {
+        if charge_phase.0.is_finished() {
             commands.entity(entity).with_children(|children| {
                 let player_size = Vec2::new(32., 24.) * 0.75;
                 let offset = player_size.x * 0.75;
@@ -273,7 +269,7 @@ pub fn attack_phase_system(
     mut commands: Commands,
 ) {
     for (mut attack_phase, entity) in query.iter_mut() {
-        if attack_phase.0.finished() {
+        if attack_phase.0.is_finished() {
             commands.entity(entity).insert(Done::Success);
         } else {
             attack_phase.0.tick(time.delta());
@@ -287,7 +283,7 @@ pub fn recover_phase_system(
     mut commands: Commands,
 ) {
     for (mut recover_phase, mut state, entity) in query.iter_mut() {
-        if recover_phase.0.finished() {
+        if recover_phase.0.is_finished() {
             state.set(State::Idle);
             commands
                 .entity(entity)
@@ -308,8 +304,8 @@ pub fn lifetimes(
     for (entity, mut lifetime) in lifetimes.iter_mut() {
         lifetime.0.tick(time.delta());
 
-        if lifetime.0.finished() {
-            commands.entity(entity).despawn_recursive();
+        if lifetime.0.is_finished() {
+            commands.entity(entity).despawn();
         }
     }
 }
@@ -318,7 +314,7 @@ pub fn lifetimes(
 pub fn projectile_break(mut commands: Commands, query: Query<(Entity, &Breakable)>) {
     for (entity, breakable) in query.iter() {
         if breakable.0 == 0 {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
     }
 }

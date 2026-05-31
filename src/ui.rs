@@ -1,11 +1,11 @@
 pub mod boss;
 pub mod player;
 
-use bevy::prelude::{AssetServer, Res, Window};
+use bevy::prelude::*;
 use bevy::prelude::{Query, With};
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::{Image, Pos2, Rect, RichText};
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{egui, EguiContexts, EguiTextureHandle};
 
 use crate::floor::FloorResource;
 use crate::player::Player;
@@ -28,17 +28,21 @@ pub fn draw_hud(
         With<Player>,
     >,
     floor: Res<FloorResource>,
-) {
+) -> Result {
     //TODO: Check if calling asset_server.load multiple times is bad
-    let health_bar_fill = contexts.add_image(asset_server.load("health_bar_fill.png"));
-    let health_bar_border = contexts.add_image(asset_server.load("health_bar_border.png"));
+    let health_bar_fill = contexts.add_image(EguiTextureHandle::Strong(
+        asset_server.load("health_bar_fill.png"),
+    ));
+    let health_bar_border = contexts.add_image(EguiTextureHandle::Strong(
+        asset_server.load("health_bar_border.png"),
+    ));
 
     let mut size = [63. * 5., 10. * 5.];
 
-    if let Ok((health, xp, progression, speed, damage, level, revenge)) = query.get_single() {
+    if let Ok((health, xp, progression, speed, damage, level, revenge)) = query.single() {
         egui::CentralPanel::default()
-            .frame(egui::Frame::none())
-            .show(contexts.ctx_mut(), |ui| {
+            .frame(egui::Frame::NONE)
+            .show(contexts.ctx_mut()?, |ui| {
                 ui.put(
                     Rect {
                         min: egui::pos2(16., 8.),
@@ -102,27 +106,29 @@ pub fn draw_hud(
     }
 
     egui::SidePanel::right("right")
-        .frame(egui::Frame::none())
+        .frame(egui::Frame::NONE)
         .resizable(false)
         .show_separator_line(false)
         .exact_width(110.)
-        .show(contexts.ctx_mut(), |ui| {
+        .show(contexts.ctx_mut()?, |ui| {
             ui.add_space(10.);
             ui.heading(RichText::new(format!("Floor: {}", floor.floor)).size(26.));
             ui.label(RichText::new(format!("Enemies: {}", floor.enemies.len())).size(16.));
         });
+
+    Ok(())
 }
 
 pub fn draw_xp_bar(
     query: Query<(&XP, &Progression, &Level), With<Player>>,
     mut contexts: EguiContexts,
     windows: Query<&Window>,
-) {
-    let painter = contexts.ctx_mut().debug_painter();
+) -> Result {
+    let painter = contexts.ctx_mut()?.debug_painter();
 
-    let width = windows.single().width();
+    let width = windows.single().expect("No window found").width();
 
-    if let Ok((xp, progression, level)) = query.get_single() {
+    if let Ok((xp, progression, level)) = query.single() {
         let start_xp = match level.level {
             1 => 0,
             _ => progression.xp_to_level_up(level.level - 1),
@@ -138,20 +144,23 @@ pub fn draw_xp_bar(
             0.,
             egui::Color32::DARK_BLUE,
             egui::Stroke::NONE,
+            egui::StrokeKind::Outside,
         );
     }
+
+    Ok(())
 }
 
 pub fn draw_revenge_bar(
     query: Query<&Revenge, With<Player>>,
     mut contexts: EguiContexts,
     windows: Query<&Window>,
-) {
-    let painter = contexts.ctx_mut().debug_painter();
+) -> Result {
+    let painter = contexts.ctx_mut()?.debug_painter();
 
-    let width = windows.single().width();
+    let width = windows.single().expect("No window found").width();
 
-    if let Ok(revenge) = query.get_single() {
+    if let Ok(revenge) = query.single() {
         let scale = revenge.amount / revenge.total;
 
         painter.rect(
@@ -162,6 +171,8 @@ pub fn draw_revenge_bar(
             0.,
             egui::Color32::DARK_RED,
             egui::Stroke::NONE,
+            egui::StrokeKind::Outside,
         );
     }
+    Ok(())
 }

@@ -1,6 +1,6 @@
 use bevy::{
     math::Vec2,
-    prelude::{Commands, Component, Entity, Query, Res, Transform, With},
+    prelude::*,
     time::{Time, Timer, TimerMode},
 };
 use bevy::{math::Vec3Swizzles, prelude::RemovedComponents};
@@ -44,7 +44,7 @@ pub fn move_player(
     time: Res<Time>,
 ) {
     if let Ok((mut state, mut direction, mut controlled, transform, mv_speed, action_state)) =
-        query.get_single_mut()
+        query.single_mut()
     {
         if !(state.equals(State::Idle) || state.equals(State::Walking)) {
             return;
@@ -61,7 +61,7 @@ pub fn move_player(
             }
         }
 
-        let dir = dir.normalize_or_zero() * mv_speed.speed as f32 * time.delta_seconds();
+        let dir = dir.normalize_or_zero() * mv_speed.speed as f32 * time.delta_secs();
 
         if dir.x == 0. && dir.y == 0. {
             state.set(State::Idle);
@@ -87,14 +87,14 @@ pub fn dash_ability(
         With<Player>,
     >,
     mut commands: Commands,
-) {
+) -> Result {
     if let Ok((mut state, transform, direction, action_state, mut cooldown, entity)) =
-        query.get_single_mut()
+        query.single_mut()
     {
         let mut dir = Vec2::ZERO;
 
         if matches!(*state, State::Attacking(_)) || state.equals(State::Dashing) {
-            return;
+            return Ok(());
         }
 
         for action in PlayerActions::DIRECTIONS {
@@ -115,11 +115,14 @@ pub fn dash_ability(
 
             //TODO: Add dash stats
             let new_pos = transform.translation.xy() + (dir.normalize() * 45.);
-            if let Some(mut ec) = commands.get_entity(entity) {
-                ec.insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.35));
-            }
+            commands.get_entity(entity)?.insert(EaseTo::new(
+                new_pos,
+                EaseFunction::EaseOutQuad,
+                0.35,
+            ));
         }
     }
+    Ok(())
 }
 
 pub fn finish_dash(
@@ -146,12 +149,12 @@ pub fn attack_ability(
         Entity,
     )>,
     mut commands: Commands,
-) {
+) -> Result {
     if let Ok((mut state, action_state, transform, direction, mut cooldown, combo, entity)) =
-        query.get_single_mut()
+        query.single_mut()
     {
         if state.equals(State::Dashing) || matches!(*state, State::Attacking(_)) {
-            return;
+            return Ok(());
         }
 
         if action_state.just_pressed(&PlayerActions::Attack) && cooldown.is_ready() {
@@ -176,16 +179,15 @@ pub fn attack_ability(
             //TODO: Add attack dash stats
             let new_pos = transform.translation.xy() + (direction.vec().normalize() * 5.);
 
-            if let Some(mut ec) = commands.get_entity(entity) {
-                ec.insert(attack_phase(0.05, 0.2, 0.075))
-                    .insert(ChargePhase(Timer::from_seconds(0.05, TimerMode::Once), 0.2))
-                    .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.5));
-            } else {
-                println!("Failed to get entity");
-                state.set(State::Idle);
-            }
+            commands
+                .get_entity(entity)?
+                .insert(attack_phase(0.05, 0.2, 0.075))
+                .insert(ChargePhase(Timer::from_seconds(0.05, TimerMode::Once), 0.2))
+                .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.5));
         }
     }
+
+    Ok(())
 }
 
 pub fn combo_system(
@@ -196,7 +198,7 @@ pub fn combo_system(
     for (mut combo, entity) in query.iter_mut() {
         combo.timer.tick(time.delta());
 
-        if combo.timer.finished() {
+        if combo.timer.is_finished() {
             commands.entity(entity).remove::<Combo>();
         }
     }

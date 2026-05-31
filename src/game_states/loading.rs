@@ -8,9 +8,12 @@ pub struct LoadingPlugin;
 
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((EguiPlugin, DataManifestPlugin {}))
+        app.add_plugins((EguiPlugin::default(), DataManifestPlugin {}))
             .add_systems(OnEnter(GameState::Loading), setup_assets)
-            .add_systems(OnEnter(SimpleAssetState::Ready), finish_loading);
+            .add_systems(
+                Update,
+                check_loading_progress.run_if(in_state(GameState::Loading)),
+            );
     }
 }
 
@@ -36,7 +39,20 @@ fn setup_assets(asset_server: Res<AssetServer>, mut commands: Commands) {
     });
 }
 
-fn finish_loading(mut next_state: ResMut<NextState<GameState>>) {
-    //TODO: Check if our own assets have loaded aswell
-    next_state.set(GameState::InGame);
+fn check_loading_progress(
+    asset_server: Res<AssetServer>,
+    game_assets: Res<GameAssets>,
+    manifest_state: Res<State<SimpleAssetState>>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    let manifests_ready = *manifest_state.get() == SimpleAssetState::Ready;
+
+    let assets_ready = asset_server.is_loaded_with_dependencies(&game_assets.font)
+        && asset_server.is_loaded_with_dependencies(&game_assets.xp_texture)
+        && asset_server.is_loaded_with_dependencies(&game_assets.map_texture)
+        && asset_server.is_loaded_with_dependencies(&game_assets.shadow_texture);
+
+    if manifests_ready && assets_ready {
+        next_state.set(GameState::InGame);
+    }
 }

@@ -1,17 +1,14 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use bevy::hierarchy::DespawnRecursiveExt;
+use bevy::ecs::message::{Message, MessageReader, MessageWriter};
+use bevy::ecs::schedule::IntoScheduleConfigs;
 use bevy::input::ButtonInput;
-use bevy::prelude::{
-    in_state, Camera, Event, IntoSystemConfigs, Query, Transform, Update, With, Without, World,
-};
+use bevy::prelude::{in_state, Camera, Query, Transform, Update, With, Without};
 use bevy::time::Timer;
 use bevy::{
     math::Vec2,
-    prelude::{
-        App, Commands, Entity, EventReader, EventWriter, KeyCode, Plugin, Res, ResMut, Resource,
-    },
+    prelude::{App, Commands, Entity, KeyCode, Plugin, Res, ResMut, Resource},
 };
 use leafwing_manifest::manifest::Manifest;
 use noisy_bevy::simplex_noise_2d;
@@ -38,36 +35,37 @@ pub struct FloorResource {
 }
 
 //Floor Generation Events
-#[derive(Event)]
-pub struct GenerateFloorEvent;
+#[derive(Message)]
+pub struct GenerateFloorMessage;
 
-#[derive(Event)]
-pub struct SpawnFloorEntitiesEvent {
+#[derive(Message)]
+pub struct SpawnFloorEntitiesMessage {
     pub spawnable_pos: Vec<Vec2>,
     pub player_pos: Vec2,
     pub portal_pos: Vec2,
 }
 
 //Floor Clearing Events
-#[derive(Event)]
-pub struct EnemyKilledEvent(pub Entity); // Entity killed
+#[derive(Message)]
+pub struct EnemyKilledMessage(pub Entity); // Entity killed
 
-#[derive(Event)]
-pub struct FloorClearedEvent; // All enemies killed
+//TODO: This two can be made events, and observed
+#[derive(Message)]
+pub struct FloorClearedMessage; // All enemies killed
 
-#[derive(Event)]
-pub struct TriggerNextFloorEvent; // Player triggered next level
+#[derive(Message)]
+pub struct TriggerNextFloorMessage; // Player triggered next level
 
 pub struct FloorPlugin;
 
 impl Plugin for FloorPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(FloorResource::default())
-            .add_event::<GenerateFloorEvent>()
-            .add_event::<SpawnFloorEntitiesEvent>()
-            .add_event::<EnemyKilledEvent>()
-            .add_event::<FloorClearedEvent>()
-            .add_event::<TriggerNextFloorEvent>()
+            .add_message::<GenerateFloorMessage>()
+            .add_message::<SpawnFloorEntitiesMessage>()
+            .add_message::<EnemyKilledMessage>()
+            .add_message::<FloorClearedMessage>()
+            .add_message::<TriggerNextFloorMessage>()
             .add_systems(
                 Update,
                 (
@@ -88,16 +86,16 @@ impl Plugin for FloorPlugin {
 
 fn keymap_generate(
     keys: Res<ButtonInput<KeyCode>>,
-    mut writer: EventWriter<TriggerNextFloorEvent>,
+    mut writer: MessageWriter<TriggerNextFloorMessage>,
 ) {
     if keys.just_pressed(KeyCode::ControlLeft) {
-        writer.send(TriggerNextFloorEvent);
+        writer.write(TriggerNextFloorMessage);
     }
 }
 
 fn new_domain_trigger(
     mut commands: Commands,
-    mut event: EventReader<GenerateFloorEvent>,
+    mut event: MessageReader<GenerateFloorMessage>,
     floor: Res<FloorResource>,
 ) {
     if event.is_empty() {
@@ -117,8 +115,8 @@ fn new_domain_trigger(
 }
 
 fn generate_floor(
-    mut event: EventReader<TriggerNextFloorEvent>,
-    mut writer: EventWriter<GenerateFloorEvent>,
+    mut event: MessageReader<TriggerNextFloorMessage>,
+    mut writer: MessageWriter<GenerateFloorMessage>,
     mut floor_resource: ResMut<FloorResource>,
     domain_manifest: Res<DomainManifest>,
 ) {
@@ -141,24 +139,24 @@ fn generate_floor(
             .expect("No floor found");
 
         floor_resource.domain = Some(domain.clone());
-        writer.send(GenerateFloorEvent);
+        writer.write(GenerateFloorMessage);
     }
 }
 
 fn move_player(
     mut player_query: Query<&mut Transform, (With<Player>, Without<Camera>)>,
     mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
-    mut event: EventReader<SpawnFloorEntitiesEvent>,
+    mut event: MessageReader<SpawnFloorEntitiesMessage>,
 ) {
     for e in event.read() {
         let pos = e.player_pos;
 
-        if let Ok(mut transform) = player_query.get_single_mut() {
+        if let Ok(mut transform) = player_query.single_mut() {
             transform.translation.x = pos.x;
             transform.translation.y = pos.y;
         }
 
-        if let Ok(mut transform) = camera_query.get_single_mut() {
+        if let Ok(mut transform) = camera_query.single_mut() {
             transform.translation.x = pos.x;
             transform.translation.y = pos.y;
         }
@@ -169,7 +167,7 @@ fn spawn_boss(
     mut commands: Commands,
     boss_manifest: Res<BossManifest>,
     mut floor: ResMut<FloorResource>,
-    mut event: EventReader<SpawnFloorEntitiesEvent>,
+    mut event: MessageReader<SpawnFloorEntitiesMessage>,
 ) {
     for e in event.read() {
         if let Some(domain) = &floor.domain {
@@ -193,7 +191,7 @@ fn spawn_enemies(
     mut commands: Commands,
     enemy_manifest: Res<EnemyManifest>,
     mut floor: ResMut<FloorResource>,
-    mut event: EventReader<SpawnFloorEntitiesEvent>,
+    mut event: MessageReader<SpawnFloorEntitiesMessage>,
 ) {
     for e in event.read() {
         if let Some(domain) = &floor.domain {
@@ -241,21 +239,21 @@ fn spawn_enemies(
 }
 
 fn enemy_killed(
-    mut event: EventReader<EnemyKilledEvent>,
+    mut event: MessageReader<EnemyKilledMessage>,
     mut level: ResMut<FloorResource>,
-    mut portal_writer: EventWriter<FloorClearedEvent>,
+    mut portal_writer: MessageWriter<FloorClearedMessage>,
     mut commands: Commands,
 ) {
     for killed in event.read() {
         level.enemies.retain(|e| *e != killed.0);
 
         //        commands.entity(killed.0).despawn_recursive();
-        if let Some(ec) = commands.get_entity(killed.0) {
-            ec.despawn_recursive();
+        if let Ok(mut ec) = commands.get_entity(killed.0) {
+            ec.despawn();
         }
 
         if level.enemies.is_empty() {
-            portal_writer.send(FloorClearedEvent);
+            portal_writer.write(FloorClearedMessage);
         }
     }
 }

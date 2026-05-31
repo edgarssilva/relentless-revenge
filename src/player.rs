@@ -1,22 +1,15 @@
-use std::usize;
-
+use bevy::image::TextureAtlas;
 use bevy::prelude::MouseButton;
+use bevy::prelude::{default, Bundle, Component, KeyCode, Transform, Vec3};
 use bevy::reflect::Reflect;
-use bevy::sprite::{SpriteBundle, TextureAtlas};
-use bevy::{
-    prelude::{default, Bundle, Component, KeyCode, Transform, Vec3},
-    utils::HashMap,
-};
+use bevy::sprite::Sprite;
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
 };
 use bevy_spritesheet_animation::prelude::SpritesheetAnimation;
-use leafwing_input_manager::{
-    prelude::{ActionState, InputMap},
-    InputManagerBundle,
-};
+use leafwing_input_manager::prelude::InputMap;
 
-use crate::animation::{Animations, DirectionalAnimations};
+use crate::animation::DirectionalAnimations;
 use crate::effects::Shadow;
 use crate::manifest::player::PlayerData;
 use crate::sorting::{self, FeetOffset, YSort};
@@ -40,8 +33,8 @@ pub struct Player;
 #[derive(Bundle)]
 pub struct PlayerBundle {
     player: Player,
-    sprite: SpriteBundle,
-    atlas: TextureAtlas,
+    sprite: Sprite,
+    transform: Transform,
     collider: Collider,
     controlled: Controlled,
     rigid_body: RigidBody,
@@ -57,8 +50,8 @@ pub struct PlayerBundle {
     stats: StatsBundle,
     progression: Progression,
     damageable: Damageable,
-    input: InputManagerBundle<PlayerActions>,
-    ysort: YSort,
+    input: InputMap<PlayerActions>,
+    ysort: YSort, //TODO: Is there a native YSort?
     feet_offset: FeetOffset,
     shadow: Shadow,
 }
@@ -115,17 +108,16 @@ impl PlayerBundle {
 
         PlayerBundle {
             player: Player,
-            atlas: TextureAtlas {
-                layout: data.atlas.clone(),
-                index: 0,
-            },
-            sprite: SpriteBundle {
-                texture: data.texture.clone(),
-                transform: Transform {
-                    translation: Vec3::new(0., 0., PLAYER_Z),
-                    scale: Vec3::new(0.75, 0.75, 0.75),
-                    ..default()
+            sprite: Sprite::from_atlas_image(
+                data.texture.clone(),
+                TextureAtlas {
+                    layout: data.atlas.clone(),
+                    index: 0,
                 },
+            ),
+            transform: Transform {
+                translation: Vec3::new(0., 0., PLAYER_Z),
+                scale: Vec3::new(0.75, 0.75, 0.75),
                 ..default()
             },
             controlled: Controlled { move_to: None },
@@ -134,14 +126,14 @@ impl PlayerBundle {
             //animation_state: AnimationState::new(player_animations, data.frame_duration, true),
             animations: data.animations.clone(),
             //TODO: Fix this to have a default animation or be insert later on
-            animation: SpritesheetAnimation::from_id(
-                *data
-                    .animations
+            animation: SpritesheetAnimation::new(
+                data.animations
                     .0
                     .get(&State::Idle)
                     .expect("No IDLE animation found for player")
                     .get(&Direction::SOUTH)
-                    .expect("No SOUTH animation found for player"),
+                    .expect("No SOUTH animation found for player")
+                    .clone(),
             ),
             collision_events: ActiveEvents::COLLISION_EVENTS,
             collision_types: ActiveCollisionTypes::all(),
@@ -168,31 +160,11 @@ impl PlayerBundle {
                 total: 75.,
             },
             damageable: Damageable,
-            input: InputManagerBundle::<PlayerActions> {
-                action_state: ActionState::default(),
-                input_map: Self::default_keybindings(),
-            },
+            input: default_keybindings(),
             ysort: YSort(sorting::ENTITIES_LAYER),
             feet_offset: FeetOffset(feet_offset),
             shadow: Shadow,
         }
-    }
-
-    fn default_keybindings() -> InputMap<PlayerActions> {
-        //TODO: Check best keybindings
-        use PlayerActions::*;
-        let mut input_map = InputMap::default();
-
-        input_map
-            .insert(PlayerActions::MoveUp, KeyCode::KeyW)
-            .insert(MoveDown, KeyCode::KeyS)
-            .insert(MoveLeft, KeyCode::KeyA)
-            .insert(MoveRight, KeyCode::KeyD)
-            .insert(Attack, KeyCode::KeyJ)
-            .insert(Attack, MouseButton::Left)
-            .insert(Dash, KeyCode::Space);
-
-        input_map
     }
 }
 
@@ -223,4 +195,21 @@ impl PlayerActions {
             _ => None,
         }
     }
+}
+
+fn default_keybindings() -> InputMap<PlayerActions> {
+    //TODO: Check best keybindings
+    use PlayerActions::*;
+    let mut input_map = InputMap::default();
+
+    input_map
+        .insert(PlayerActions::MoveUp, KeyCode::KeyW)
+        .insert(MoveDown, KeyCode::KeyS)
+        .insert(MoveLeft, KeyCode::KeyA)
+        .insert(MoveRight, KeyCode::KeyD)
+        .insert(Attack, KeyCode::KeyJ)
+        .insert(Attack, MouseButton::Left)
+        .insert(Dash, KeyCode::Space);
+
+    input_map
 }

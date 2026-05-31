@@ -1,6 +1,8 @@
 use std::convert::Infallible;
 
-use bevy::{asset::Asset, ecs::system::Resource, reflect::TypePath, utils::HashMap};
+use bevy::{
+    asset::Asset, ecs::resource::Resource, platform::collections::HashMap, reflect::TypePath,
+};
 use leafwing_manifest::{
     identifier::Id,
     manifest::{Manifest, ManifestFormat},
@@ -43,7 +45,7 @@ impl Manifest for DomainManifest {
         raw_manifest: Self::RawManifest,
         _world: &mut bevy::prelude::World,
     ) -> Result<Self, Self::ConversionError> {
-        let domains: bevy::utils::hashbrown::HashMap<Id<DomainData>, DomainData> = raw_manifest
+        let domains: HashMap<Id<DomainData>, DomainData> = raw_manifest
             .domains
             .iter()
             .map(|raw| (Id::from_name(&raw.name.as_str()), raw.clone()))

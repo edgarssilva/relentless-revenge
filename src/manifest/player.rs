@@ -2,13 +2,13 @@ use std::convert::Infallible;
 
 use bevy::{
     asset::{Asset, Handle},
-    ecs::system::Resource,
+    ecs::resource::Resource,
+    image::{Image, TextureAtlasLayout},
     math::Vec2,
     reflect::TypePath,
-    render::texture::Image,
-    sprite::TextureAtlasLayout,
 };
 
+use bevy_spritesheet_animation::spritesheet::Spritesheet;
 use leafwing_manifest::manifest::{Manifest, ManifestFormat};
 use serde::{Deserialize, Serialize};
 
@@ -78,6 +78,12 @@ impl Manifest for PlayerManifest {
 
         let (texture, atlas) = load_texture_data(&raw_data.texture, world);
 
+        let spritesheet = Spritesheet::new(
+            &texture,
+            raw_data.texture.columns as usize,
+            raw_data.texture.rows as usize,
+        );
+
         let player_data = PlayerData {
             size: raw_data.size,
             health: raw_data.health,
@@ -91,7 +97,7 @@ impl Manifest for PlayerManifest {
             feet_offset: raw_data.feet_offset,
             texture,
             atlas,
-            animations: load_directional_animations(&raw_data.animations, world),
+            animations: load_directional_animations(&spritesheet, &raw_data.animations, world),
         };
 
         Ok(PlayerManifest { player_data })

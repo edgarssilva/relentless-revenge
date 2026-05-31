@@ -2,12 +2,13 @@ use std::convert::Infallible;
 
 use bevy::{
     asset::{Asset, Handle},
+    image::TextureAtlasLayout,
     math::Vec2,
+    platform::collections::HashMap,
     prelude::{Image, Resource},
     reflect::TypePath,
-    sprite::TextureAtlasLayout,
-    utils::HashMap,
 };
+use bevy_spritesheet_animation::spritesheet::Spritesheet;
 use leafwing_manifest::{
     identifier::Id,
     manifest::{Manifest, ManifestFormat},
@@ -44,6 +45,7 @@ pub struct BossData {
     pub feet_offset: Option<f32>,
     pub texture: Handle<Image>,
     pub atlas: Handle<TextureAtlasLayout>,
+    //pub spritesheet: Spritesheet,
     pub animations: Animations,
 }
 
@@ -75,7 +77,12 @@ impl Manifest for BossManifest {
             .iter()
             .map(|raw_boss| {
                 let (texture, atlas) = load_texture_data(&raw_boss.texture, world);
-                let animations = load_animations(&raw_boss.name, &raw_boss.animations, world);
+                let spritesheet = Spritesheet::new(
+                    &texture,
+                    raw_boss.texture.columns as usize,
+                    raw_boss.texture.rows as usize,
+                );
+                let animations = load_animations(&spritesheet, &raw_boss.animations, world);
 
                 let enemy_data = BossData {
                     name: raw_boss.name.clone(),

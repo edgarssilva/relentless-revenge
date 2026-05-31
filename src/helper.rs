@@ -1,10 +1,10 @@
 use crate::movement::movement::Follow;
+use bevy::camera::Projection;
 use bevy::input::ButtonInput;
 use bevy::math::Vec3Swizzles;
 use bevy::prelude::{
     Commands, Component, Entity, KeyCode, Query, Res, Resource, Time, Transform, With,
 };
-use bevy::render::camera::OrthographicProjection;
 use noisy_bevy::fbm_simplex_2d_seeded;
 
 #[derive(Component)]
@@ -37,7 +37,7 @@ pub fn shake_system(
                 OCTAVES,
                 LACUNARITY,
                 GAIN,
-                time.delta_seconds(),
+                time.delta_secs(),
             ) * shake.strength;
 
             let y_offset = fbm_simplex_2d_seeded(
@@ -45,7 +45,7 @@ pub fn shake_system(
                 OCTAVES,
                 LACUNARITY,
                 GAIN,
-                time.delta_seconds() + 100.0,
+                time.delta_secs() + 100.0,
             ) * shake.strength;
 
             let angle_offset = fbm_simplex_2d_seeded(
@@ -53,16 +53,16 @@ pub fn shake_system(
                 OCTAVES,
                 LACUNARITY,
                 GAIN / 2.,
-                time.delta_seconds() + 50.,
+                time.delta_secs() + 50.,
             ) * shake.strength
                 / 200.;
 
-            trans.translation.x += x_offset * time.delta_seconds();
-            trans.translation.y += y_offset * time.delta_seconds();
+            trans.translation.x += x_offset * time.delta_secs();
+            trans.translation.y += y_offset * time.delta_secs();
 
-            trans.rotate_z(angle_offset * time.delta_seconds());
+            trans.rotate_z(angle_offset * time.delta_secs());
 
-            shake.duration -= time.delta_seconds();
+            shake.duration -= time.delta_secs();
         } else {
             commands.entity(entity).remove::<Shake>();
         }
@@ -71,29 +71,31 @@ pub fn shake_system(
 
 //Helper camera controller
 pub fn helper_camera_controller(
-    mut query: Query<(&mut OrthographicProjection, &mut Transform), With<Follow>>,
+    mut query: Query<(&mut Projection, &mut Transform), With<Follow>>,
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
 ) {
-    if let Ok((mut projection, mut transform)) = query.get_single_mut() {
+    if let Ok((mut projection, mut transform)) = query.single_mut() {
         if keys.pressed(KeyCode::ArrowUp) {
-            transform.translation.y += 150.0 * time.delta_seconds();
+            transform.translation.y += 150.0 * time.delta_secs();
         }
         if keys.pressed(KeyCode::ArrowLeft) {
-            transform.translation.x -= 150.0 * time.delta_seconds();
+            transform.translation.x -= 150.0 * time.delta_secs();
         }
         if keys.pressed(KeyCode::ArrowDown) {
-            transform.translation.y -= 150.0 * time.delta_seconds();
+            transform.translation.y -= 150.0 * time.delta_secs();
         }
         if keys.pressed(KeyCode::ArrowRight) {
-            transform.translation.x += 150.0 * time.delta_seconds();
+            transform.translation.x += 150.0 * time.delta_secs();
         }
 
-        if keys.pressed(KeyCode::KeyZ) {
-            projection.scale -= 1. * time.delta_seconds();
-        }
-        if keys.pressed(KeyCode::KeyX) {
-            projection.scale += 1. * time.delta_seconds();
+        if let Projection::Orthographic(ortho_projection) = projection.as_mut() {
+            if keys.pressed(KeyCode::KeyZ) {
+                ortho_projection.scale -= 1. * time.delta_secs();
+            }
+            if keys.pressed(KeyCode::KeyX) {
+                ortho_projection.scale += 1. * time.delta_secs();
+            }
         }
     }
 }

@@ -12,11 +12,10 @@ pub fn spawn_shadows(
     for (entity, offset) in query.iter() {
         let offset = offset.map(|x| x.0).unwrap_or(0.0);
         commands.entity(entity).with_children(|parent| {
-            parent.spawn(SpriteBundle {
-                texture: game_assets.shadow_texture.clone(),
-                transform: Transform::from_xyz(0., -offset, -0.5),
-                ..Default::default()
-            });
+            parent.spawn((
+                Sprite::from_image(game_assets.shadow_texture.clone()),
+                Transform::from_xyz(0., -offset, -0.5),
+            ));
         });
     }
 }

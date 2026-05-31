@@ -1,6 +1,7 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 use bevy::time::{Timer, TimerMode};
-use bevy::utils::Duration;
 use bevy_persistent::prelude::*;
 use serde::{Deserialize, Serialize};
 

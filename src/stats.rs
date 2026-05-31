@@ -1,20 +1,20 @@
 use std::time::Duration;
 
+use bevy::ecs::message::{MessageReader, MessageWriter};
 use bevy::prelude::Time;
+use bevy::sprite::Sprite;
 use bevy::{
     math::Vec3Swizzles,
     prelude::{
-        Bundle, Commands, Component, DespawnRecursiveExt, Entity, EventReader, EventWriter, Handle,
-        Image, Query, Res, Transform, Vec2, Vec3, With,
+        Bundle, Commands, Component, Entity, Handle, Image, Query, Res, Transform, Vec2, Vec3, With,
     },
-    sprite::SpriteBundle,
     time::Timer,
 };
 use bevy_rapier2d::prelude::{ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups};
 
 use crate::game_states::loading::GameAssets;
 use crate::{
-    collision::BodyLayers, enemy::Enemy, floor::EnemyKilledEvent, movement::movement::Follow,
+    collision::BodyLayers, enemy::Enemy, floor::EnemyKilledMessage, movement::movement::Follow,
     player::Player,
 };
 
@@ -135,7 +135,7 @@ impl Cooldown {
     }
 
     pub fn is_ready(&self) -> bool {
-        self.timer.finished()
+        self.timer.is_finished()
     }
 
     pub fn reset(&mut self) {
@@ -157,83 +157,47 @@ pub struct StatsBundle {
     pub cooldown: Cooldown,
 }
 
-pub fn death_system(
+pub fn trigger_enemy_death(
     mut commands: Commands,
     query: Query<(Entity, &Health, Option<&Enemy>)>,
-    mut enemy_kill_writer: EventWriter<EnemyKilledEvent>,
+    mut enemy_kill_writer: MessageWriter<EnemyKilledMessage>,
 ) {
     for (entity, health, enemy) in query.iter() {
         if health.current == 0 {
             if enemy.is_some() {
-                enemy_kill_writer.send(EnemyKilledEvent(entity));
+                enemy_kill_writer.write(EnemyKilledMessage(entity));
             } else {
-                commands.entity(entity).despawn_recursive();
+                commands.entity(entity).despawn();
             }
         }
     }
 }
 
 //TODO: Move this to a separate file
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct Drop;
-
-#[derive(Bundle)]
-pub struct XPDropBundle {
-    pub drop: Drop,
-    pub xp: XP,
-    //TODO: Check if this a simple sprite or a sprite sheet animation
-    pub sprite_bundle: SpriteBundle,
-    pub follow: Follow,
-    pub collider: Collider,
-    pub collision_events: ActiveEvents,
-    pub collision_types: ActiveCollisionTypes,
-    pub collision_groups: CollisionGroups,
-}
-
-impl XPDropBundle {
-    pub fn spawn_enemy_drop(
-        location: Vec2,
-        xp: u32,
-        commands: &mut Commands,
-        texture: Handle<Image>,
-        player: Entity,
-    ) -> Entity {
-        commands
-            .spawn(XPDropBundle {
-                drop: Drop,
-                xp: XP::new(xp),
-                sprite_bundle: SpriteBundle {
-                    texture,
-                    transform: Transform::from_translation(Vec3::new(location.x, location.y, 3.)),
-                    ..Default::default()
-                },
-                follow: Follow::new(player, 2.5, false, 0.1),
-                collider: Collider::ball(4.),
-                collision_events: ActiveEvents::COLLISION_EVENTS,
-                collision_types: ActiveCollisionTypes::all(),
-                collision_groups: CollisionGroups::new(BodyLayers::XP_LAYER, BodyLayers::PLAYER),
-            })
-            .id()
-    }
-}
 
 pub fn drop_xp_system(
     mut commands: Commands,
-    mut enemy_kill_reader: EventReader<EnemyKilledEvent>,
+    mut enemy_kill_reader: MessageReader<EnemyKilledMessage>,
     query: Query<(&Transform, &XP), With<Enemy>>,
     game_assets: Res<GameAssets>,
     player_query: Query<Entity, With<Player>>,
 ) {
-    if let Ok(player) = player_query.get_single() {
+    if let Ok(player) = player_query.single() {
         for event in enemy_kill_reader.read() {
             if let Ok((transform, xp)) = query.get(event.0) {
-                XPDropBundle::spawn_enemy_drop(
-                    transform.translation.xy(),
-                    xp.amount,
-                    &mut commands,
-                    game_assets.xp_texture.clone(),
-                    player,
-                );
+                commands.spawn((
+                    Drop,
+                    XP::new(xp.amount),
+                    Sprite::from_image(game_assets.xp_texture.clone()),
+                    Transform::from_translation(transform.translation.xy().extend(3.)),
+                    Follow::new(player, 2.5, false, 0.1),
+                    Collider::ball(4.),
+                    ActiveEvents::COLLISION_EVENTS,
+                    ActiveCollisionTypes::all(),
+                    CollisionGroups::new(BodyLayers::XP_LAYER, BodyLayers::PLAYER),
+                ));
             }
         }
     }
@@ -284,7 +248,7 @@ pub fn revenge_mode(
             revenge.active = true;
         }
 
-        let decay = revenge.decay() * time.delta_seconds();
+        let decay = revenge.decay() * time.delta_secs();
 
         if revenge.amount > revenge.total {
             revenge.amount = revenge.total;

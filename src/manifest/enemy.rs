@@ -2,14 +2,13 @@ use std::convert::Infallible;
 
 use bevy::{
     asset::{Asset, Handle},
-    ecs::system::Resource,
+    ecs::resource::Resource,
+    image::{Image, TextureAtlasLayout},
     math::Vec2,
+    platform::collections::HashMap,
     reflect::TypePath,
-    render::texture::Image,
-    sprite::TextureAtlasLayout,
-    utils::HashMap,
 };
-use bevy_spritesheet_animation::prelude::AnimationId;
+use bevy_spritesheet_animation::spritesheet::Spritesheet;
 use leafwing_manifest::{
     identifier::Id,
     manifest::{Manifest, ManifestFormat},
@@ -85,6 +84,12 @@ impl Manifest for EnemyManifest {
             .map(|raw_enemy| {
                 let (texture, atlas) = load_texture_data(&raw_enemy.texture, world);
 
+                let spritesheet = Spritesheet::new(
+                    &texture,
+                    raw_enemy.texture.columns as usize,
+                    raw_enemy.texture.rows as usize,
+                );
+
                 let enemy_data = EnemyData {
                     name: raw_enemy.name.clone(),
                     health: raw_enemy.health,
@@ -98,7 +103,7 @@ impl Manifest for EnemyManifest {
                     texture,
                     atlas,
                     attack: load_attack_data(&raw_enemy.attack, world),
-                    animations: load_animations(&raw_enemy.name, &raw_enemy.animations, world),
+                    animations: load_animations(&spritesheet, &raw_enemy.animations, world),
                 };
 
                 (Id::from_name(raw_enemy.name.as_str()), enemy_data)

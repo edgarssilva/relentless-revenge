@@ -3,15 +3,15 @@ use std::path::PathBuf;
 use bevy::{
     app::Plugin,
     asset::{AssetServer, Assets, Handle},
+    image::{Image, TextureAtlasLayout},
     math::{UVec2, Vec2},
+    platform::collections::HashMap,
     prelude::AppExtStates,
-    render::texture::Image,
-    sprite::TextureAtlasLayout,
-    utils::HashMap,
 };
 use bevy_spritesheet_animation::{
     clip::Clip,
-    prelude::{Animation, AnimationDuration, AnimationId, AnimationLibrary},
+    prelude::{Animation, AnimationDuration},
+    spritesheet::Spritesheet,
 };
 use boss::BossManifest;
 use leafwing_manifest::{
@@ -145,28 +145,22 @@ pub struct RawAnimationData {
 }
 
 pub fn load_animations(
-    name: &str,
+    spritesheet: &Spritesheet,
     data: &Vec<RawAnimationData>,
     world: &mut bevy::prelude::World,
 ) -> Animations {
-    let mut library = world
-        .get_resource_mut::<AnimationLibrary>()
-        .expect("No AnimationLibrary found!");
+    let mut animations = world.resource_mut::<Assets<Animation>>();
 
     Animations(
         data.iter()
             .map(|raw| {
-                let clip_id = library.register_clip(
-                    Clip::from_frames(raw.frames.clone())
-                        .with_duration(AnimationDuration::PerFrame(raw.duration)),
-                );
-                let animation_id = library.register_animation(Animation::from_clip(clip_id));
+                let animation = spritesheet
+                    .create_animation()
+                    .add_indices(raw.frames.clone())
+                    .set_duration(AnimationDuration::PerFrame(raw.duration))
+                    .build();
 
-                library
-                    .name_animation(animation_id, format!("{}_{}", name, raw.name))
-                    .expect(format!("Failed to name animation for {}_{}", name, raw.name).as_str());
-
-                (raw.name.clone(), animation_id)
+                (raw.name.clone(), animations.add(animation))
             })
             .collect(),
     )
@@ -180,14 +174,13 @@ pub struct RawDirectionalAnimationData {
 }
 
 pub fn load_directional_animations(
+    spritesheet: &Spritesheet,
     data: &Vec<RawDirectionalAnimationData>,
     world: &mut bevy::prelude::World,
 ) -> DirectionalAnimations {
-    let mut library = world
-        .get_resource_mut::<AnimationLibrary>()
-        .expect("No AnimationLibrary found!");
+    let mut animations = world.resource_mut::<Assets<Animation>>();
 
-    let mut states: HashMap<State, HashMap<Direction, AnimationId>> = HashMap::new();
+    let mut states: HashMap<State, HashMap<Direction, Handle<Animation>>> = HashMap::new();
 
     for raw in data {
         states.insert(
@@ -195,13 +188,13 @@ pub fn load_directional_animations(
             raw.directions
                 .iter()
                 .map(|(dir, frames)| {
-                    let clip_id = library.register_clip(
-                        Clip::from_frames(frames.clone())
-                            .with_duration(AnimationDuration::PerFrame(raw.duration)),
-                    );
-                    let animation_id = library.register_animation(Animation::from_clip(clip_id));
+                    let animation = spritesheet
+                        .create_animation()
+                        .add_indices(frames.clone())
+                        .set_duration(AnimationDuration::PerFrame(raw.duration))
+                        .build();
 
-                    (*dir, animation_id)
+                    (*dir, animations.add(animation))
                 })
                 .collect(),
         );

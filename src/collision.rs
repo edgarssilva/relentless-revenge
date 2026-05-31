@@ -1,15 +1,10 @@
-use bevy::prelude::{
-    in_state, Color, IntoSystemConfigs, Parent, Res, Text, Text2dBundle, TextStyle, Timer, Update,
-    Vec2,
-};
-use bevy::text::JustifyText;
+use bevy::ecs::hierarchy::ChildOf;
+use bevy::ecs::message::MessageReader;
+use bevy::prelude::*;
 use bevy::time::TimerMode;
 use bevy::{
     math::Vec3Swizzles,
-    prelude::{
-        App, Camera, Commands, DespawnRecursiveExt, Entity, EventReader, Plugin, Query, Transform,
-        With, Without,
-    },
+    prelude::{App, Camera, Commands, Entity, Plugin, Query, Transform, With, Without},
 };
 use bevy_rapier2d::{prelude::*, rapier::prelude::CollisionEventFlags};
 use std::time::Duration;
@@ -52,7 +47,7 @@ impl BodyLayers {
 
 pub fn xp_system(
     mut commands: Commands,
-    mut events: EventReader<CollisionEvent>,
+    mut events: MessageReader<CollisionEvent>,
     drop_query: Query<&XP, (With<Drop>, Without<Player>)>,
     mut player_query: Query<&mut XP, (With<Player>, Without<Drop>)>,
 ) {
@@ -79,27 +74,27 @@ pub fn xp_system(
             let mut player_xp = player_query.get_mut(player_entity).unwrap();
 
             player_xp.add(drop_xp);
-            commands.entity(drop_entity).despawn_recursive();
+            commands.entity(drop_entity).despawn();
         }
     });
 }
 
 pub fn damageable_collision(
-    mut events: EventReader<CollisionEvent>,
+    mut events: MessageReader<CollisionEvent>,
     mut damage_query: Query<(
         &Damage,
         Option<&mut EntitiesHit>,
         Option<&Knockback>,
         Option<&mut Breakable>,
-        Option<&Parent>,
+        Option<&ChildOf>,
     )>,
     mut damageable_query: Query<(&mut Health, &Transform), With<Damageable>>,
     mut player_query: Query<&mut Revenge, With<Player>>,
     camera_query: Query<Entity, With<Camera>>,
     mut commands: Commands,
     game_assets: Res<GameAssets>,
-) {
-    events.read().for_each(|e| {
+) -> Result {
+    for e in events.read() {
         let (e1, e2, started, flags) = match e {
             CollisionEvent::Started(e1, e2, flags) => (e1, e2, true, flags),
             CollisionEvent::Stopped(e1, e2, flags) => (e1, e2, false, flags),
@@ -107,7 +102,7 @@ pub fn damageable_collision(
 
         //If entity removed from world, don't handle collision
         if !started || *flags == CollisionEventFlags::REMOVED {
-            return;
+            return Ok(());
         }
 
         //TODO: Check what to do when both entities have damage and damageable
@@ -119,12 +114,12 @@ pub fn damageable_collision(
             (false, true) => Some((*e2, *e1)),
             _ => None,
         } {
-            let (damage, entities_hit, knockback, breakable, parent) =
+            let (damage, entities_hit, knockback, breakable, child_of) =
                 damage_query.get_mut(damage_entity).unwrap();
 
             if let Some(mut entities_hit) = entities_hit {
                 if entities_hit.0.contains(&damaged_entity) {
-                    return;
+                    return Ok(());
                 } else {
                     entities_hit.0.push(damaged_entity);
                 }
@@ -144,21 +139,23 @@ pub fn damageable_collision(
             if let Some(knockback) = knockback {
                 let new_pos =
                     transform.translation.xy() + knockback.force * knockback.direction.vec();
-                if let Some(mut ec) = commands.get_entity(damaged_entity) {
-                    if health.current > 0 {
-                        ec.insert(EaseTo::new(new_pos, EaseFunction::EaseOutExpo, 0.5));
-                    }
+                if health.current > 0 {
+                    commands.get_entity(damaged_entity)?.insert(EaseTo::new(
+                        new_pos,
+                        EaseFunction::EaseOutExpo,
+                        0.5,
+                    ));
                 }
             }
 
-            if let Some(parent) = parent {
-                if let Ok(mut revenge) = player_query.get_mut(parent.get()) {
+            if let Some(child_of) = child_of {
+                if let Ok(mut revenge) = player_query.get_mut(child_of.0) {
                     revenge.amount += damage.amount as f32 / 10.;
                 }
             }
 
             //Switch this into a shake event
-            if let Ok(camera) = camera_query.get_single() {
+            if let Ok(camera) = camera_query.single() {
                 commands.entity(camera).insert(Shake {
                     duration: 0.25,
                     strength: (damage.amount as f32 / 25.).powi(2),
@@ -166,20 +163,16 @@ pub fn damageable_collision(
             }
 
             //TODO: Move this into a separate system using events
-            let text_style = TextStyle {
-                font: game_assets.font.clone(),
-                font_size: 12.0,
-                color: Color::WHITE,
-            };
-
-            //Spawn damage indicator text
             commands.spawn((
-                Text2dBundle {
-                    text: Text::from_section(format!("-{}", damage.amount), text_style)
-                        .with_justify(JustifyText::Center),
-                    transform: Transform::from_translation(transform.translation.xy().extend(500.)),
-                    ..Default::default()
+                Text::new(format!("-{}", damage.amount)),
+                TextLayout::new_with_justify(Justify::Center),
+                TextColor(Color::WHITE),
+                TextFont {
+                    font: game_assets.font.clone(),
+                    font_size: 12.0,
+                    ..default()
                 },
+                Transform::from_translation(transform.translation.xy().extend(500.)),
                 EaseTo::new(
                     transform.translation.xy() + Vec2::new(0., 20.),
                     EaseFunction::EaseOutExpo,
@@ -188,5 +181,7 @@ pub fn damageable_collision(
                 Lifetime(Timer::new(Duration::from_secs_f32(1.), TimerMode::Once)),
             ));
         }
-    });
+    }
+
+    Ok(())
 }

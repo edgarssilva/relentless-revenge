@@ -10,9 +10,10 @@ use crate::{
     Cooldown, Damage, Health, MovementSpeed, XP,
 };
 use bevy::{
+    image::TextureAtlas,
     math::Vec3,
     prelude::{default, Bundle, Component, Transform},
-    sprite::{SpriteBundle, TextureAtlas},
+    sprite::Sprite,
 };
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, CollisionGroups, RigidBody};
 use bevy_spritesheet_animation::prelude::SpritesheetAnimation;
@@ -32,8 +33,8 @@ pub struct BossBundle {
     //Sprite
     ysort: YSort,
     shadow: Shadow,
-    sprite: SpriteBundle,
-    atlas: TextureAtlas,
+    sprite: Sprite,
+    transform: Transform,
     animation: SpritesheetAnimation,
     animations: Animations,
     feet_offset: FeetOffset,
@@ -63,26 +64,24 @@ impl BossBundle {
             ysort: YSort(sorting::ENTITIES_LAYER),
             shadow: Shadow,
 
-            //TODO: Extract this
-            sprite: SpriteBundle {
-                texture: data.texture.clone(),
-                transform: Transform {
-                    translation,
-                    scale: data.scale.extend(1.),
-                    ..default()
-                },
+            transform: Transform {
+                translation,
+                scale: data.scale.extend(1.),
                 ..default()
             },
-            atlas: TextureAtlas {
-                layout: data.atlas.clone(),
-                index: 0,
-            },
-            animation: SpritesheetAnimation::from_id(
-                *data
-                    .animations
+            sprite: Sprite::from_atlas_image(
+                data.texture.clone(),
+                TextureAtlas {
+                    layout: data.atlas.clone(),
+                    index: 0,
+                },
+            ),
+            animation: SpritesheetAnimation::new(
+                data.animations
                     .0
                     .get("idle")
-                    .expect(format!("No idle animation for {}", data.name).as_str()),
+                    .expect(format!("No idle animation for {}", data.name).as_str())
+                    .clone(),
             ),
             animations: data.animations.clone(),
             feet_offset: FeetOffset(data.feet_offset.unwrap_or_default()),

@@ -77,7 +77,7 @@ pub fn ease_to_position(
             .lerp(ease.position, ease_function(percentage, &ease.function))
             .extend(transform.translation.z);
 
-        ease.elapsed += time.delta_seconds();
+        ease.elapsed += time.delta_secs();
 
         //TODO: Make the threshold value configurable
         if transform.translation.xy().distance(ease.position) < 1.5 {

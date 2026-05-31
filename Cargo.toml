@@ -6,26 +6,26 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = {version = "0.14", features = ["dynamic_linking"] }
-bevy_egui = "0.29.0"
-bevy_rapier2d = "0.27"
-bevy_ecs_tilemap = "0.14" 
+bevy = {version = "0.18", features = ["dynamic_linking"] }
+bevy_egui = "0.39.1"
+bevy_rapier2d = "0.34"
+bevy_ecs_tilemap = "0.18"
 
 #big-brain = "0.16.0"
-seldom_state = "0.11"
+seldom_state = "0.16"
 
-leafwing-input-manager = "0.15"
-leafwing_manifest = {version = "0.2.0", features = ["yaml"]}
+leafwing-input-manager = "0.20"
+leafwing_manifest = {version = "0.6", features = ["yaml"]}
 
 #bevy_asset_loader = { version = "0.20", features = ["2d"] }
-bevy_common_assets = { version = "0.11", features = ["yaml"] }
+bevy_common_assets = { version = "0.16", features = ["yaml"] }
 
 turborand = "0.10.0"
 dirs = "5.0"
 serde = "1.0"
-bevy-persistent = { version = "0.6", features = ["all"] }
-noisy_bevy = "0.7"
-bevy_spritesheet_animation = "0.4.2"
+bevy-persistent = { version = "0.10", features = ["all"] }
+noisy_bevy = "0.13"
+bevy_spritesheet_animation = "6.1"
 
 # Otimizations to speed up compilation in debug mode
 # Enable a small amount of optimization in debug mode

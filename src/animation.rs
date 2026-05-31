@@ -2,8 +2,10 @@ use crate::{movement::direction::Direction, state::State, GameState};
 use bevy_spritesheet_animation::prelude::*;
 
 use bevy::{
-    prelude::{in_state, App, Component, IntoSystemConfigs, Plugin, Query, Update},
-    utils::HashMap,
+    asset::Handle,
+    ecs::schedule::IntoScheduleConfigs,
+    platform::collections::HashMap,
+    prelude::{in_state, App, Component, Plugin, Query, Update},
 };
 
 pub struct AnimationPlugin;
@@ -19,10 +21,10 @@ impl Plugin for AnimationPlugin {
 }
 
 #[derive(Component, PartialEq, Debug, Clone)]
-pub struct Animations(pub HashMap<String, AnimationId>);
+pub struct Animations(pub HashMap<String, Handle<Animation>>);
 
 #[derive(Component, PartialEq, Debug, Clone)] //And statefull
-pub struct DirectionalAnimations(pub HashMap<State, HashMap<Direction, AnimationId>>);
+pub struct DirectionalAnimations(pub HashMap<State, HashMap<Direction, Handle<Animation>>>);
 
 pub fn animation_state(
     mut query: Query<(
@@ -35,8 +37,8 @@ pub fn animation_state(
     for (animations, mut spritesheet, state, direction) in query.iter_mut() {
         if let Some(state_animations) = animations.0.get(state) {
             if let Some(anim) = state_animations.get(direction) {
-                if spritesheet.animation_id != *anim {
-                    spritesheet.switch(*anim);
+                if *anim != spritesheet.animation {
+                    spritesheet.switch(anim.clone());
                 }
             }
         }

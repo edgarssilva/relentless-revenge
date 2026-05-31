@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
@@ -33,9 +31,9 @@ pub struct Enemy(String);
 #[derive(Bundle)]
 pub struct EnemyBundle {
     enemy: Enemy,
-    pub sprite: SpriteBundle,
-    pub atlas: TextureAtlas,
+    pub sprite: Sprite,
     pub stats: StatsBundle,
+    pub transform: Transform,
     pub damageable: Damageable,
     pub animations: Animations,
     pub animation: SpritesheetAnimation,
@@ -55,17 +53,16 @@ impl EnemyBundle {
     pub fn new(data: &EnemyData, translation: Vec3) -> Self {
         Self {
             enemy: Enemy(data.name.clone()),
-            atlas: TextureAtlas {
-                layout: data.atlas.clone(),
-                index: 0,
-            },
-            sprite: SpriteBundle {
-                texture: data.texture.clone(),
-                transform: Transform {
-                    translation,
-                    scale: data.scale.extend(1.),
-                    ..default()
+            sprite: Sprite::from_atlas_image(
+                data.texture.clone(),
+                TextureAtlas {
+                    layout: data.atlas.clone(),
+                    index: 0,
                 },
+            ),
+            transform: Transform {
+                translation,
+                scale: data.scale.extend(1.),
                 ..default()
             },
             stats: StatsBundle {
@@ -76,13 +73,13 @@ impl EnemyBundle {
                 cooldown: Cooldown::new(data.cooldown),
             },
             damageable: Damageable,
-            animation: SpritesheetAnimation::from_id(
-                *data
-                    .animations
+            animation: SpritesheetAnimation::new(
+                data.animations
                     .0
                     .values()
                     .next()
-                    .expect(format!("No animations for {}", data.name).as_str()),
+                    .expect(format!("No animations for {}", data.name).as_str())
+                    .clone(),
             ),
             animations: data.animations.clone(),
             rigid_body: RigidBody::KinematicPositionBased,
