@@ -1,101 +1,56 @@
+use bevy::ecs::error::Result;
 use bevy::ecs::message::MessageWriter;
-use bevy::math::Vec3Swizzles;
-use bevy::prelude::{Component, Local, Query, Res, Time, Transform, Vec2, With};
-use bevy_ecs_tilemap::anchor::TilemapAnchor;
-use bevy_ecs_tilemap::map::TilemapTileSize;
-use bevy_ecs_tilemap::{
-    prelude::{TilemapGridSize, TilemapSize, TilemapType},
-    tiles::{TilePos, TileStorage},
-};
+use bevy::math::{IVec2, Vec3Swizzles};
+use bevy::prelude::Component;
+use bevy::prelude::{Local, Query, Res, Time, With};
+use bevy::transform::components::Transform;
 
+use crate::controller::Controlled;
 use crate::floor::TriggerNextFloorMessage;
-use crate::map::generation::LevelPortalTile;
-use crate::{controller::Controlled, state::State};
-
-#[derive(Component)]
-pub struct WalkableTile;
+use crate::map::generation::MapResource;
+use crate::player::Player;
+use crate::state::State;
 
 pub fn restrict_movement(
     mut controlled_query: Query<(&Controlled, &mut Transform, Option<&State>)>,
-    query: Query<(
-        &TileStorage,
-        &TilemapType,
-        &TilemapSize,
-        &TilemapTileSize,
-        &TilemapGridSize,
-        &TilemapAnchor,
-    )>,
-    walkable_tiles_query: Query<&WalkableTile>,
-) {
-    if let Some((tile_storage, tilemap_type, map_size, tile_size, grid_size, anchor)) =
-        query.iter().next()
-    {
-        for (controlled, mut transform, state) in controlled_query.iter_mut() {
-            if let Some(move_to) = controlled.move_to {
-                let grid_pos = move_to + Vec2::new(0., -16.); //Account for the tile being 32x32 on a
-                                                              //32x16 grid
+    map_resource: Res<MapResource>,
+) -> Result {
+    let (controlled, mut transform, state) = controlled_query.single_mut()?;
 
-                if let Some(tile_pos) = TilePos::from_world_pos(
-                    &grid_pos,
-                    map_size,
-                    grid_size,
-                    tile_size,
-                    tilemap_type,
-                    anchor,
-                ) {
-                    //Don't move if the player doesn't want to move
-                    if let Some(state) = state {
-                        if !state.equals(State::Walking) {
-                            continue;
-                        }
-                    }
-
-                    if let Some(tile_entity) = tile_storage.get(&tile_pos) {
-                        if walkable_tiles_query.get(tile_entity).is_ok() {
-                            transform.translation = move_to.extend(transform.translation.z);
-                        }
-                    }
-                }
-            }
+    if controlled.move_to.is_some()
+        && match map_resource.get_aprox_tile(controlled.move_to.unwrap()) {
+            Some(tile) => tile.walkable,
+            None => false,
         }
+        && state.map_or_else(|| true, |s| s.equals(State::Walking))
+    {
+        transform.translation = controlled.move_to.unwrap().extend(transform.translation.z);
     }
+
+    Ok(())
 }
 
 pub fn travel_through_portal(
-    controlled_query: Query<&Transform, With<Controlled>>,
-    query: Query<(
-        &TileStorage,
-        &TilemapType,
-        &TilemapSize,
-        &TilemapTileSize,
-        &TilemapGridSize,
-        &TilemapAnchor,
-    )>,
-    portal_query: Query<&LevelPortalTile>,
+    player_query: Query<&Transform, With<Player>>,
+    map_resource: Res<MapResource>,
     mut timer: Local<f32>,
     delta: Res<Time>,
     mut level_writer: MessageWriter<TriggerNextFloorMessage>,
 ) {
-    if let Some((tile_storage, map_type, map_size, tile_size, grid_size, anchor)) =
-        query.iter().next()
-    {
-        for transform in controlled_query.iter() {
-            let pos = transform.translation.xy() + Vec2::new(0., -16.); //Account for the tile being 32x32 on a
-                                                                        //32x16 grid
-            if let Some(tile_pos) =
-                TilePos::from_world_pos(&pos, map_size, grid_size, tile_size, map_type, anchor)
-            {
-                if let Some(tile_entity) = tile_storage.get(&tile_pos) {
-                    if portal_query.get(tile_entity).is_ok() {
-                        *timer += delta.delta_secs();
+    for transform in player_query.iter() {
+        if map_resource
+            .get_aprox_tile(transform.translation.xy())
+            .map(|tile| tile.last_room)
+            .unwrap_or(false)
+        {
+            *timer += delta.delta_secs();
 
-                        if *timer > 3. {
-                            *timer = 0.0;
-                            level_writer.write(TriggerNextFloorMessage);
-                        }
-                    }
-                }
+            if *timer > 3. {
+                *timer = 0.0;
+                level_writer.write(TriggerNextFloorMessage);
             }
+        } else {
+            *timer = 0.0;
         }
     }
 }

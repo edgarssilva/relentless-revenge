@@ -1,7 +1,12 @@
-use bevy::prelude::{IVec2, Vec2};
+use bevy::{
+    platform::collections::{HashMap, HashSet},
+    prelude::{IVec2, Vec2},
+};
 use turborand::{rng::Rng, TurboRand};
 
-use crate::{manifest::floor::DomainData, movement::direction::Direction};
+use crate::{
+    manifest::floor::DomainData, map::generation::TILE_SIZE, movement::direction::Direction,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Room {
@@ -50,9 +55,9 @@ pub struct Map {
     pub bridges: Vec<Bridge>,
 }
 
-impl Into<Vec<Tile>> for Map {
-    fn into(self) -> Vec<Tile> {
-        let mut tiles = Vec::<Tile>::new();
+impl Map {
+    pub(crate) fn generate_tiles(&self) -> HashMap<IVec2, Tile> {
+        let mut tiles = HashMap::<IVec2, Tile>::new();
 
         for (i, room) in self.rooms.iter().enumerate() {
             for x in -room.radius..=room.radius {
@@ -63,58 +68,60 @@ impl Into<Vec<Tile>> for Map {
                     }
 
                     let pos = room.pos + IVec2::new(x, y);
+                    let world_pos = pos * TILE_SIZE as i32;
                     //let walkable = x * x + y * y <= room.radius * room.radius;
                     let is_center = x == 0 && y == 0;
 
-                    tiles.push(Tile {
-                        pos,
+                    tiles.insert(
+                        world_pos,
+                        Tile {
+                            pos,
+                            walkable: true,
+                            is_center,
+                            empty_neighbors: Vec::new(),
+                            variant: TileVariant::Standard,
+                            spawnable: true,
+                            firt_room: i == 0,
+                            last_room: i == self.rooms.len() - 1,
+                        },
+                    );
+                }
+            }
+        }
+
+        for bridge in &self.bridges {
+            for pos in &bridge.pos {
+                tiles.insert(
+                    pos * TILE_SIZE as i32,
+                    Tile {
+                        pos: pos.clone(),
                         walkable: true,
-                        is_center,
+                        is_center: false,
                         empty_neighbors: Vec::new(),
-                        variant: TileVariant::Standard,
-                        spawnable: true,
-                        firt_room: i == 0,
-                        last_room: i == self.rooms.len() - 1,
-                    });
-                }
+                        variant: TileVariant::Accented,
+                        spawnable: false, //TODO: Should be fine to make the bridges spawnable
+                        firt_room: false,
+                        last_room: false,
+                    },
+                );
             }
         }
 
-        for bridge in self.bridges {
-            for pos in bridge.pos {
-                tiles.push(Tile {
-                    pos,
-                    walkable: true,
-                    is_center: false,
-                    empty_neighbors: Vec::new(),
-                    variant: TileVariant::Accented,
-                    spawnable: false, //TODO: Should be fine to make the bridges spawnable
-                    firt_room: false,
-                    last_room: false,
-                });
-            }
-        }
+        let existing_positions: HashSet<IVec2> = tiles.keys().cloned().collect();
 
-        let tiles_copy = tiles.clone(); //TODO: possible optimization
+        for (pos, tile) in tiles.iter_mut() {
+            tile.empty_neighbors = Direction::values()
+                .iter()
+                .filter(|direction| {
+                    let neighbor_pos = *pos + direction.vec().as_ivec2();
+                    !existing_positions.contains(&neighbor_pos)
+                })
+                .cloned() // Copy the Direction enum into the vector
+                .collect();
 
-        for tile in &mut tiles {
-            let mut empty_neighbors = Vec::<Direction>::new();
-
-            for direction in Direction::values() {
-                let neighbor = tiles_copy
-                    .iter()
-                    .find(|neighbor| neighbor.pos == tile.pos + direction.vec().as_ivec2());
-
-                if neighbor.is_none() {
-                    empty_neighbors.push(direction);
-                }
-            }
-
-            if empty_neighbors.len() != 0 || tile.is_center {
+            if !tile.empty_neighbors.is_empty() || tile.is_center {
                 tile.spawnable = false;
             }
-
-            tile.empty_neighbors = empty_neighbors;
         }
 
         tiles

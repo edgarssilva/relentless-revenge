@@ -6,8 +6,8 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = {version = "0.18", features = ["dynamic_linking"] }
-bevy_egui = "0.39.1"
+bevy = {version = "0.18", features = ["dynamic_linking", "dev", "bevy_camera_controller", "free_camera"] }
+bevy_egui = "0.39"
 bevy_rapier2d = "0.34"
 bevy_ecs_tilemap = "0.18"
 
@@ -26,6 +26,7 @@ serde = "1.0"
 bevy-persistent = { version = "0.10", features = ["all"] }
 noisy_bevy = "0.13"
 bevy_spritesheet_animation = "6.1"
+bevy-inspector-egui = "0.36.0"
 
 # Otimizations to speed up compilation in debug mode
 # Enable a small amount of optimization in debug mode

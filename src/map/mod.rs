@@ -1,3 +1,4 @@
+pub mod debug;
 pub mod generation;
-pub mod walkable;
 pub mod map;
+pub mod walkable;

@@ -17,11 +17,12 @@ use turborand::TurboRand;
 
 use crate::boss::BossBundle;
 use crate::enemy::state_machine::Idle;
+use crate::layers::world_z;
 use crate::manifest::boss::BossManifest;
 use crate::manifest::enemy::EnemyManifest;
 use crate::manifest::floor::{DomainData, DomainManifest};
 use crate::map::generation::open_level_portal;
-use crate::map::walkable::travel_through_portal;
+use crate::map::walkable::{restrict_movement, travel_through_portal};
 use crate::player::Player;
 use crate::ui::boss::DomainName;
 use crate::{enemy::EnemyBundle, GameState};
@@ -72,12 +73,13 @@ impl Plugin for FloorPlugin {
                     new_domain_trigger,
                     move_player,
                     enemy_killed,
-                    spawn_enemies,
+                    //spawn_enemies,
                     spawn_boss,
                     generate_floor,
                     keymap_generate,
                     open_level_portal,
                     travel_through_portal,
+                    restrict_movement,
                 )
                     .run_if(in_state(GameState::InGame)),
             );
@@ -145,7 +147,7 @@ fn generate_floor(
 
 fn move_player(
     mut player_query: Query<&mut Transform, (With<Player>, Without<Camera>)>,
-    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
+    //mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
     mut event: MessageReader<SpawnFloorEntitiesMessage>,
 ) {
     for e in event.read() {
@@ -156,10 +158,10 @@ fn move_player(
             transform.translation.y = pos.y;
         }
 
-        if let Ok(mut transform) = camera_query.single_mut() {
+        /*if let Ok(mut transform) = camera_query.single_mut() {
             transform.translation.x = pos.x;
             transform.translation.y = pos.y;
-        }
+        }*/
     }
 }
 
@@ -178,7 +180,7 @@ fn spawn_boss(
             if let Some(boss) = boss_manifest.get_by_name(domain.boss.clone()) {
                 floor.boss = Some(
                     commands
-                        .spawn(BossBundle::new(boss, e.portal_pos.extend(38.0)))
+                        .spawn(BossBundle::new(boss, e.portal_pos.extend(world_z::ENEMY)))
                         .insert(Idle)
                         .id(),
                 );
@@ -224,7 +226,10 @@ fn spawn_enemies(
                         if let Some(enemy_data) = enemy_manifest.get_by_name(enemy.1.clone()) {
                             floor.enemies.push(
                                 commands
-                                    .spawn(EnemyBundle::new(enemy_data, pos.1.extend(38.0)))
+                                    .spawn(EnemyBundle::new(
+                                        enemy_data,
+                                        pos.1.extend(world_z::ENEMY),
+                                    ))
                                     .insert(Idle)
                                     .id(),
                             );

@@ -11,6 +11,7 @@ use std::time::Duration;
 
 use crate::attack::{EntitiesHit, Lifetime};
 use crate::game_states::loading::GameAssets;
+use crate::layers::world_z;
 use crate::stats::Revenge;
 use crate::{
     attack::{Breakable, Damageable, Knockback},
@@ -172,7 +173,7 @@ pub fn damageable_collision(
                     font_size: 12.0,
                     ..default()
                 },
-                Transform::from_translation(transform.translation.xy().extend(500.)),
+                Transform::from_translation(transform.translation.xy().extend(world_z::FLOATING_TEXT)),
                 EaseTo::new(
                     transform.translation.xy() + Vec2::new(0., 20.),
                     EaseFunction::EaseOutExpo,

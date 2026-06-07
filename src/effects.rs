@@ -1,4 +1,5 @@
 use crate::{game_states::loading::GameAssets, sorting::FeetOffset};
+use crate::layers::local_z;
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -14,7 +15,7 @@ pub fn spawn_shadows(
         commands.entity(entity).with_children(|parent| {
             parent.spawn((
                 Sprite::from_image(game_assets.shadow_texture.clone()),
-                Transform::from_xyz(0., -offset, -0.5),
+                Transform::from_xyz(0., -offset, local_z::SHADOW),
             ));
         });
     }

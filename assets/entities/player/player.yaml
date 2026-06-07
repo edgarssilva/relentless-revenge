@@ -2,7 +2,7 @@ size: [ 24, 32 ]
 hitbox: [ 18, 28 ]
 
 xp: 0
-speed: 75
+speed: 50
 health: 250
 damage: 55
 cooldown: 400

@@ -1,13 +1,10 @@
-use crate::map::walkable::WalkableTile;
+use crate::map::generation::MapResource;
 use crate::GameState;
 use bevy::ecs::schedule::IntoScheduleConfigs;
-use bevy::math::{Vec2, Vec3Swizzles};
+use bevy::math::{IVec2, Vec2, Vec3Swizzles};
 use bevy::prelude::{
     in_state, App, Commands, Component, Entity, Plugin, Query, Res, Time, Transform, Update,
 };
-use bevy_ecs_tilemap::anchor::TilemapAnchor;
-use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapSize, TilemapTileSize, TilemapType};
-use bevy_ecs_tilemap::prelude::{TilePos, TileStorage};
 
 use super::easing::ease_to_position;
 
@@ -90,15 +87,7 @@ pub struct Velocity(pub Vec2, pub bool);
 
 pub fn movement_system(
     mut query_velocity: Query<(&Velocity, &mut Transform)>,
-    tile_query: Query<(
-        &TileStorage,
-        &TilemapType,
-        &TilemapSize,
-        &TilemapTileSize,
-        &TilemapGridSize,
-        &TilemapAnchor,
-    )>,
-    walkable_tiles_query: Query<&WalkableTile>,
+    map_resource: Res<MapResource>,
     time: Res<Time>,
 ) {
     for (velocity, mut transform) in query_velocity.iter_mut() {
@@ -110,23 +99,12 @@ pub fn movement_system(
             continue;
         }
 
-        if let Some((tile_storage, tilemap_type, map_size, tile_size, grid_size, anchor)) =
-            tile_query.iter().next()
+        if map_resource
+            .get_aprox_tile(new_pos.xy())
+            .map(|tile| tile.walkable)
+            .unwrap_or(false)
         {
-            if let Some(tile_pos) = TilePos::from_world_pos(
-                &new_pos.xy(),
-                map_size,
-                grid_size,
-                tile_size,
-                tilemap_type,
-                anchor,
-            ) {
-                if let Some(tile_entity) = tile_storage.get(&tile_pos) {
-                    if walkable_tiles_query.get(tile_entity).is_ok() {
-                        transform.translation = new_pos;
-                    }
-                }
-            }
+            transform.translation = new_pos;
         }
     }
 }

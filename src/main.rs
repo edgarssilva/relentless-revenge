@@ -14,6 +14,7 @@ mod enemy;
 mod floor;
 mod game_states;
 mod helper;
+mod layers;
 mod manifest;
 mod map;
 mod movement;
@@ -23,11 +24,6 @@ mod state;
 mod statistics;
 mod stats;
 mod ui;
-
-pub const PLAYER_Z: f32 = 39.;
-pub const MAP_Z: f32 = 36.;
-pub const BACKGROUND_Z: f32 = 1.;
-pub const DEBUG_Z: f32 = 100.;
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 enum GameState {

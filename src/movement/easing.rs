@@ -80,7 +80,7 @@ pub fn ease_to_position(
         ease.elapsed += time.delta_secs();
 
         //TODO: Make the threshold value configurable
-        if transform.translation.xy().distance(ease.position) < 1.5 {
+        if transform.translation.xy().distance(ease.position) < 0.015 {
             transform.translation = ease.position.extend(transform.translation.z);
             commands.entity(entity).remove::<EaseTo>();
         }

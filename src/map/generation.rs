@@ -1,185 +1,120 @@
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
 
-use crate::floor::{
-    FloorClearedMessage, FloorResource, GenerateFloorMessage, SpawnFloorEntitiesMessage,
-};
+use crate::floor::{FloorClearedMessage, GenerateFloorMessage, SpawnFloorEntitiesMessage};
+use crate::layers::world_z;
 
-use crate::game_states::loading::GameAssets;
-use crate::map::map::generate_map;
+use crate::map::map::Map;
 use crate::map::map::Tile;
 use crate::map::map::TileVariant;
-use crate::map::walkable::WalkableTile;
 
-const QUADRANT_SIDE_LENGTH: u32 = 64;
-const TILE_SIZE: f32 = 32.0;
+pub const MAP_HEIGHT: f32 = 0.01;
+pub const TILE_SIZE: f32 = 10.0;
+
+#[derive(Resource)]
+pub struct MapResource {
+    pub blueprint: Map,
+    pub tiles: HashMap<IVec2, Tile>,
+}
+
+impl MapResource {
+    pub fn new(blueprint: Map) -> Self {
+        MapResource {
+            tiles: blueprint.generate_tiles(),
+            blueprint,
+        }
+    }
+
+    pub fn get_tile(&self, pos: IVec2) -> Option<&Tile> {
+        self.tiles.get(&pos)
+    }
+
+    //TODO: Check if this rounding is enough, or check within bounds of tile
+    pub fn get_aprox_tile(&self, pos: Vec2) -> Option<&Tile> {
+        self.get_tile(pos.round().as_ivec2())
+    }
+}
 
 #[derive(Component)]
-pub struct LevelStartTile;
+pub struct TileMarker;
 
 #[derive(Component)]
 pub struct LevelPortalTile;
 
-pub fn setup_map(mut commands: Commands, game_assets: Res<GameAssets>) {
-    let tilemap_size = TilemapSize {
-        x: QUADRANT_SIDE_LENGTH * 2,
-        y: QUADRANT_SIDE_LENGTH * 2,
-    };
+#[derive(Component)]
+pub struct PlayerSpawnTile;
 
-    let mut tile_storage = TileStorage::empty(tilemap_size);
-    let tilemap_entity = commands.spawn_empty().id();
-    let tilemap_id = TilemapId(tilemap_entity);
-
-    let tile_size = TilemapTileSize {
-        x: TILE_SIZE,
-        y: TILE_SIZE,
-    };
-    let grid_size = TilemapGridSize {
-        x: TILE_SIZE,
-        y: TILE_SIZE / 2.,
-    };
-
-    fill_tilemap(
-        TileTextureIndex(8),
-        tilemap_size,
-        tilemap_id,
-        &mut commands,
-        &mut tile_storage,
-    );
-
-    commands.entity(tilemap_entity).insert(TilemapBundle {
-        grid_size,
-        size: tilemap_size,
-        storage: tile_storage,
-        texture: TilemapTexture::Single(game_assets.map_texture.clone()),
-        tile_size,
-        map_type: TilemapType::Isometric(IsoCoordSystem::Diamond),
-        render_settings: TilemapRenderSettings {
-            render_chunk_size: UVec2::new(32, 1),
-            y_sort: true,
-        },
-        ..Default::default()
-    });
-}
-
-pub fn remake_map(
-    mut event: MessageReader<GenerateFloorMessage>,
-    mut tile_query: Query<(Entity, &mut TileTextureIndex)>,
-    map_query: Query<(
-        &TilemapSize,
-        &TilemapGridSize,
-        &TilemapTileSize,
-        &TilemapType,
-        &TilemapAnchor,
-    )>,
-    tile_storage_query: Query<&TileStorage>,
-    mut spawn_writer: MessageWriter<SpawnFloorEntitiesMessage>,
+pub fn build_3d_map_system(
+    event: MessageReader<GenerateFloorMessage>,
+    map_resource: Res<MapResource>,
     mut commands: Commands,
-    floor: Res<FloorResource>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut event_writer: MessageWriter<SpawnFloorEntitiesMessage>,
 ) {
-    if let Some(domain_data) = &floor.domain {
-        for _ in event.read() {
-            //Change all tiles to clear texture
-            for (entity, mut tile) in tile_query.iter_mut() {
-                tile.0 = 8;
-                //TODO: Check if it's better to remove all the tiles and then add them back
-                commands.entity(entity).remove::<WalkableTile>();
-                commands.entity(entity).remove::<LevelStartTile>();
-                commands.entity(entity).remove::<LevelPortalTile>();
-            }
-
-            if let Ok(tile_storage) = tile_storage_query.single() {
-                let map = generate_map(domain_data);
-                let tiles: Vec<Tile> = map.into();
-                let spawn_event = build_map(
-                    tiles,
-                    &mut tile_query,
-                    &map_query,
-                    tile_storage,
-                    &mut commands,
-                );
-
-                spawn_writer.write(spawn_event);
-            }
-        }
+    if event.is_empty() {
+        return;
     }
-}
 
-fn build_map(
-    tiles: Vec<Tile>,
-    tile_query: &mut Query<(Entity, &mut TileTextureIndex)>,
-    map_query: &Query<(
-        &TilemapSize,
-        &TilemapGridSize,
-        &TilemapTileSize,
-        &TilemapType,
-        &TilemapAnchor,
-    )>,
-    tile_storage: &TileStorage,
-    commands: &mut Commands,
-) -> SpawnFloorEntitiesMessage {
     let mut player_pos = Vec2::ZERO;
     let mut spawnable_pos = Vec::new();
     let mut portal_pos = Vec2::ZERO;
 
-    for tile in &tiles {
-        let tile_pos = TilePos {
-            x: tile.pos.x as u32,
-            y: tile.pos.y as u32,
+    let standard_mesh = meshes.add(Cuboid::new(TILE_SIZE, TILE_SIZE, MAP_HEIGHT));
+    let standard_material = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.4, 0.4, 0.4),
+        ..Default::default()
+    });
+    let accented_material = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.6, 0.3, 0.3),
+        ..Default::default()
+    });
+
+    for tile in map_resource.tiles.values() {
+        let world_pos_3d = Vec3::new(
+            tile.pos.x as f32 * TILE_SIZE,
+            tile.pos.y as f32 * TILE_SIZE,
+            world_z::MAP,
+        );
+        let world_pos_2d = world_pos_3d.xy(); // Quick .xy() swizzle shortcut
+
+        let active_material = match tile.variant {
+            TileVariant::Standard => standard_material.clone(),
+            TileVariant::Accented => accented_material.clone(),
         };
 
-        if let Ok((map_size, grid_size, tile_size, map_type, anchor)) = map_query.single() {
-            let world_pos =
-                tile_pos.center_in_world(map_size, grid_size, tile_size, map_type, anchor);
+        let mut ec = commands.spawn((
+            TileMarker,
+            Mesh3d(standard_mesh.clone()),
+            MeshMaterial3d(active_material),
+            Transform::from_translation(world_pos_3d),
+        ));
 
-            //TODO: Build room using neighbors
-            if let Some(tile_entity) = tile_storage.get(&tile_pos) {
-                let mut ec = commands.entity(tile_entity);
+        if tile.spawnable {
+            spawnable_pos.push(world_pos_2d);
+        }
 
-                if let Ok((_, mut tile_texture)) = tile_query.get_mut(tile_entity) {
-                    tile_texture.0 = match tile.variant {
-                        TileVariant::Standard => 2,
-                        TileVariant::Accented => 0,
-                    };
-                }
-
-                if tile.spawnable {
-                    spawnable_pos.push(world_pos);
-                }
-
-                if tile.walkable {
-                    ec.insert(WalkableTile);
-                }
-
-                if tile.is_center {
-                    if tile.firt_room {
-                        ec.insert(LevelStartTile);
-                        player_pos = world_pos;
-                    } else if tile.last_room {
-                        ec.insert(LevelPortalTile);
-                        portal_pos = world_pos;
-                    }
-                }
+        if tile.is_center {
+            if tile.firt_room {
+                player_pos = world_pos_2d;
+                ec.insert(PlayerSpawnTile);
+            } else if tile.last_room {
+                portal_pos = world_pos_2d;
+                ec.insert(LevelPortalTile);
             }
         }
     }
 
-    SpawnFloorEntitiesMessage {
+    event_writer.write(SpawnFloorEntitiesMessage {
         spawnable_pos,
         player_pos,
         portal_pos,
-    }
+    });
 }
 
-pub fn open_level_portal(
-    mut events: MessageReader<FloorClearedMessage>,
-    mut tile_query: Query<&mut TileTextureIndex, With<LevelPortalTile>>,
-) {
+pub fn open_level_portal(mut events: MessageReader<FloorClearedMessage>) {
     if !events.is_empty() {
-        for mut tile in tile_query.iter_mut() {
-            tile.0 = 4;
-        }
-
+        //TODO: Set floor tile to red
         events.clear();
     }
 }

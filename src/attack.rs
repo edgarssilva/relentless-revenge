@@ -19,6 +19,7 @@ use seldom_state::prelude::{Done, StateMachine};
 use seldom_state::trigger::done;
 
 use crate::manifest::AttackData;
+use crate::layers::local_z;
 use crate::{
     collision::BodyLayers,
     movement::direction::Direction,
@@ -244,7 +245,7 @@ pub fn charge_phase_system(
                 let offset = player_size.x * 0.75;
 
                 children.spawn(MeleeAttackBundle::new(
-                    (direction.vec() * offset).extend(10.),
+                    (direction.vec() * offset).extend(local_z::PLAYER_MELEE_ATTACK),
                     player_size,
                     charge_phase.1,
                     *damage,

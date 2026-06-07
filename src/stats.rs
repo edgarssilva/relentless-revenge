@@ -13,6 +13,7 @@ use bevy::{
 use bevy_rapier2d::prelude::{ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups};
 
 use crate::game_states::loading::GameAssets;
+use crate::layers::world_z;
 use crate::{
     collision::BodyLayers, enemy::Enemy, floor::EnemyKilledMessage, movement::movement::Follow,
     player::Player,
@@ -191,7 +192,7 @@ pub fn drop_xp_system(
                     Drop,
                     XP::new(xp.amount),
                     Sprite::from_image(game_assets.xp_texture.clone()),
-                    Transform::from_translation(transform.translation.xy().extend(3.)),
+                    Transform::from_translation(transform.translation.xy().extend(world_z::XP_DROP)),
                     Follow::new(player, 2.5, false, 0.1),
                     Collider::ball(4.),
                     ActiveEvents::COLLISION_EVENTS,

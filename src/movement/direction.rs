@@ -1,4 +1,4 @@
-use bevy::{math::Vec2, prelude::Component};
+use bevy::{math::{IVec3, Vec2}, prelude::Component};
 use serde::{Deserialize, Serialize};
 
 #[derive(Component, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -16,6 +16,15 @@ impl Direction {
             Self::SOUTH => -Vec2::Y,
             Self::WEST => -Vec2::X,
             Self::EAST => Vec2::X,
+        }
+    }
+
+    pub fn ivec3(&self) -> IVec3 {
+        match *self {
+            Self::NORTH => IVec3::new(0, 1, 0),
+            Self::SOUTH => IVec3::new(0, -1, 0),
+            Self::WEST => IVec3::new(-1, 0, 0),
+            Self::EAST => IVec3::new(1, 0, 0),
         }
     }
 

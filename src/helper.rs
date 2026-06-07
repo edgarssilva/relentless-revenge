@@ -1,9 +1,11 @@
 use crate::movement::movement::Follow;
+use crate::player::Player;
 use bevy::camera::Projection;
 use bevy::input::ButtonInput;
 use bevy::math::Vec3Swizzles;
 use bevy::prelude::{
-    Commands, Component, Entity, KeyCode, Query, Res, Resource, Time, Transform, With,
+    Camera, Commands, Component, Entity, KeyCode, Query, Res, Resource, Time, Transform, Vec3,
+    With, Without,
 };
 use noisy_bevy::fbm_simplex_2d_seeded;
 
@@ -14,6 +16,12 @@ pub struct Parallax;
 pub struct Shake {
     pub strength: f32,
     pub duration: f32,
+}
+
+#[derive(Component)]
+pub struct IsometricCameraFollow {
+    pub offset: Vec3,
+    pub smoothness: f32,
 }
 
 pub fn shake_system(
@@ -97,6 +105,22 @@ pub fn helper_camera_controller(
                 ortho_projection.scale += 1. * time.delta_secs();
             }
         }
+    }
+}
+
+pub fn follow_player_camera(
+    mut camera_query: Query<(&mut Transform, &IsometricCameraFollow), (With<Camera>, Without<Player>)>,
+    player_query: Query<&Transform, With<Player>>,
+    time: Res<Time>,
+) {
+    let Ok(player_transform) = player_query.single() else {
+        return;
+    };
+
+    for (mut camera_transform, follow) in camera_query.iter_mut() {
+        let target_pos = player_transform.translation + follow.offset;
+        let lerp_factor = (follow.smoothness * time.delta_secs()).clamp(0.0, 1.0);
+        camera_transform.translation = camera_transform.translation.lerp(target_pos, lerp_factor);
     }
 }
 

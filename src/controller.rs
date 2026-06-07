@@ -11,13 +11,15 @@ use crate::{
     movement::{
         direction::Direction,
         easing::{EaseFunction, EaseTo},
+        iso_mul,
     },
     player::{Player, PlayerActions},
     state::State,
     stats::{Cooldown, MovementSpeed},
 };
 
-#[derive(Component)]
+//TODO: Better name this
+#[derive(Component, Default)]
 pub struct Controlled {
     pub move_to: Option<Vec2>,
 }
@@ -61,7 +63,8 @@ pub fn move_player(
             }
         }
 
-        let dir = dir.normalize_or_zero() * mv_speed.speed as f32 * time.delta_secs();
+        //iso_mul sets the direction to the screen directions
+        let dir = iso_mul(dir.normalize_or_zero() * mv_speed.speed as f32 * time.delta_secs());
 
         if dir.x == 0. && dir.y == 0. {
             state.set(State::Idle);
@@ -114,7 +117,7 @@ pub fn dash_ability(
             cooldown.reset();
 
             //TODO: Add dash stats
-            let new_pos = transform.translation.xy() + (dir.normalize() * 45.);
+            let new_pos = transform.translation.xy() + iso_mul(dir.normalize() * 25.);
             commands.get_entity(entity)?.insert(EaseTo::new(
                 new_pos,
                 EaseFunction::EaseOutQuad,

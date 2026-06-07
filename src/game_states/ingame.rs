@@ -1,3 +1,5 @@
+use bevy::camera::ScalingMode;
+use bevy::camera_controller::free_camera::{FreeCamera, FreeCameraPlugin};
 use bevy::prelude::*;
 use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_egui::EguiPrimaryContextPass;
@@ -10,8 +12,13 @@ use crate::attack::{
 use crate::controller::combo_system;
 use crate::effects::spawn_shadows;
 use crate::game_states::ingame::InGameSet::{Normal, Post};
+use crate::manifest::floor::DomainData;
 use crate::manifest::player::PlayerManifest;
-use crate::sorting::ysort;
+use crate::map::debug::draw_tile_grid_gizmos;
+use crate::map::generation::{build_3d_map_system, MapResource};
+use crate::map::map::{generate_map, Map};
+use crate::player::spawn_player;
+//use crate::sorting::ysort;
 use crate::stats::{level_up, revenge_mode};
 use crate::ui::boss::{draw_boss_health, draw_domain_name};
 use crate::ui::player::{draw_hud, draw_revenge_bar, draw_xp_bar};
@@ -22,13 +29,9 @@ use crate::{
     controller::{attack_ability, dash_ability, finish_dash, move_player},
     enemy::EnemyBehaviourPlugin,
     floor::FloorPlugin,
-    helper::{helper_camera_controller, shake_system},
-    map::{
-        generation::{remake_map, setup_map},
-        walkable::restrict_movement,
-    },
-    movement::movement::{Follow, MovementPlugin},
-    player::{PlayerActions, PlayerBundle},
+    helper::{follow_player_camera, helper_camera_controller, shake_system, IsometricCameraFollow},
+    movement::movement::MovementPlugin,
+    player::PlayerActions,
     statistics::{auto_save, statistics, Statistics},
     stats::{drop_xp_system, trigger_enemy_death},
     GameState,
@@ -52,11 +55,24 @@ impl Plugin for InGamePlugin {
             .add_plugins(EnemyBehaviourPlugin)
             .add_plugins(FloorPlugin)
             .add_plugins(MovementPlugin)
+            //.add_plugins(FreeCameraPlugin)
             .add_systems(
                 Update,
                 (auto_save, statistics).run_if(in_state(GameState::InGame)),
             )
-            .add_systems(OnEnter(GameState::InGame), (setup_game, setup_map))
+            .insert_resource(MapResource::new(generate_map(&DomainData {
+                name: "Test domain".to_string(),
+                floors: (1, 4),
+                rooms: (3, 5),
+                room_size: (3, 5),
+                boss: "test".to_string(),
+                enemies_count: (2, 10),
+                enemies: vec![],
+            })))
+            .add_systems(
+                OnEnter(GameState::InGame),
+                (setup_game /*setup_map*/, spawn_player).chain(),
+            )
             //TODO: Check system ordering and optimize it
             .add_systems(
                 EguiPrimaryContextPass,
@@ -74,6 +90,7 @@ impl Plugin for InGamePlugin {
             .add_systems(
                 Update,
                 (
+                    follow_player_camera,
                     helper_camera_controller,
                     move_player,
                     dash_ability,
@@ -81,7 +98,8 @@ impl Plugin for InGamePlugin {
                     combo_system,
                     tick_cooldown,
                     shake_system,
-                    remake_map,
+                    build_3d_map_system,
+                    draw_tile_grid_gizmos,
                     lifetimes,
                     projectile_break,
                     drop_xp_system,
@@ -98,10 +116,9 @@ impl Plugin for InGamePlugin {
                 Update,
                 (
                     spawn_shadows,
-                    restrict_movement,
                     finish_dash,
                     trigger_enemy_death,
-                    ysort,
+                    //ysort,
                 )
                     .in_set(Post)
                     .after(Normal)
@@ -110,7 +127,7 @@ impl Plugin for InGamePlugin {
     }
 }
 
-fn setup_game(mut commands: Commands, player_manifest: Res<PlayerManifest>) {
+fn setup_game(mut commands: Commands) {
     let dir = dirs::data_dir().unwrap().join("relentless_revenge");
 
     commands.insert_resource(
@@ -123,15 +140,31 @@ fn setup_game(mut commands: Commands, player_manifest: Res<PlayerManifest>) {
             .expect("Failed to create persistent statistics"),
     );
 
-    let player_data = &player_manifest.player_data;
-    let player_entity = commands.spawn(PlayerBundle::new(&player_data)).id();
-
     commands.spawn((
-        Camera2d,
+        FreeCamera::default(),
+        IsometricCameraFollow {
+            offset: Vec3::new(10.0, -10.0, 10.0),
+            smoothness: 9.0,
+        },
+        Camera3d::default(),
         Projection::Orthographic(OrthographicProjection {
-            scale: 0.25,
-            ..OrthographicProjection::default_2d()
+            /*scaling_mode: ScalingMode::FixedVertical {
+                viewport_height: 30.0, // Clean zoom level
+            },*/
+            scale: 0.1,
+            near: -1000.0, // Expands the front clipping plane
+            far: 1000.0,   // Expands the back clipping plane
+            ..OrthographicProjection::default_3d()
         }),
-        Follow::new(player_entity, 2.5, true, 2.),
+        Transform::from_xyz(100.0, -100.0, 100.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Z),
+    ));
+    commands.spawn((
+        DirectionalLight {
+            illuminance: 5000.0,
+            shadows_enabled: true,
+            ..Default::default()
+        },
+        // Angle it slightly down so it hits your 3D faces cleanly
+        Transform::from_xyz(5.0, 10.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 }
