@@ -156,6 +156,7 @@ fn move_player(
         if let Ok(mut transform) = player_query.single_mut() {
             transform.translation.x = pos.x;
             transform.translation.y = pos.y;
+            transform.translation.z = world_z::PLAYER;
         }
 
         /*if let Ok(mut transform) = camera_query.single_mut() {

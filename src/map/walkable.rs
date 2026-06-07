@@ -1,7 +1,6 @@
 use bevy::ecs::error::Result;
 use bevy::ecs::message::MessageWriter;
-use bevy::math::{IVec2, Vec3Swizzles};
-use bevy::prelude::Component;
+use bevy::math::{Vec2, Vec3Swizzles};
 use bevy::prelude::{Local, Query, Res, Time, With};
 use bevy::transform::components::Transform;
 
@@ -17,14 +16,38 @@ pub fn restrict_movement(
 ) -> Result {
     let (controlled, mut transform, state) = controlled_query.single_mut()?;
 
-    if controlled.move_to.is_some()
-        && match map_resource.get_aprox_tile(controlled.move_to.unwrap()) {
-            Some(tile) => tile.walkable,
-            None => false,
+    if let Some(move_to) = controlled.move_to {
+        if state.map_or_else(|| true, |s| s.equals(State::Walking)) {
+            let current_pos = transform.translation.xy();
+
+            if map_resource
+                .get_aprox_tile(&move_to)
+                .map(|tile| tile.walkable)
+                .unwrap_or(false)
+            {
+                transform.translation.x = move_to.x;
+                transform.translation.y = move_to.y;
+            } else {
+                let x_move = Vec2::new(move_to.x, current_pos.y);
+                let y_move = Vec2::new(current_pos.x, move_to.y);
+
+                if map_resource
+                    .get_aprox_tile(&x_move)
+                    .map(|tile| tile.walkable)
+                    .unwrap_or(false)
+                {
+                    transform.translation.x = move_to.x;
+                }
+
+                if map_resource
+                    .get_aprox_tile(&y_move)
+                    .map(|tile| tile.walkable)
+                    .unwrap_or(false)
+                {
+                    transform.translation.y = move_to.y;
+                }
+            }
         }
-        && state.map_or_else(|| true, |s| s.equals(State::Walking))
-    {
-        transform.translation = controlled.move_to.unwrap().extend(transform.translation.z);
     }
 
     Ok(())
@@ -39,8 +62,8 @@ pub fn travel_through_portal(
 ) {
     for transform in player_query.iter() {
         if map_resource
-            .get_aprox_tile(transform.translation.xy())
-            .map(|tile| tile.last_room)
+            .get_aprox_tile(&transform.translation.xy())
+            .map(|tile| tile.last_room && tile.is_center)
             .unwrap_or(false)
         {
             *timer += delta.delta_secs();

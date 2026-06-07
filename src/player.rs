@@ -2,7 +2,7 @@ use bevy::asset::Assets;
 use bevy::color::Color;
 use bevy::ecs::system::{Commands, Res, ResMut};
 use bevy::math::primitives::Capsule3d;
-use bevy::math::{IVec2, Quat};
+use bevy::math::Quat;
 use bevy::mesh::{Mesh, Mesh3d};
 use bevy::pbr::{MeshMaterial3d, StandardMaterial};
 use bevy::prelude::MouseButton;
@@ -44,7 +44,7 @@ pub fn spawn_player(
             ..Default::default()
         })),
         Transform::from_xyz(80., 80., world_z::PLAYER)
-            .with_rotation(Quat::from_rotation_z(-std::f32::consts::FRAC_PI_4)),
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
         Controlled::default(),
         Direction::SOUTH,
         State::Idle,

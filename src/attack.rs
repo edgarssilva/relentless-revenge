@@ -18,8 +18,8 @@ use bevy_rapier2d::prelude::{ActiveCollisionTypes, ActiveEvents, Collider, Senso
 use seldom_state::prelude::{Done, StateMachine};
 use seldom_state::trigger::done;
 
-use crate::manifest::AttackData;
 use crate::layers::local_z;
+use crate::manifest::AttackData;
 use crate::{
     collision::BodyLayers,
     movement::direction::Direction,

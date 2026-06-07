@@ -173,7 +173,9 @@ pub fn damageable_collision(
                     font_size: 12.0,
                     ..default()
                 },
-                Transform::from_translation(transform.translation.xy().extend(world_z::FLOATING_TEXT)),
+                Transform::from_translation(
+                    transform.translation.xy().extend(world_z::FLOATING_TEXT),
+                ),
                 EaseTo::new(
                     transform.translation.xy() + Vec2::new(0., 20.),
                     EaseFunction::EaseOutExpo,

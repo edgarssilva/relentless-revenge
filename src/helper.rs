@@ -109,7 +109,10 @@ pub fn helper_camera_controller(
 }
 
 pub fn follow_player_camera(
-    mut camera_query: Query<(&mut Transform, &IsometricCameraFollow), (With<Camera>, Without<Player>)>,
+    mut camera_query: Query<
+        (&mut Transform, &IsometricCameraFollow),
+        (With<Camera>, Without<Player>),
+    >,
     player_query: Query<&Transform, With<Player>>,
     time: Res<Time>,
 ) {

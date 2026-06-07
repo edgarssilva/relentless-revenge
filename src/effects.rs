@@ -1,5 +1,5 @@
-use crate::{game_states::loading::GameAssets, sorting::FeetOffset};
 use crate::layers::local_z;
+use crate::{game_states::loading::GameAssets, sorting::FeetOffset};
 use bevy::prelude::*;
 
 #[derive(Component)]

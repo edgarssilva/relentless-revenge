@@ -91,20 +91,20 @@ pub fn movement_system(
     time: Res<Time>,
 ) {
     for (velocity, mut transform) in query_velocity.iter_mut() {
-        let new_pos = transform.translation + velocity.0.extend(0.) * time.delta_secs();
+        let new_pos = transform.translation.xy() + velocity.0 * time.delta_secs();
 
         if !velocity.1 {
             //If not restricted to walkable tiles
-            transform.translation = new_pos;
+            transform.translation = new_pos.extend(transform.translation.z);
             continue;
         }
 
         if map_resource
-            .get_aprox_tile(new_pos.xy())
+            .get_aprox_tile(&new_pos)
             .map(|tile| tile.walkable)
             .unwrap_or(false)
         {
-            transform.translation = new_pos;
+            transform.translation = new_pos.extend(transform.translation.z);
         }
     }
 }

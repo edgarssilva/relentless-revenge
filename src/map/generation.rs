@@ -11,6 +11,13 @@ use crate::map::map::TileVariant;
 pub const MAP_HEIGHT: f32 = 0.01;
 pub const TILE_SIZE: f32 = 10.0;
 
+fn tile_pos_to_world_2d(tile_pos: IVec2) -> Vec2 {
+    Vec2::new(
+        tile_pos.x as f32 * TILE_SIZE,
+        tile_pos.y as f32 * TILE_SIZE,
+    )
+}
+
 #[derive(Resource)]
 pub struct MapResource {
     pub blueprint: Map,
@@ -29,9 +36,25 @@ impl MapResource {
         self.tiles.get(&pos)
     }
 
-    //TODO: Check if this rounding is enough, or check within bounds of tile
-    pub fn get_aprox_tile(&self, pos: Vec2) -> Option<&Tile> {
-        self.get_tile(pos.round().as_ivec2())
+    pub fn tile_to_world_2d(&self, tile: &Tile) -> Vec2 {
+        tile_pos_to_world_2d(tile.pos)
+    }
+
+    pub fn tile_to_world(&self, tile: &Tile) -> Vec3 {
+        self.tile_to_world_2d(tile).extend(world_z::MAP)
+    }
+
+    pub fn world_to_tile(&self, world_pos: &Vec2) -> IVec2 {
+        (world_pos / TILE_SIZE).round().as_ivec2() * TILE_SIZE as i32
+    }
+
+    pub fn get_tile_at_world_pos(&self, world_pos: &Vec2) -> Option<&Tile> {
+        let tile_coords = self.world_to_tile(world_pos);
+        self.get_tile(tile_coords)
+    }
+
+    pub fn get_aprox_tile(&self, world_pos_2d: &Vec2) -> Option<&Tile> {
+        self.get_tile(self.world_to_tile(world_pos_2d))
     }
 }
 
@@ -56,9 +79,19 @@ pub fn build_3d_map_system(
         return;
     }
 
-    let mut player_pos = Vec2::ZERO;
+    let player_pos = map_resource
+        .blueprint
+        .rooms
+        .first()
+        .map(|room| tile_pos_to_world_2d(room.pos))
+        .unwrap_or(Vec2::ZERO);
     let mut spawnable_pos = Vec::new();
-    let mut portal_pos = Vec2::ZERO;
+    let portal_pos = map_resource
+        .blueprint
+        .rooms
+        .last()
+        .map(|room| tile_pos_to_world_2d(room.pos))
+        .unwrap_or(Vec2::ZERO);
 
     let standard_mesh = meshes.add(Cuboid::new(TILE_SIZE, TILE_SIZE, MAP_HEIGHT));
     let standard_material = materials.add(StandardMaterial {
@@ -71,12 +104,8 @@ pub fn build_3d_map_system(
     });
 
     for tile in map_resource.tiles.values() {
-        let world_pos_3d = Vec3::new(
-            tile.pos.x as f32 * TILE_SIZE,
-            tile.pos.y as f32 * TILE_SIZE,
-            world_z::MAP,
-        );
-        let world_pos_2d = world_pos_3d.xy(); // Quick .xy() swizzle shortcut
+        let world_pos_2d = map_resource.tile_to_world_2d(tile);
+        let world_pos_3d = world_pos_2d.extend(world_z::MAP);
 
         let active_material = match tile.variant {
             TileVariant::Standard => standard_material.clone(),
@@ -96,10 +125,8 @@ pub fn build_3d_map_system(
 
         if tile.is_center {
             if tile.firt_room {
-                player_pos = world_pos_2d;
                 ec.insert(PlayerSpawnTile);
             } else if tile.last_room {
-                portal_pos = world_pos_2d;
                 ec.insert(LevelPortalTile);
             }
         }

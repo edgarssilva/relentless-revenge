@@ -1,5 +1,5 @@
 use bevy::math::Vec3Swizzles;
-use bevy::prelude::{Color, Gizmos, IVec2, Query, Res, Result, Vec3, With};
+use bevy::prelude::{Color, Gizmos, Query, Res, Result, Vec3, With};
 use bevy::transform::components::Transform;
 
 use crate::controller::Controlled;
@@ -14,14 +14,14 @@ pub fn draw_tile_grid_gizmos(
 ) -> Result {
     let (transform, controlled) = player_query.single()?;
 
-    let current_tile = map_resource.get_aprox_tile(transform.translation.xy());
+    let current_tile = map_resource.get_aprox_tile(&transform.translation.xy());
     let next_tile = controlled
         .move_to
-        .and_then(|pos| map_resource.get_aprox_tile(pos));
+        .and_then(|pos| map_resource.get_aprox_tile(&pos));
 
     for tile in map_resource.tiles.values() {
-        let z = world_z::DEBUG_GRID;
-        let center = Vec3::new(tile.pos.x as f32, tile.pos.y as f32, z);
+        let world_pos = map_resource.tile_to_world_2d(tile);
+        let center = Vec3::new(world_pos.x, world_pos.y, world_z::DEBUG_GRID);
 
         let is_current_tile = current_tile.map_or_else(|| false, |p| p.pos == tile.pos);
         let is_next_tile = next_tile.map_or_else(|| false, |p| p.pos == tile.pos);
@@ -36,15 +36,10 @@ pub fn draw_tile_grid_gizmos(
             Color::srgb(1.0, 0.2, 0.2)
         };
 
-        draw_tile_outline(&mut gizmos, center, TILE_SIZE, color);
+        draw_tile_outline(&mut gizmos, center, TILE_SIZE / 2.0, color);
 
         if is_current_tile {
-            draw_tile_cross(&mut gizmos, center, TILE_SIZE, Color::WHITE);
-            gizmos.line(
-                Vec3::new(center.x, center.y, center.z),
-                Vec3::new(center.x, center.y, center.z),
-                Color::WHITE,
-            );
+            draw_tile_cross(&mut gizmos, center, TILE_SIZE / 2.0, Color::WHITE);
         }
     }
 

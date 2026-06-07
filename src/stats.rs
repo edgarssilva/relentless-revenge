@@ -192,7 +192,9 @@ pub fn drop_xp_system(
                     Drop,
                     XP::new(xp.amount),
                     Sprite::from_image(game_assets.xp_texture.clone()),
-                    Transform::from_translation(transform.translation.xy().extend(world_z::XP_DROP)),
+                    Transform::from_translation(
+                        transform.translation.xy().extend(world_z::XP_DROP),
+                    ),
                     Follow::new(player, 2.5, false, 0.1),
                     Collider::ball(4.),
                     ActiveEvents::COLLISION_EVENTS,

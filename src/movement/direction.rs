@@ -1,4 +1,7 @@
-use bevy::{math::{IVec3, Vec2}, prelude::Component};
+use bevy::{
+    math::{IVec3, Vec2},
+    prelude::Component,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Component, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Copy, Debug)]

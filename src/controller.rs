@@ -180,7 +180,7 @@ pub fn attack_ability(
             cooldown.reset();
 
             //TODO: Add attack dash stats
-            let new_pos = transform.translation.xy() + (direction.vec().normalize() * 5.);
+            let new_pos = transform.translation.xy() + iso_mul(direction.vec().normalize() * 5.);
 
             commands
                 .get_entity(entity)?

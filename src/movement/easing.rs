@@ -70,18 +70,20 @@ pub fn ease_to_position(
         }
 
         let percentage = ease.elapsed / ease.duration;
-
-        transform.translation = ease
+        let start = ease
             .start
-            .expect("EaseTo start position was not set")
-            .lerp(ease.position, ease_function(percentage, &ease.function))
-            .extend(transform.translation.z);
+            .unwrap()
+            .lerp(ease.position, ease_function(percentage, &ease.function));
+
+        transform.translation.x = start.x;
+        transform.translation.y = start.y;
 
         ease.elapsed += time.delta_secs();
 
         //TODO: Make the threshold value configurable
         if transform.translation.xy().distance(ease.position) < 0.015 {
-            transform.translation = ease.position.extend(transform.translation.z);
+            transform.translation.x = ease.position.x;
+            transform.translation.y = ease.position.y;
             commands.entity(entity).remove::<EaseTo>();
         }
     }

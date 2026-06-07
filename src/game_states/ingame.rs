@@ -11,6 +11,7 @@ use crate::attack::{
 };
 use crate::controller::combo_system;
 use crate::effects::spawn_shadows;
+use crate::floor::TriggerNextFloorMessage;
 use crate::game_states::ingame::InGameSet::{Normal, Post};
 use crate::manifest::floor::DomainData;
 use crate::manifest::player::PlayerManifest;
@@ -127,7 +128,7 @@ impl Plugin for InGamePlugin {
     }
 }
 
-fn setup_game(mut commands: Commands) {
+fn setup_game(mut commands: Commands, mut floor_writer: MessageWriter<TriggerNextFloorMessage>) {
     let dir = dirs::data_dir().unwrap().join("relentless_revenge");
 
     commands.insert_resource(
@@ -167,4 +168,6 @@ fn setup_game(mut commands: Commands) {
         // Angle it slightly down so it hits your 3D faces cleanly
         Transform::from_xyz(5.0, 10.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
+
+    floor_writer.write(TriggerNextFloorMessage);
 }
