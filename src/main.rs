@@ -19,6 +19,7 @@ mod manifest;
 mod map;
 mod movement;
 mod player;
+mod rendering;
 mod sorting;
 mod state;
 mod statistics;

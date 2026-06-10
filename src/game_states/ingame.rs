@@ -19,6 +19,7 @@ use crate::map::debug::draw_tile_grid_gizmos;
 use crate::map::generation::{build_3d_map_system, MapResource};
 use crate::map::map::{generate_map, Map};
 use crate::player::spawn_player;
+use crate::rendering::plugin::PixelRenderPlugin;
 //use crate::sorting::ysort;
 use crate::stats::{level_up, revenge_mode};
 use crate::ui::boss::{draw_boss_health, draw_domain_name};
@@ -56,6 +57,7 @@ impl Plugin for InGamePlugin {
             .add_plugins(EnemyBehaviourPlugin)
             .add_plugins(FloorPlugin)
             .add_plugins(MovementPlugin)
+            .add_plugins(PixelRenderPlugin)
             //.add_plugins(FreeCameraPlugin)
             .add_systems(
                 Update,
@@ -141,7 +143,7 @@ fn setup_game(mut commands: Commands, mut floor_writer: MessageWriter<TriggerNex
             .expect("Failed to create persistent statistics"),
     );
 
-    commands.spawn((
+    /*commands.spawn((
         FreeCamera::default(),
         IsometricCameraFollow {
             offset: Vec3::new(10.0, -10.0, 10.0),
@@ -158,7 +160,7 @@ fn setup_game(mut commands: Commands, mut floor_writer: MessageWriter<TriggerNex
             ..OrthographicProjection::default_3d()
         }),
         Transform::from_xyz(100.0, -100.0, 100.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Z),
-    ));
+    ));*/
     commands.spawn((
         DirectionalLight {
             illuminance: 5000.0,

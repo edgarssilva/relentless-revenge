@@ -117,7 +117,7 @@ pub fn dash_ability(
             cooldown.reset();
 
             //TODO: Add dash stats
-            let new_pos = transform.translation.xy() + iso_mul(dir.normalize() * 25.);
+            let new_pos = transform.translation.xy() + iso_mul(dir.normalize() * 35.);
             commands.get_entity(entity)?.insert(EaseTo::new(
                 new_pos,
                 EaseFunction::EaseOutQuad,
