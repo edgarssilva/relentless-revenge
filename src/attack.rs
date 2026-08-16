@@ -58,6 +58,7 @@ pub struct AttackPhase(pub Timer);
 #[component(storage = "SparseSet")]
 pub struct RecoverPhase(pub Timer);
 
+/*
 pub fn attack_phase(_charge: f32, attack: f32, recover: f32) -> StateMachine {
     StateMachine::default()
         .trans::<ChargePhase, _>(
@@ -69,6 +70,7 @@ pub fn attack_phase(_charge: f32, attack: f32, recover: f32) -> StateMachine {
             RecoverPhase(Timer::from_seconds(recover, TimerMode::Once)),
         )
 }
+*/
 
 #[derive(Component)]
 pub struct EntitiesHit(pub Vec<Entity>);
@@ -257,7 +259,7 @@ pub fn charge_phase_system(
                 ));
             });
 
-            commands.entity(entity).insert(Done::Success);
+            //commands.entity(entity).insert(Done::Success);
         } else {
             charge_phase.0.tick(time.delta());
         }
@@ -271,7 +273,7 @@ pub fn attack_phase_system(
 ) {
     for (mut attack_phase, entity) in query.iter_mut() {
         if attack_phase.0.is_finished() {
-            commands.entity(entity).insert(Done::Success);
+            //commands.entity(entity).insert(Done::Success);
         } else {
             attack_phase.0.tick(time.delta());
         }
@@ -288,8 +290,8 @@ pub fn recover_phase_system(
             state.set(State::Idle);
             commands
                 .entity(entity)
-                .insert(Done::Success)
-                .remove::<StateMachine>()
+                //.insert(Done::Success)
+                //.remove::<StateMachine>()
                 .remove::<RecoverPhase>();
         } else {
             recover_phase.0.tick(time.delta());

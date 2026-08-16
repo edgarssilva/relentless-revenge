@@ -1,8 +1,6 @@
 use bevy::camera::ScalingMode;
 use bevy::camera_controller::free_camera::{FreeCamera, FreeCameraPlugin};
 use bevy::prelude::*;
-use bevy_ecs_tilemap::TilemapPlugin;
-use bevy_egui::EguiPrimaryContextPass;
 use bevy_persistent::prelude::*;
 use leafwing_input_manager::prelude::InputManagerPlugin;
 
@@ -22,8 +20,6 @@ use crate::player::spawn_player;
 use crate::rendering::plugin::PixelRenderPlugin;
 //use crate::sorting::ysort;
 use crate::stats::{level_up, revenge_mode};
-use crate::ui::boss::{draw_boss_health, draw_domain_name};
-use crate::ui::player::{draw_hud, draw_revenge_bar, draw_xp_bar};
 use crate::{
     animation::AnimationPlugin,
     attack::{lifetimes, projectile_break, tick_cooldown},
@@ -50,8 +46,7 @@ enum InGameSet {
 
 impl Plugin for InGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(TilemapPlugin)
-            .add_plugins(InputManagerPlugin::<PlayerActions>::default())
+        app.add_plugins(InputManagerPlugin::<PlayerActions>::default())
             .add_plugins(CollisionPlugin)
             .add_plugins(AnimationPlugin)
             .add_plugins(EnemyBehaviourPlugin)
@@ -77,18 +72,6 @@ impl Plugin for InGamePlugin {
                 (setup_game /*setup_map*/, spawn_player).chain(),
             )
             //TODO: Check system ordering and optimize it
-            .add_systems(
-                EguiPrimaryContextPass,
-                (
-                    draw_hud,
-                    draw_domain_name,
-                    draw_xp_bar,
-                    draw_revenge_bar,
-                    draw_boss_health,
-                )
-                    .in_set(Normal)
-                    .run_if(in_state(GameState::InGame)),
-            )
             .add_observer(attack_spawner_observer)
             .add_systems(
                 Update,
@@ -164,7 +147,7 @@ fn setup_game(mut commands: Commands, mut floor_writer: MessageWriter<TriggerNex
     commands.spawn((
         DirectionalLight {
             illuminance: 5000.0,
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             ..Default::default()
         },
         // Angle it slightly down so it hits your 3D faces cleanly

@@ -24,7 +24,6 @@ mod sorting;
 mod state;
 mod statistics;
 mod stats;
-mod ui;
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 enum GameState {

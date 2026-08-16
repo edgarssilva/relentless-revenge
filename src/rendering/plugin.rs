@@ -5,23 +5,33 @@ use bevy::{
         visibility::RenderLayers, Camera2d, Camera3d, OrthographicProjection, Projection,
         RenderTarget,
     },
+    core_pipeline::{Core3d, Core3dSystems},
     ecs::{
         component::Component,
         message::MessageReader,
         query::With,
         resource::Resource,
+        schedule::IntoScheduleConfigs,
         system::{Commands, Query, Res, ResMut},
     },
     image::Image,
     math::{Vec2, Vec3},
-    render::render_resource::TextureFormat,
+    render::{
+        extract_component::ExtractComponentPlugin, render_resource::TextureFormat,
+        uniform::UniformComponentPlugin, RenderApp, RenderStartup,
+    },
     sprite::Sprite,
     transform::components::Transform,
     utils::default,
     window::WindowResized,
 };
 
-use crate::helper::IsometricCameraFollow;
+use crate::{
+    helper::IsometricCameraFollow,
+    rendering::pipeline::{
+        init_post_process_pipeline, pixel_post_process_system, PixelPostProcessSettings,
+    },
+};
 
 const TARGET_WIDTH: u32 = 480;
 const TARGET_HEIGHT: u32 = 270;
@@ -43,7 +53,8 @@ pub struct PixelRenderPlugin;
 impl Plugin for PixelRenderPlugin {
     fn build(&self, app: &mut App) {
         //TODO: Should propable handle this better, and with a loading state
-        embedded_asset!(app, "shaders/pixel_pipeline.wgsl");
+        //embedded_asset!(app, "shaders/pixel_pipeline.wgsl");
+        embedded_asset!(app, "shaders/post_processing.wgsl");
         app.insert_resource(PixelCamera {
             target_width: TARGET_WIDTH,
             target_height: TARGET_HEIGHT,
@@ -51,7 +62,21 @@ impl Plugin for PixelRenderPlugin {
             camera_layer: RenderLayers::layer(1),
         })
         .add_systems(Startup, setup_pixel_camera)
-        .add_systems(Update, on_window_resize);
+        .add_systems(Update, on_window_resize)
+        .add_plugins((
+            ExtractComponentPlugin::<PixelPostProcessSettings>::default(),
+            UniformComponentPlugin::<PixelPostProcessSettings>::default(),
+        ));
+
+        let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
+            return;
+        };
+
+        render_app.add_systems(RenderStartup, init_post_process_pipeline);
+        render_app.add_systems(
+            Core3d,
+            pixel_post_process_system.in_set(Core3dSystems::PostProcess),
+        );
     }
 }
 
@@ -85,6 +110,7 @@ fn setup_pixel_camera(
             ..OrthographicProjection::default_3d()
         }),
         Transform::from_xyz(100.0, -100.0, 100.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Z),
+        PixelPostProcessSettings { intensity: 0.02 },
     ));
 
     commands.spawn((

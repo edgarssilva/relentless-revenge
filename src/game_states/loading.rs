@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use leafwing_manifest::asset_state::SimpleAssetState;
 
@@ -9,8 +8,8 @@ pub struct LoadingPlugin;
 
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((EguiPlugin::default(), DataManifestPlugin {}))
-            .add_plugins(WorldInspectorPlugin::new())
+        app.add_plugins(DataManifestPlugin {})
+            //.add_plugins(WorldInspectorPlugin::new())
             .add_systems(OnEnter(GameState::Loading), setup_assets)
             .add_systems(
                 Update,

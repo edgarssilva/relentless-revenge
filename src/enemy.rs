@@ -3,7 +3,7 @@ use bevy_rapier2d::prelude::{
     ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, RigidBody,
 };
 use bevy_spritesheet_animation::prelude::SpritesheetAnimation;
-use seldom_state::prelude::StateMachine;
+//use seldom_state::prelude::StateMachine;
 
 use crate::animation::Animations;
 use crate::effects::Shadow;
@@ -21,7 +21,7 @@ pub struct EnemyBehaviourPlugin;
 
 impl Plugin for EnemyBehaviourPlugin {
     fn build(&self, app: &mut App) {
-        state_machine::register(app);
+        //state_machine::register(app);
     }
 }
 
@@ -46,7 +46,7 @@ pub struct EnemyBundle {
     pub shadow: Shadow,
     pub feet_offset: FeetOffset,
     // finding_player: FindingPLayer,
-    state_machine: StateMachine,
+    //state_machine: StateMachine,
 }
 
 impl EnemyBundle {
@@ -87,7 +87,7 @@ impl EnemyBundle {
             collision_groups: CollisionGroups::new(BodyLayers::ENEMY, BodyLayers::PLAYER_ATTACK),
             active_events: ActiveEvents::COLLISION_EVENTS,
             active_collision_types: ActiveCollisionTypes::all(),
-            state_machine: state_machine::get_state_machine(),
+            //state_machine: state_machine::get_state_machine(),
             ysort: YSort(sorting::ENTITIES_LAYER),
             feet_offset: FeetOffset(data.feet_offset.unwrap_or_default()),
             shadow: Shadow,

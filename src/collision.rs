@@ -163,6 +163,7 @@ pub fn damageable_collision(
                 });
             }
 
+            /*
             //TODO: Move this into a separate system using events
             commands.spawn((
                 Text::new(format!("-{}", damage.amount)),
@@ -170,7 +171,7 @@ pub fn damageable_collision(
                 TextColor(Color::WHITE),
                 TextFont {
                     font: game_assets.font.clone(),
-                    font_size: 12.0,
+                    font_size: Px(12.0),
                     ..default()
                 },
                 Transform::from_translation(
@@ -183,6 +184,7 @@ pub fn damageable_collision(
                 ),
                 Lifetime(Timer::new(Duration::from_secs_f32(1.), TimerMode::Once)),
             ));
+            */
         }
     }
 

@@ -3,11 +3,15 @@ use crate::{
     attack::Damageable,
     collision::BodyLayers,
     effects::Shadow,
-    enemy::state_machine,
+    //enemy::state_machine,
     manifest::boss::BossData,
     sorting::{self, FeetOffset, YSort},
     stats::StatsBundle,
-    Cooldown, Damage, Health, MovementSpeed, XP,
+    Cooldown,
+    Damage,
+    Health,
+    MovementSpeed,
+    XP,
 };
 use bevy::{
     image::TextureAtlas,
@@ -28,7 +32,7 @@ pub struct BossBundle {
     stats: StatsBundle,
     damageable: Damageable,
 
-    state_matchine: StateMachine,
+    //state_matchine: StateMachine,
 
     //Sprite
     ysort: YSort,
@@ -90,8 +94,7 @@ impl BossBundle {
             collider: Collider::cuboid(data.hitbox.x / 2., data.hitbox.y / 2.),
             collision_groups: CollisionGroups::new(BodyLayers::ENEMY, BodyLayers::PLAYER_ATTACK),
             active_events: ActiveEvents::COLLISION_EVENTS,
-
-            state_matchine: state_machine::get_state_machine(),
+            //state_matchine: state_machine::get_state_machine(),
         }
     }
 }

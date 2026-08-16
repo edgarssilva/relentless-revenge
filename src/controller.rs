@@ -7,7 +7,7 @@ use bevy::{math::Vec3Swizzles, prelude::RemovedComponents};
 use leafwing_input_manager::prelude::ActionState;
 
 use crate::{
-    attack::{attack_phase, ChargePhase},
+    attack::{/*attack_phase*/ ChargePhase},
     movement::{
         direction::Direction,
         easing::{EaseFunction, EaseTo},
@@ -184,7 +184,7 @@ pub fn attack_ability(
 
             commands
                 .get_entity(entity)?
-                .insert(attack_phase(0.05, 0.2, 0.075))
+                //.insert(attack_phase(0.05, 0.2, 0.075))
                 .insert(ChargePhase(Timer::from_seconds(0.05, TimerMode::Once), 0.2))
                 .insert(EaseTo::new(new_pos, EaseFunction::EaseOutQuad, 0.5));
         }

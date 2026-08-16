@@ -16,7 +16,7 @@ use turborand::rng::Rng;
 use turborand::TurboRand;
 
 use crate::boss::BossBundle;
-use crate::enemy::state_machine::Idle;
+//use crate::enemy::state_machine::Idle;
 use crate::layers::world_z;
 use crate::manifest::boss::BossManifest;
 use crate::manifest::enemy::EnemyManifest;
@@ -24,7 +24,6 @@ use crate::manifest::floor::{DomainData, DomainManifest};
 use crate::map::generation::open_level_portal;
 use crate::map::walkable::{restrict_movement, travel_through_portal};
 use crate::player::Player;
-use crate::ui::boss::DomainName;
 use crate::{enemy::EnemyBundle, GameState};
 
 #[derive(Default, Resource)]
@@ -106,10 +105,7 @@ fn new_domain_trigger(
 
     if let Some(domain) = &floor.domain {
         if floor.floor == domain.floors.0 {
-            commands.spawn(DomainName(
-                domain.name.clone(),
-                Timer::new(Duration::from_secs(3), bevy::time::TimerMode::Once),
-            ));
+            //TODO: Spawn domain title
         }
     }
 
@@ -182,7 +178,7 @@ fn spawn_boss(
                 floor.boss = Some(
                     commands
                         .spawn(BossBundle::new(boss, e.portal_pos.extend(world_z::ENEMY)))
-                        .insert(Idle)
+                        //.insert(Idle)
                         .id(),
                 );
             }
@@ -231,7 +227,7 @@ fn spawn_enemies(
                                         enemy_data,
                                         pos.1.extend(world_z::ENEMY),
                                     ))
-                                    .insert(Idle)
+                                    //.insert(Idle)
                                     .id(),
                             );
                         }
